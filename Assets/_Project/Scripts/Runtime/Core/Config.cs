@@ -26,7 +26,7 @@ namespace HordeLab
 
         public static int CellX(float x) => math.clamp((int)math.floor((x + HalfW) / CellSize), 0, GridW - 1);
         public static int CellY(float y) => math.clamp((int)math.floor((y + HalfH) / CellSize), 0, GridH - 1);
-        public static int TeamOf(int type) => type >= 2 ? 1 : 0;
+        public static int TeamOf(int type) => (type == UnitType.Zombie || type == UnitType.Skeleton) ? 1 : 0;
     }
 
     /// <summary>Chỉ số trong mảng counters dùng chung giữa các Job.</summary>
@@ -34,14 +34,15 @@ namespace HordeLab
     {
         public const int Units = 0, Arrows = 1, Particles = 2, Stamps = 3;
         public const int DeadKingdom = 4, DeadUndead = 5, Breach = 6;
-        public const int Type0 = 8; // 8..11: số lượng mỗi loại lính
+        public const int Type0 = 8; // 8..12: số lượng mỗi loại lính
         public const int Length = 16;
     }
 
-    /// <summary>Loại lính. 0-1 là Vương quốc, 2-3 là Xác sống.</summary>
+    /// <summary>Loại lính. Vương quốc: Footman, Archer, Cavalry. Xác sống: Zombie, Skeleton (dùng Cfg.TeamOf để biết phe).</summary>
     public static class UnitType
     {
-        public const int Footman = 0, Archer = 1, Zombie = 2, Skeleton = 3;
+        public const int Footman = 0, Archer = 1, Zombie = 2, Skeleton = 3, Cavalry = 4;
+        public const int Count = 5;
     }
 
     public static class PKind
@@ -53,7 +54,8 @@ namespace HordeLab
     public static class StampCell
     {
         public const int BloodRed = 0, BloodDark = 4, Corpse = 8, CorpseAlt = 12, Drop = 16,
-                         ArrowKingdom = 20, ArrowUndead = 22, Scorch = 24, Ash = 28;
+                         ArrowKingdom = 20, ArrowUndead = 22, Scorch = 24, Ash = 28,
+                         HorseCorpse = 32; // 32 = ngựa chết, 33 = ngựa + kỵ sĩ chết
     }
 
     public struct UnitStats
@@ -75,6 +77,7 @@ namespace HordeLab
         public int state;       // 0 = đi, 1 = đánh
         public int hasGoal;
         public int faceLeft;
+        public float charge;    // kỵ binh: đà xung phong 0..1, tích khi phi, xả hết vào đòn đâm kế tiếp
     }
 
     public struct Arrow

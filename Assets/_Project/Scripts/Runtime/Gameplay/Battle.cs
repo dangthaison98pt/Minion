@@ -26,6 +26,7 @@ namespace HordeLab
         [Header("Quân số ban đầu")]
         public int startFootmen = 2200;
         public int startArchers = 1000;
+        public int startCavalry = 400;
         public int startZombies = 3800;
         public int startSkeletons = 700;
 
@@ -35,6 +36,8 @@ namespace HordeLab
         public float kingdomRate = 55f;
         public float undeadRate = 60f;
         public float undeadRateGrowth = 0.6f;   // quái đến nhanh dần theo thời gian
+        [Range(0f, 1f)] public float archerChance = 0.3f;    // tỉ lệ tiểu đội viện binh là cung thủ
+        [Range(0f, 1f)] public float cavalryChance = 0.15f;  // ... là kỵ binh (còn lại là kiếm sĩ)
 
         [Header("Tường thành")]
         public int castleMaxHp = 250;
@@ -109,6 +112,8 @@ namespace HordeLab
         public float SimMs => simMs;
         public float Fps => fps;
         public int Counter(int idx) => counters[idx];
+        public int KingdomCount => counters[C.Type0 + UnitType.Footman] + counters[C.Type0 + UnitType.Archer] + counters[C.Type0 + UnitType.Cavalry];
+        public int UndeadCount => counters[C.Type0 + UnitType.Zombie] + counters[C.Type0 + UnitType.Skeleton];
         public RenderTexture GroundTexture => groundRT;
         public Texture2D GroundSource => groundTex;
 
@@ -143,11 +148,13 @@ namespace HordeLab
         {
             var p = Allocator.Persistent;
             units = new NativeArray<Unit>(Cfg.MaxUnits, p);
-            stats = new NativeArray<UnitStats>(4, p);
+            stats = new NativeArray<UnitStats>(UnitType.Count, p);
             stats[UnitType.Footman] = new UnitStats { maxHp = 40f, damage = 7f, cooldown = 0.9f, range = 1.0f, speed = 3.0f };
             stats[UnitType.Archer] = new UnitStats { maxHp = 18f, damage = 6f, cooldown = 1.7f, range = 24f, speed = 2.8f, ranged = 1 };
             stats[UnitType.Zombie] = new UnitStats { maxHp = 32f, damage = 6f, cooldown = 1.1f, range = 1.0f, speed = 2.2f };
             stats[UnitType.Skeleton] = new UnitStats { maxHp = 14f, damage = 5f, cooldown = 2.2f, range = 20f, speed = 2.5f, ranged = 1 };
+            // Kỵ binh: nhanh gấp ~2 lính bộ, trâu; đòn thường vừa phải, mạnh nhất khi xung phong (xem Fx.ChargeBonus)
+            stats[UnitType.Cavalry] = new UnitStats { maxHp = 75f, damage = 9f, cooldown = 1.0f, range = 1.2f, speed = 5.5f };
 
             arrows = new NativeArray<Arrow>(Cfg.MaxArrows, p);
             particles = new NativeArray<Particle>(Cfg.MaxParticles, p);
@@ -206,7 +213,7 @@ namespace HordeLab
             unitMat = LoadMat("Units");
             unitMat.mainTexture = unitAtlas;
             unitMat.SetBuffer("_Units", unitBuf);
-            unitMat.SetVector("_Atlas", new Vector4(PixelArt.UnitCols, PixelArt.UnitRows, 1f, Cfg.PPU));
+            unitMat.SetVector("_Atlas", new Vector4(PixelArt.UnitCols, PixelArt.UnitRows, PixelArt.UnitCell / (float)Cfg.PPU, Cfg.PPU));
 
             arrowMat = LoadMat("Arrows");
             arrowMat.mainTexture = arrowTex;
@@ -271,6 +278,7 @@ namespace HordeLab
 
             SpawnBlock(UnitType.Footman, startFootmen, new float2(-58f, -50f), new float2(-30f, 50f));
             SpawnBlock(UnitType.Archer, startArchers, new float2(-72f, -50f), new float2(-62f, 50f));
+            SpawnBlock(UnitType.Cavalry, startCavalry, new float2(-86f, -48f), new float2(-76f, 48f));
             SpawnBlock(UnitType.Zombie, startZombies, new float2(28f, -51f), new float2(72f, 51f));
             SpawnBlock(UnitType.Skeleton, startSkeletons, new float2(74f, -50f), new float2(84f, 50f));
         }
@@ -288,7 +296,7 @@ namespace HordeLab
                 cooldown = rng.NextFloat(0f, s.cooldown),
                 animT = rng.NextFloat(0f, 1f),
                 type = type,
-                faceLeft = type >= 2 ? 1 : 0
+                faceLeft = Cfg.TeamOf(type)
             };
             counters[C.Units] = n + 1;
         }
@@ -300,8 +308,8 @@ namespace HordeLab
 
         void Reinforce(float dt)
         {
-            int kingdom = counters[C.Type0 + UnitType.Footman] + counters[C.Type0 + UnitType.Archer];
-            int undead = counters[C.Type0 + UnitType.Zombie] + counters[C.Type0 + UnitType.Skeleton];
+            int kingdom = KingdomCount;
+            int undead = UndeadCount;
             kingdomAcc += kingdomRate * dt;
             undeadAcc += (undeadRate + undeadRateGrowth * elapsed) * dt;
 
@@ -310,8 +318,10 @@ namespace HordeLab
             {
                 kingdomAcc -= SquadSize;
                 if (kingdom >= kingdomCap) continue;
-                bool archers = rng.NextFloat() < 0.33f;
-                kingdom += SpawnSquad(archers ? UnitType.Archer : UnitType.Footman, archers ? -88f : -85f);
+                float roll = rng.NextFloat();
+                if (roll < archerChance) kingdom += SpawnSquad(UnitType.Archer, -88f);
+                else if (roll < archerChance + cavalryChance) kingdom += SpawnSquad(UnitType.Cavalry, -86f);
+                else kingdom += SpawnSquad(UnitType.Footman, -85f);
             }
             while (undeadAcc >= SquadSize)
             {
@@ -369,7 +379,7 @@ namespace HordeLab
             for (int i = 0; i < n; i++)
             {
                 Unit u = units[i];
-                if (u.type < 2) continue;
+                if (Cfg.TeamOf(u.type) == 0) continue;
                 float d = math.distance(u.pos, at);
                 if (d > R) continue;
                 u.hp -= 70f * (1f - 0.5f * d / R);
@@ -594,7 +604,7 @@ namespace HordeLab
             if (!counters.IsCreated) return;
             EnsureStyles();
 
-            int k0 = counters[C.Type0 + 0], k1 = counters[C.Type0 + 1];
+            int k0 = counters[C.Type0 + UnitType.Footman], k1 = counters[C.Type0 + UnitType.Archer], k2 = counters[C.Type0 + UnitType.Cavalry];
             int u0 = counters[C.Type0 + 2], u1 = counters[C.Type0 + 3];
             int t = (int)elapsed;
 
@@ -602,7 +612,7 @@ namespace HordeLab
             float x = hudRect.x + 12f, y = hudRect.y + 8f, w = hudRect.width - 24f;
             void Line(string s) { GUI.Label(new Rect(x, y, w, 22f), s, label); y += 22f; }
 
-            Line($"<color=#8fb8ff>VƯƠNG QUỐC</color>  {k0 + k1:N0} lính   <color=#aaaaaa>({k0:N0} kiếm · {k1:N0} cung)</color>");
+            Line($"<color=#8fb8ff>VƯƠNG QUỐC</color>  {k0 + k1 + k2:N0} lính   <color=#aaaaaa>({k0:N0} kiếm · {k1:N0} cung · {k2:N0} kỵ)</color>");
             Line($"<color=#9fe07a>XÁC SỐNG</color>  {u0 + u1:N0} con   <color=#aaaaaa>({u0:N0} zombie · {u1:N0} cung xương)</color>");
             Line($"Mũi tên đang bay: <color=#ffe08a>{counters[C.Arrows]:N0}</color>    Hạt hiệu ứng: <color=#ffb070>{counters[C.Particles]:N0}</color>");
             Line($"Đã diệt: <color=#9fe07a>{counters[C.DeadUndead]:N0}</color>    Tử trận: <color=#ff8f8f>{counters[C.DeadKingdom]:N0}</color>");

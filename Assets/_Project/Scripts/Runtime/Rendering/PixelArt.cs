@@ -11,8 +11,9 @@ namespace HordeLab
     /// </summary>
     public static class PixelArt
     {
-        public const int UnitCell = 10, UnitCols = 4, UnitRows = 8;     // 4 khung hình x (4 loại lính x 2 trạng thái)
-        public const int StampPx = 20, StampCols = 8, StampRows = 4;
+        // Ô atlas 16x16: lính bộ 10x10 vẽ ở giữa ô, kỵ binh dùng trọn 16x16. 4 khung hình x (5 loại x 2 trạng thái)
+        public const int UnitCell = 16, InfantryPx = 10, UnitCols = 4, UnitRows = UnitType.Count * 2;
+        public const int StampPx = 20, StampCols = 8, StampRows = 5;
 
         static Color32 Rgb(byte r, byte g, byte b, byte a = 255) => new Color32(r, g, b, a);
 
@@ -25,6 +26,8 @@ namespace HordeLab
         static readonly Color32 Hood = Rgb(98, 70, 44), HoodDark = Rgb(74, 52, 34);
         static readonly Color32 Zomb = Rgb(124, 170, 96), ZombDark = Rgb(86, 124, 70), Rags = Rgb(100, 64, 114), RagsDark = Rgb(68, 44, 82), EyeRed = Rgb(230, 44, 40);
         static readonly Color32 Bone = Rgb(228, 222, 198), BoneDark = Rgb(166, 158, 138), EyeGreen = Rgb(120, 255, 120), BowDark = Rgb(84, 62, 52);
+        static readonly Color32 Horse = Rgb(150, 98, 58), HorseLight = Rgb(176, 122, 74), HorseDark = Rgb(104, 66, 40), Mane = Rgb(58, 38, 30), Hoof = Rgb(46, 36, 34);
+        static readonly Color32 Cloth = Rgb(196, 40, 44), ClothDark = Rgb(140, 26, 32);
 
         /// <summary>Khung vẽ với toạ độ y hướng xuống (giống phần mềm vẽ pixel).</summary>
         public class Canvas
@@ -62,20 +65,51 @@ namespace HordeLab
         // ------------------------------------------------------------------
         // Lính
         // ------------------------------------------------------------------
-        public static Texture2D BuildUnitAtlas()
+        public static Texture2D BuildUnitAtlas() => BuildUnitCanvas().ToTexture("UnitAtlas");
+
+        /// <summary>Lưu atlas lính + dấu in ra PNG (phóng to <paramref name="zoom"/> lần) để xem sprite mà không cần mở game.</summary>
+        public static void SaveAtlases(string dir, int zoom = 6)
+        {
+            System.IO.File.WriteAllBytes(System.IO.Path.Combine(dir, "atlas_units.png"), Zoomed(BuildUnitCanvas(), zoom));
+            System.IO.File.WriteAllBytes(System.IO.Path.Combine(dir, "atlas_stamps.png"), Zoomed(BuildStampCanvas(), zoom / 2));
+        }
+
+        static byte[] Zoomed(Canvas c, int k)
+        {
+            var bg = new Color32(70, 92, 52, 255);   // nền cỏ cho dễ nhìn
+            var t = new Texture2D(c.W * k, c.H * k, TextureFormat.RGBA32, false);
+            var px = new Color32[t.width * t.height];
+            for (int y = 0; y < t.height; y++)
+                for (int x = 0; x < t.width; x++)
+                {
+                    var p = c.Px[(y / k) * c.W + x / k];
+                    px[y * t.width + x] = p.a > 0 ? p : bg;
+                }
+            t.SetPixels32(px);
+            t.Apply();
+            var png = t.EncodeToPNG();
+            Object.Destroy(t);
+            return png;
+        }
+
+        static Canvas BuildUnitCanvas()
         {
             var atlas = new Canvas(UnitCell * UnitCols, UnitCell * UnitRows);
-            for (int type = 0; type < 4; type++)
+            for (int type = 0; type < UnitType.Count; type++)
                 for (int state = 0; state < 2; state++)
                     for (int f = 0; f < 4; f++)
-                        atlas.Blit(DrawUnit(type, state, f), f * UnitCell, (type * 2 + state) * UnitCell);
-            return atlas.ToTexture("UnitAtlas");
+                    {
+                        var sprite = type == UnitType.Cavalry ? DrawCavalry(state, f, true) : DrawUnit(type, state, f);
+                        int pad = (UnitCell - sprite.W) / 2;   // lính bộ 10x10 nằm giữa ô 16x16 → vị trí trên màn hình không đổi
+                        atlas.Blit(sprite, f * UnitCell + pad, (type * 2 + state) * UnitCell + pad);
+                    }
+            return atlas;
         }
 
         /// <summary>Vẽ 1 khung hình 10x10 của 1 loại lính, quay mặt sang phải.</summary>
         public static Canvas DrawUnit(int type, int state, int f)
         {
-            var s = new Canvas(UnitCell, UnitCell);
+            var s = new Canvas(InfantryPx, InfantryPx);
             bool walk = state == 0;
             int bob = walk && (f & 1) == 1 ? 1 : 0;
 
@@ -187,6 +221,79 @@ namespace HordeLab
             }
         }
 
+        // ------------------------------------------------------------------
+        // Kỵ binh: ngựa nâu + kỵ sĩ mũ sắt, khiên, thương. 16x16, quay mặt sang phải.
+        // Đi = phi nước đại 4 khung; Đánh = khung 0-1 thu thương, 2-3 đâm tới.
+        // ------------------------------------------------------------------
+        public static Canvas DrawCavalry(int state, int f, bool rider)
+        {
+            var s = new Canvas(UnitCell, UnitCell);
+            bool walk = state == 0;
+            int g = walk ? f : 1;                 // tư thế chân: đứng đánh thì chân thẳng
+            int bob = walk && (f == 1 || f == 3) ? -1 : 0;   // ngựa nhún lên khi chân duỗi thẳng
+
+            // --- chân ngựa (vẽ trước để thân đè lên) ---
+            void Leg(int x0, int y0, int dx1, int dx2)
+            {
+                s.Set(x0, y0, HorseDark); s.Set(x0 + dx1, y0 + 1, HorseDark); s.Set(x0 + dx2, y0 + 2, Hoof);
+            }
+            int ly = 11 + bob;
+            switch (g)
+            {
+                case 0: Leg(11, ly, 1, 2); Leg(10, ly, 0, 1); Leg(5, ly, -1, -2); Leg(4, ly, -1, -1); break;   // duỗi dài
+                case 1: Leg(11, ly, 0, 0); Leg(9, ly, 0, 0); Leg(6, ly, 0, 0); Leg(4, ly, 0, 0); break;         // chạm đất
+                case 2: Leg(11, ly, -1, -2); Leg(10, ly, -1, -1); Leg(5, ly, 1, 2); Leg(4, ly, 1, 1); break;    // co lại
+                default: Leg(12, ly, 0, 0); Leg(10, ly, 0, 0); Leg(5, ly, 0, 0); Leg(3, ly, 0, 0); break;
+            }
+
+            // --- thân, cổ, đầu, đuôi ---
+            int by = 8 + bob;
+            for (int x = 4; x <= 11; x++)
+            {
+                s.Set(x, by, HorseLight);
+                s.Set(x, by + 1, Horse);
+                s.Set(x, by + 2, HorseDark);
+            }
+            s.Set(11, by - 1, Horse); s.Set(12, by - 1, Horse); s.Set(12, by - 2, Horse);    // cổ
+            s.Set(11, by - 2, Mane); s.Set(11, by - 3, Mane);                                  // bờm
+            s.Set(12, by - 3, HorseLight); s.Set(13, by - 3, Horse); s.Set(14, by - 2, HorseDark); s.Set(13, by - 2, Horse); // đầu
+            s.Set(12, by - 4, Horse);                                                          // tai
+            s.Set(13, by - 3, Outline);                                                        // mắt
+            int tail = walk && (f & 1) == 0 ? 0 : 1;
+            s.Set(3, by, Mane); s.Set(2, by + 1 - tail, Mane); s.Set(2, by + 2 - tail, Mane);  // đuôi bay
+            s.Set(6, by, Cloth); s.Set(7, by, Cloth); s.Set(8, by, Cloth); s.Set(7, by + 1, ClothDark); // yên + vải phủ
+
+            if (rider)
+            {
+                int ry = by - 1;                                         // hông kỵ sĩ ngồi trên yên
+                s.Set(8, ry + 2, Pants); s.Set(8, ry + 3, Leather);      // chân + ủng thả xuống sườn ngựa
+                for (int y = ry - 2; y <= ry; y++) { s.Set(7, y, TunicDark); s.Set(8, y, Tunic); }
+                s.Set(8, ry, Gold);                                       // thắt lưng
+                s.Set(7, ry - 3, SteelDark); s.Set(8, ry - 3, Skin);      // mặt
+                s.Set(7, ry - 4, Steel); s.Set(8, ry - 4, Steel);         // mũ sắt
+                s.Set(7, ry - 5, Cloth);                                  // chỏm mũ đỏ
+                s.Set(6, ry - 2, White); s.Set(6, ry - 1, Tunic); s.Set(6, ry, White);   // khiên
+
+                // thương
+                if (walk)
+                {
+                    s.Set(9, ry - 1, Skin);
+                    s.Set(10, ry - 2, Wood); s.Set(11, ry - 3, Wood); s.Set(12, ry - 4, Wood); s.Set(13, ry - 5, Steel);
+                    s.Set(11, ry - 4, Cloth);                             // cờ đuôi nheo
+                }
+                else
+                {
+                    int reach = f >= 2 ? 1 : 0;                           // khung 2-3: đâm tới
+                    s.Set(9 + reach, ry - 2, Skin);
+                    for (int x = 8 + reach; x <= 12 + reach; x++) s.Set(x, ry - 3, Wood);
+                    s.Set(13 + reach, ry - 3, Steel);
+                }
+            }
+
+            AddOutline(s);
+            return s;
+        }
+
         static void AddOutline(Canvas s)
         {
             var marks = new List<Vector2Int>();
@@ -203,7 +310,9 @@ namespace HordeLab
         // ------------------------------------------------------------------
         // "Con dấu" in lên mặt đất: máu, xác, mũi tên cắm, vết cháy
         // ------------------------------------------------------------------
-        public static Texture2D BuildStampAtlas()
+        public static Texture2D BuildStampAtlas() => BuildStampCanvas().ToTexture("StampAtlas");
+
+        static Canvas BuildStampCanvas()
         {
             int S = StampPx;
             var a = new Canvas(S * StampCols, S * StampRows);
@@ -227,7 +336,14 @@ namespace HordeLab
 
             for (int v = 0; v < 8; v++) Scorch(a, v * S, 3 * S, rnd, v >= 4);              // hàng 3: vết cháy, tro
 
-            return a.ToTexture("StampAtlas");
+            for (int v = 0; v < 2; v++)                                                     // hàng 4: ngựa chết (không / có kỵ sĩ)
+            {
+                var horse = DrawCavalry(0, 1, v == 1);
+                Darken(horse, 0.72f);
+                a.Blit(horse, v * S + 2, 4 * S + 2);
+            }
+
+            return a;
         }
 
         static void Darken(Canvas c, float k)

@@ -45,6 +45,9 @@ namespace HordeLab
 
         public static int BloodKind(int type) =>
             type == UnitType.Skeleton ? PKind.Bone : type == UnitType.Zombie ? PKind.DarkBlood : PKind.Blood;
+
+        // Kỵ binh: đòn đâm mạnh gấp (1 + ChargeBonus * charge) lần, phi 1/ChargeRate giây là đầy đà
+        public const float ChargeRate = 0.6f, ChargeBonus = 2f, ChargeKnockback = 0.9f;
     }
 
     // =====================================================================
@@ -248,6 +251,8 @@ namespace HordeLab
             u.animT += dt;
             u.cooldown -= dt;
             u.flash = math.max(0f, u.flash - dt * 8f);
+            if (u.type == UnitType.Cavalry && !attacking && math.length(vel) > s.speed * 0.5f)
+                u.charge = math.min(1f, u.charge + dt * Fx.ChargeRate);
 
             units[i] = u;
             attackTarget[i] = atk;
@@ -318,10 +323,19 @@ namespace HordeLab
                 {
                     Unit a = units[i];
                     Unit v = units[t];
-                    v.hp -= stats[a.type].damage * rng.NextFloat(0.75f, 1.25f);
-                    v.flash = 1f;
-                    units[t] = v;
                     float2 hit = math.lerp(a.pos, v.pos, 0.6f);
+                    float mult = 1f + Fx.ChargeBonus * a.charge;   // xung phong (chỉ kỵ binh có charge > 0)
+                    v.hp -= stats[a.type].damage * mult * rng.NextFloat(0.75f, 1.25f);
+                    v.flash = 1f;
+                    if (a.charge > 0.25f)
+                    {
+                        float2 d = v.pos - a.pos;
+                        v.pos += d / math.max(math.length(d), 1e-4f) * Fx.ChargeKnockback * a.charge;   // hất văng
+                        Fx.Spray(particles, counters, ref rng, hit, 0.2f, 4, PKind.Dust, 3f, 3f);
+                        a.charge = 0f;
+                        units[i] = a;
+                    }
+                    units[t] = v;
                     Fx.Spray(particles, counters, ref rng, hit, 0.5f, 2, Fx.BloodKind(v.type), 2.5f, 5f);
                     Fx.Spray(particles, counters, ref rng, hit, 0.6f, 1, PKind.Spark, 3f, 3f);
                 }
@@ -529,7 +543,7 @@ namespace HordeLab
             while (i < n)
             {
                 Unit u = units[i];
-                bool breach = u.type >= 2 && u.pos.x < Cfg.WallX;
+                bool breach = Cfg.TeamOf(u.type) == 1 && u.pos.x < Cfg.WallX;
                 if (u.hp > 0f && !breach) { i++; continue; }
 
                 if (breach)
@@ -539,15 +553,20 @@ namespace HordeLab
                 }
                 else
                 {
-                    int deadIdx = u.type >= 2 ? C.DeadUndead : C.DeadKingdom;
+                    int deadIdx = Cfg.TeamOf(u.type) == 1 ? C.DeadUndead : C.DeadKingdom;
                     counters[deadIdx] = counters[deadIdx] + 1;
                     if (u.type != UnitType.Skeleton)
                     {
                         int splat = u.type == UnitType.Zombie ? StampCell.BloodDark : StampCell.BloodRed;
                         Fx.Stamp(stamps, counters, u.pos + rng.NextFloat2(-0.3f, 0.3f), splat + rng.NextInt(0, 4), rng.NextInt(0, 8));
                     }
-                    int corpse = (rng.NextBool() ? StampCell.Corpse : StampCell.CorpseAlt) + u.type;
-                    Fx.Stamp(stamps, counters, u.pos, corpse, rng.NextBool() ? 4 : 0);
+                    if (u.type == UnitType.Cavalry)   // ngựa nằm nghiêng: xoay 90° trái/phải, có thể lật
+                        Fx.Stamp(stamps, counters, u.pos, StampCell.HorseCorpse + rng.NextInt(0, 2), (rng.NextBool() ? 1 : 3) | (rng.NextBool() ? 4 : 0));
+                    else
+                    {
+                        int corpse = (rng.NextBool() ? StampCell.Corpse : StampCell.CorpseAlt) + u.type;
+                        Fx.Stamp(stamps, counters, u.pos, corpse, rng.NextBool() ? 4 : 0);
+                    }
                     Fx.Spray(particles, counters, ref rng, u.pos, 0.6f, 7, Fx.BloodKind(u.type), 3f, 7f);
                 }
 
@@ -556,7 +575,7 @@ namespace HordeLab
             }
             counters[C.Units] = n;
 
-            for (int t = 0; t < 4; t++) counters[C.Type0 + t] = 0;
+            for (int t = 0; t < UnitType.Count; t++) counters[C.Type0 + t] = 0;
             for (int k = 0; k < n; k++)
             {
                 int idx = C.Type0 + units[k].type;
@@ -582,7 +601,7 @@ namespace HordeLab
             int frame;
             if (u.state == 0)
             {
-                float fps = u.type == UnitType.Zombie ? 6f : 9f;
+                float fps = u.type == UnitType.Zombie ? 6f : u.type == UnitType.Cavalry ? 12f : 9f;
                 frame = (int)(u.animT * fps) & 3;
             }
             else frame = u.animT < 0.4f ? math.min(3, (int)(u.animT * 10f)) : 0;

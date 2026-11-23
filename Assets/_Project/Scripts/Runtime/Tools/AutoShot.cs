@@ -47,7 +47,8 @@ namespace HordeLab
         internal static void ApplyStress(Battle b, int n)
         {
             n = math.clamp(n, 1000, Cfg.MaxUnits - 1000);
-            b.startFootmen = (int)(n * 0.28f);
+            b.startFootmen = (int)(n * 0.24f);
+            b.startCavalry = (int)(n * 0.04f);
             b.startArchers = (int)(n * 0.13f);
             b.startZombies = (int)(n * 0.49f);
             b.startSkeletons = (int)(n * 0.09f);
@@ -62,7 +63,11 @@ namespace HordeLab
         IEnumerator Start()
         {
             while (battle == null) { battle = FindAnyObjectByType<Battle>(); yield return null; }
-            if (Headless) log.AppendLine("Chạy ngầm (-batchmode): không chụp màn hình, không đo GPU");
+            if (Headless)
+            {
+                log.AppendLine("Chạy ngầm (-batchmode): không chụp màn hình, không đo GPU — xuất atlas sprite ra PNG thay thế");
+                PixelArt.SaveAtlases(dir);
+            }
             if (stress > 0)
             {
                 ApplyStress(battle, stress);
@@ -148,7 +153,7 @@ namespace HordeLab
             nextLog += 1f;
             int n = Mathf.Max(1, samples);
             log.AppendLine($"t={Time.time:0}s fps={battle.Fps:0} frame={sumFrame / n:0.0}ms(max {maxFrame:0}) gpu={sumGpu / n:0.0}ms main={sumMain / n:0.0}ms render={sumRender / n:0.0}ms sim={battle.SimMs:0.00}ms " +
-                           $"units={battle.Counter(C.Units)} (K {battle.Counter(C.Type0) + battle.Counter(C.Type0 + 1)} / U {battle.Counter(C.Type0 + 2) + battle.Counter(C.Type0 + 3)}) " +
+                           $"units={battle.Counter(C.Units)} (K {battle.KingdomCount} [kỵ {battle.Counter(C.Type0 + UnitType.Cavalry)}] / U {battle.UndeadCount}) " +
                            $"arrows={battle.Counter(C.Arrows)} particles={battle.Counter(C.Particles)} " +
                            $"deadU={battle.Counter(C.DeadUndead)} deadK={battle.Counter(C.DeadKingdom)} breach={battle.Counter(C.Breach)}");
             sumGpu = sumMain = sumRender = sumFrame = maxFrame = 0;
