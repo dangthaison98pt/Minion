@@ -16,7 +16,7 @@ namespace HordeLab
         public const float CellSize = 2f;
         public const int GridW = 96, GridH = 54, Cells = GridW * GridH;
 
-        public const int MaxUnits = 16384;
+        public const int MaxUnits = 32768;     // đủ cho màn 20k lính (mỗi lính ~48 byte → vài MB tổng cộng)
         public const int MaxArrows = 16384;
         public const int MaxParticles = 65536;
         public const int MaxStamps = 16384;

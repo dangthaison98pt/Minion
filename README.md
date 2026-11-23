@@ -20,6 +20,16 @@ lửa, máu, xác nằm la liệt — chạy mượt nhờ **Job System + Burst 
 - Game giới hạn FPS bằng `Application.targetFrameRate` thay vì VSync (`Battle.targetFps`): GPU Intel hạ xung khi
   dùng VSync nên hay tụt về 40 FPS dù còn dư sức.
 
+## Đo hiệu năng
+```
+Build\HordeLab.exe -batchmode -bench ketqua.txt -stress 20000
+```
+Chạy ngầm (không cửa sổ), seed và dt cố định, 3 lượt x 1200 frame, ghi thời gian từng job vào `ketqua.txt`.
+Kết quả trên i5-12400: **20k lính ≈ 1,1–1,2 ms/frame**, ~8,5k lính ≈ 0,42 ms/frame (ThinkMove chiếm ~70%).
+
+> Chỉ số "Mô phỏng" trên HUD đo từ lúc xếp lịch job đến lúc `Complete()`, tức gồm cả thời gian chờ luồng worker,
+> nên thường cao hơn nhiều so với số của `-bench`. Muốn so sánh trước/sau khi tối ưu thì dùng `-bench`.
+
 ## Điều khiển
 | Phím | Tác dụng |
 |---|---|
@@ -59,7 +69,8 @@ Build/                           ← bản build (.gitignore)
 | `Runtime/Rendering/PixelView.cs` | Camera pixel-perfect: vẽ vào RenderTexture độ phân giải thấp rồi phóng nguyên lần |
 | `Runtime/Rendering/PixelArt.cs` | "Vẽ" toàn bộ sprite bằng code (lính 10x10, xác, máu, mặt đất, tường, nghĩa địa) |
 | `Resources/Shaders/*.shader` | Shader instancing đọc `StructuredBuffer`, tạo quad từ `SV_VertexID` |
-| `Runtime/Tools/AutoShot.cs` | Công cụ test: chạy exe với `-autoshot <thư mục>` để tự chụp màn hình + ghi số liệu |
+| `Runtime/Tools/AutoShot.cs` | Công cụ test: chạy exe với `-autoshot <thư mục>` để tự chụp màn hình + ghi số liệu (thêm `-stress 20000` để dồn quân) |
+| `Runtime/Tools/Benchmark.cs` | Đo chi phí từng job, seed + dt cố định: `-batchmode -bench <file.txt> [-stress 20000]` |
 | `Editor/HordeBuild.cs` | Menu **Horde Lab**: tạo lại scene, build file `.exe` |
 
 ## Các mẹo chính (đúng như lý thuyết)

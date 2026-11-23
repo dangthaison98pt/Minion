@@ -43,6 +43,28 @@ namespace HordeLab
         [Tooltip("Giới hạn FPS bằng CPU thay cho VSync. GPU tích hợp (Intel) hạ xung khi dùng VSync nên hay tụt xuống 30-45 FPS.")]
         public int targetFps = 60;
 
+        // ---- Đo hiệu năng (Tools/Benchmark.cs dùng) ----
+        [System.NonSerialized] public uint fixedSeed;      // 0 = ngẫu nhiên theo đồng hồ
+        [System.NonSerialized] public float fixedDt;       // 0 = dùng Time.deltaTime thật
+        [System.NonSerialized] public bool profileJobs;    // true = chờ từng job xong để bấm giờ riêng (chậm hơn chút)
+        public static readonly string[] StageNames =
+            { "BuildGrid", "ThinkMove", "Resolve", "ArrowStep", "ArrowLand", "ParticleStep", "ParticleCompact", "Death", "Pack" };
+        public readonly double[] stageMs = new double[9];  // cộng dồn theo từng stage
+        public readonly System.Collections.Generic.List<float> frameSimMs = new System.Collections.Generic.List<float>();
+        readonly Stopwatch stageSw = new Stopwatch();
+        double frameAcc;
+
+        JobHandle Mark(int stage, JobHandle h)
+        {
+            if (!profileJobs) return h;
+            h.Complete();
+            double ms = stageSw.Elapsed.TotalMilliseconds;
+            stageMs[stage] += ms;
+            frameAcc += ms;
+            stageSw.Restart();
+            return h;
+        }
+
         // ---- Dữ liệu mô phỏng (toàn bộ là mảng struct) ----
         NativeArray<Unit> units;
         NativeArray<UnitStats> stats;
@@ -238,7 +260,7 @@ namespace HordeLab
         {
             simHandle.Complete();
             for (int i = 0; i < C.Length; i++) counters[i] = 0;
-            rng = new Random((uint)System.Environment.TickCount | 1u);
+            rng = new Random(fixedSeed != 0 ? fixedSeed : ((uint)System.Environment.TickCount | 1u));
             groundDirty = true;   // vẽ lại mặt đất sạch ở frame kế tiếp (lúc GPU sẵn sàng)
 
             elapsed = 0f;
@@ -414,7 +436,7 @@ namespace HordeLab
             simScheduled = false;
             if (paused || defeated) return;
 
-            float dt = math.min(Time.deltaTime, 1f / 30f);
+            float dt = fixedDt > 0f ? fixedDt : math.min(Time.deltaTime, 1f / 30f);
             elapsed += dt;
             volleyCd -= dt;
             fireCd -= dt;
@@ -436,12 +458,15 @@ namespace HordeLab
         {
             frame++;
             int nu = counters[C.Units];
+            frameAcc = 0;
+            stageSw.Restart();
 
             var h = new BuildGridJob
             {
                 units = units, counters = counters, cellStart = cellStart, cursor = cursor, teamCount = teamCount,
                 cellOf = cellOf, sortedIndex = sortedIndex, sortedPos = sortedPos, sortedTeam = sortedTeam
             }.Schedule();
+            h = Mark(0, h);
 
             h = new ThinkMoveJob
             {
@@ -449,29 +474,41 @@ namespace HordeLab
                 sortedIndex = sortedIndex, sortedPos = sortedPos, sortedTeam = sortedTeam,
                 attackTarget = attackTarget, shots = shots, dt = dt, frame = frame
             }.Schedule(nu, 64, h);
+            h = Mark(1, h);
 
             h = new ResolveJob
             {
                 units = units, stats = stats, attackTarget = attackTarget, shots = shots, arrows = arrows,
                 particles = particles, counters = counters, seed = rng.NextUInt() | 1u
             }.Schedule(h);
+            h = Mark(2, h);
 
             h = new ArrowStepJob { arrows = arrows, counters = counters, dt = dt }.Schedule(Cfg.MaxArrows, 512, h);
+            h = Mark(3, h);
 
             h = new ArrowLandJob
             {
                 arrows = arrows, units = units, particles = particles, stamps = stamps, counters = counters,
                 cellStart = cellStart, sortedIndex = sortedIndex, seed = rng.NextUInt() | 1u
             }.Schedule(h);
+            h = Mark(4, h);
 
             h = new ParticleStepJob { particles = particles, counters = counters, dt = dt }.Schedule(Cfg.MaxParticles, 1024, h);
+            h = Mark(5, h);
             h = new ParticleCompactJob { particles = particles, stamps = stamps, counters = counters, seed = rng.NextUInt() | 1u }.Schedule(h);
+            h = Mark(6, h);
             h = new DeathJob { units = units, particles = particles, stamps = stamps, counters = counters, seed = rng.NextUInt() | 1u }.Schedule(h);
+            h = Mark(7, h);
 
             var p1 = new PackUnitsJob { units = units, counters = counters, gpu = unitGpu }.Schedule(Cfg.MaxUnits, 256, h);
             var p2 = new PackArrowsJob { arrows = arrows, counters = counters, gpu = arrowGpu }.Schedule(Cfg.MaxArrows, 256, h);
             var p3 = new PackParticlesJob { particles = particles, counters = counters, gpu = particleGpu }.Schedule(Cfg.MaxParticles, 1024, h);
             simHandle = JobHandle.CombineDependencies(p1, p2, p3);
+            if (profileJobs)
+            {
+                Mark(8, simHandle);
+                frameSimMs.Add((float)frameAcc);
+            }
             JobHandle.ScheduleBatchedJobs();
         }
 
