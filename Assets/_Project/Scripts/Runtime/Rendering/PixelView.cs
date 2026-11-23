@@ -13,6 +13,8 @@ namespace HordeLab
         public Camera Cam { get; private set; }
         public RenderTexture Target { get; private set; }
         public int Scale = 1;
+        public bool BlockMouse;    // chuột đang ở trên bảng giao diện: lăn chuột / kéo là của giao diện, không phải của camera
+        public int MinScale = 1;   // mức phóng vừa khít cả chiến trường vào màn hình
         public float2 Center;
 
         Camera screenCam;
@@ -45,7 +47,7 @@ namespace HordeLab
             screenCam.allowMSAA = false;
             screenCam.allowHDR = false;
 
-            Scale = math.max(1, (int)math.floor(math.min(Screen.width / (float)Cfg.GroundW, Screen.height / (float)Cfg.GroundH)));
+            Scale = MinScale = math.max(1, (int)math.floor(math.min(Screen.width / (float)Cfg.GroundW, Screen.height / (float)Cfg.GroundH)));
             Center = 0f;
             EnsureTarget();
             ApplyCamera();
@@ -81,7 +83,7 @@ namespace HordeLab
 
         public void SetScale(int scale, Vector2 anchorScreen)
         {
-            scale = math.clamp(scale, 1, 6);
+            scale = math.clamp(scale, MinScale, MinScale + 5);   // không thu nhỏ quá mức vừa khít chiến trường
             if (scale == Scale) return;
             float2 anchorWorld = ScreenToWorld(anchorScreen);
             Scale = scale;
@@ -93,7 +95,7 @@ namespace HordeLab
 
         public void Update()
         {
-            float wheel = Input.mouseScrollDelta.y;
+            float wheel = BlockMouse ? 0f : Input.mouseScrollDelta.y;
             if (wheel > 0.01f) SetScale(Scale + 1, Input.mousePosition);
             else if (wheel < -0.01f) SetScale(Scale - 1, Input.mousePosition);
             if (Input.GetKeyDown(KeyCode.Equals) || Input.GetKeyDown(KeyCode.KeypadPlus)) SetScale(Scale + 1, new Vector2(Screen.width, Screen.height) * 0.5f);
@@ -107,7 +109,7 @@ namespace HordeLab
             if (Input.GetKey(KeyCode.W) || Input.GetKey(KeyCode.UpArrow)) move.y += 1f;
             Center += move * (80f / Scale) * Time.unscaledDeltaTime;
 
-            if (Input.GetMouseButtonDown(2)) { dragging = true; dragStart = Input.mousePosition; dragCenter = Center; }
+            if (Input.GetMouseButtonDown(2) && !BlockMouse) { dragging = true; dragStart = Input.mousePosition; dragCenter = Center; }
             if (Input.GetMouseButtonUp(2)) dragging = false;
             if (dragging)
             {
@@ -120,7 +122,9 @@ namespace HordeLab
 
         void ApplyCamera()
         {
-            Center = math.clamp(Center, new float2(-Cfg.HalfW, -Cfg.HalfH), new float2(Cfg.HalfW, Cfg.HalfH));
+            // không cho camera trượt ra ngoài chiến trường: ở mức vừa khít thì đứng yên, phóng to mới kéo được
+            float2 lim = math.max(0f, new float2(Cfg.HalfW, Cfg.HalfH) - new float2(Target.width, Target.height) / (2f * Cfg.PPU));
+            Center = math.clamp(Center, -lim, lim);
             float2 snapped = math.round(Center * Cfg.PPU) / Cfg.PPU; // camera bám lưới pixel → hình không bị rung
             Cam.transform.position = new Vector3(snapped.x, snapped.y, -100f);
         }

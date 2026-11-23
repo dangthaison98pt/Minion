@@ -21,7 +21,7 @@ Shader "Horde/Units"
             #include "UnityCG.cginc"
             #include "HordeCommon.cginc"
 
-            StructuredBuffer<float4> _Units;   // xy = vị trí, z = ô trong atlas, w = cờ (1 = quay trái, 2 = nháy trắng)
+            StructuredBuffer<float4> _Units;   // xy = vị trí, z = ô trong atlas, w = cờ (1 = quay trái, 2 = nháy trắng, 4 = đang bị làm chậm)
             sampler2D _MainTex;
             float4 _Atlas;                     // x = số cột, y = số hàng, z = kích thước quad, w = PPU
 
@@ -29,7 +29,7 @@ Shader "Horde/Units"
             {
                 float4 pos   : SV_POSITION;
                 float2 uv    : TEXCOORD0;
-                float  flash : TEXCOORD1;
+                float2 fx    : TEXCOORD1;   // x = nháy trắng, y = bị làm chậm
             };
 
             v2f vert (uint vid : SV_VertexID, uint iid : SV_InstanceID)
@@ -48,7 +48,7 @@ Shader "Horde/Units"
                 v2f o;
                 o.pos = mul(UNITY_MATRIX_VP, float4(p, DepthFromY(u.y), 1.0));
                 o.uv = float2((col + local.x) / _Atlas.x, 1.0 - (row + 1.0 - local.y) / _Atlas.y);
-                o.flash = (flags & 2u) ? 1.0 : 0.0;
+                o.fx = float2((flags & 2u) ? 1.0 : 0.0, (flags & 4u) ? 1.0 : 0.0);
                 return o;
             }
 
@@ -56,7 +56,8 @@ Shader "Horde/Units"
             {
                 fixed4 col = tex2D(_MainTex, i.uv);
                 clip(col.a - 0.5);          // cutout: không cần sắp xếp thứ tự vẽ
-                col.rgb = lerp(col.rgb, fixed3(1, 1, 1), i.flash * 0.85);
+                col.rgb = lerp(col.rgb, fixed3(0.45, 0.7, 1.0), i.fx.y * 0.4);   // ám xanh khi bị làm chậm
+                col.rgb = lerp(col.rgb, fixed3(1, 1, 1), i.fx.x * 0.85);
                 return col;
             }
             ENDCG

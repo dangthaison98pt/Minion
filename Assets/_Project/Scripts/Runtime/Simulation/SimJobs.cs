@@ -6,9 +6,15 @@ using Random = Unity.Mathematics.Random;
 
 namespace HordeLab
 {
-    /// <summary>Hàm phụ để thêm hạt hiệu ứng / dấu in vào mảng (dùng được cả trong Burst lẫn main thread).</summary>
+    /// <summary>Hàm phụ dùng chung cho các Job (dùng được cả trong Burst lẫn main thread).</summary>
     static class Fx
     {
+        public const float ChargeRate = 0.6f;      // kỵ binh phi 1/ChargeRate giây là đầy đà
+        public const float AuraRadius = 2.6f;      // tầm của tu sĩ / pháp sư bộ lạc
+        public const float HealRate = 4f;          // máu hồi mỗi giây khi đứng cạnh tu sĩ
+        public const float PowerBonus = 0.3f;      // +30% sát thương khi đứng cạnh pháp sư bộ lạc
+        public const float SlowFactor = 0.5f;
+
         public static void Emit(NativeArray<Particle> ps, NativeArray<int> counters, in Particle p)
         {
             int n = counters[C.Particles];
@@ -43,11 +49,67 @@ namespace HordeLab
             }
         }
 
-        public static int BloodKind(int type) =>
-            type == UnitType.Skeleton ? PKind.Bone : type == UnitType.Zombie ? PKind.DarkBlood : PKind.Blood;
+        /// <summary>Lửa / khói bốc lên rồi tắt.</summary>
+        public static void Flames(NativeArray<Particle> ps, NativeArray<int> counters, ref Random rng,
+                                  float2 pos, float radius, int count, int kind, float life)
+        {
+            for (int k = 0; k < count; k++)
+            {
+                Emit(ps, counters, new Particle
+                {
+                    pos = pos + rng.NextFloat2Direction() * math.sqrt(rng.NextFloat()) * radius,
+                    vel = rng.NextFloat2Direction() * rng.NextFloat(0f, 1.5f),
+                    h = rng.NextFloat(0f, 1f),
+                    vh = rng.NextFloat(2f, 7f),
+                    maxLife = rng.NextFloat(0.5f, 1f) * life,
+                    kind = kind
+                });
+            }
+        }
 
-        // Kỵ binh: đòn đâm mạnh gấp (1 + ChargeBonus * charge) lần, phi 1/ChargeRate giây là đầy đà
-        public const float ChargeRate = 0.6f, ChargeBonus = 2f, ChargeKnockback = 0.9f;
+        /// <summary>Vòng hạt toả ra từ tâm (sóng âm, vụ nổ).</summary>
+        public static void Ring(NativeArray<Particle> ps, NativeArray<int> counters, float2 pos, float radius, int count, int kind)
+        {
+            for (int k = 0; k < count; k++)
+            {
+                float ang = k * (6.2831853f / count);
+                float2 dir = new float2(math.cos(ang), math.sin(ang));
+                Emit(ps, counters, new Particle { pos = pos + dir * 0.3f, vel = dir * radius * 3.3f, h = 0.6f, vh = 6f, maxLife = 3f, kind = kind });
+            }
+        }
+
+        /// <summary>Sát thương vùng: mọi địch trong bán kính đều dính, càng xa tâm càng nhẹ. Trả về số nạn nhân.</summary>
+        public static int Splash(NativeArray<Unit> units, NativeArray<int> cellStart, NativeArray<int> sortedIndex, int unitCount,
+                                 float2 p, float radius, int enemyTeam, float dmg, float slow)
+        {
+            int r = (int)math.ceil(radius / Cfg.CellSize);
+            int cx = Cfg.CellX(p.x), cy = Cfg.CellY(p.y);
+            float r2 = radius * radius;
+            int hits = 0;
+            for (int y = math.max(cy - r, 0); y <= math.min(cy + r, Cfg.GridH - 1); y++)
+            {
+                for (int x = math.max(cx - r, 0); x <= math.min(cx + r, Cfg.GridW - 1); x++)
+                {
+                    int c = y * Cfg.GridW + x;
+                    int end = cellStart[c + 1];
+                    for (int k = cellStart[c]; k < end; k++)
+                    {
+                        int j = sortedIndex[k];
+                        if (j >= unitCount) continue;
+                        Unit u = units[j];
+                        if (u.team != enemyTeam || u.hp <= 0f) continue;
+                        float d2 = math.lengthsq(u.pos - p);
+                        if (d2 > r2) continue;
+                        u.hp -= dmg * (1f - 0.5f * math.sqrt(d2) / radius);
+                        u.flash = 1f;
+                        if (slow > 0f) u.slow = math.max(u.slow, slow);
+                        units[j] = u;
+                        hits++;
+                    }
+                }
+            }
+            return hits;
+        }
     }
 
     // =====================================================================
@@ -58,6 +120,7 @@ namespace HordeLab
     struct BuildGridJob : IJob
     {
         [ReadOnly] public NativeArray<Unit> units;
+        [ReadOnly] public NativeArray<UnitStats> stats;
         [ReadOnly] public NativeArray<int> counters;
         public NativeArray<int> cellStart;    // Cells + 1
         public NativeArray<int> cursor;       // Cells
@@ -65,7 +128,7 @@ namespace HordeLab
         public NativeArray<int> cellOf;
         public NativeArray<int> sortedIndex;
         public NativeArray<float2> sortedPos;
-        public NativeArray<byte> sortedTeam;
+        public NativeArray<byte> sortedInfo;  // bit 0 = phe, bit 1 = có vùng hồi máu, bit 2 = có vùng tăng sức mạnh, bit 3 = đi xuyên, bit 4 = còn ở ngoài màn hình
 
         public void Execute()
         {
@@ -79,7 +142,7 @@ namespace HordeLab
                 int c = Cfg.CellY(p.y) * Cfg.GridW + Cfg.CellX(p.x);
                 cellOf[i] = c;
                 cellStart[c + 1]++;
-                teamCount[c * 2 + Cfg.TeamOf(units[i].type)]++;
+                teamCount[c * 2 + units[i].team]++;
             }
 
             for (int c = 0; c < Cfg.Cells; c++)
@@ -93,9 +156,15 @@ namespace HordeLab
                 int c = cellOf[i];
                 int k = cursor[c];
                 cursor[c] = k + 1;
+                Unit u = units[i];
+                int f = stats[u.type].flags;
                 sortedIndex[k] = i;
-                sortedPos[k] = units[i].pos;
-                sortedTeam[k] = (byte)Cfg.TeamOf(units[i].type);
+                sortedPos[k] = u.pos;
+                sortedInfo[k] = (byte)(u.team
+                                       | ((f & UFlag.HealAura) != 0 ? 2 : 0)
+                                       | ((f & UFlag.PowerAura) != 0 ? 4 : 0)
+                                       | ((f & UFlag.Ghost) != 0 ? 8 : 0)
+                                       | (u.team == 1 && u.pos.x > Cfg.HalfW ? 16 : 0));
             }
         }
     }
@@ -109,6 +178,8 @@ namespace HordeLab
     {
         const float SepRadius = 0.85f;
         const float SepStrength = 7f;
+        const int SightCells = 28;   // 56 đơn vị
+        const int EnemySightCells = 3;
 
         public NativeArray<Unit> units;
         [ReadOnly] public NativeArray<UnitStats> stats;
@@ -117,9 +188,9 @@ namespace HordeLab
         [ReadOnly] public NativeArray<int> teamCount;
         [ReadOnly] public NativeArray<int> sortedIndex;
         [ReadOnly] public NativeArray<float2> sortedPos;
-        [ReadOnly] public NativeArray<byte> sortedTeam;
-        public NativeArray<int> attackTarget;   // -1 = không chém ai
-        public NativeArray<float3> shots;       // z > 0 = bắn tên vào xy
+        [ReadOnly] public NativeArray<byte> sortedInfo;
+        public NativeArray<int> attackTarget;   // -1 = không chém ai, -2 = đánh vào tường thành
+        public NativeArray<float3> shots;       // z = 1: bắn / làm phép vào xy, z = 2: bắn vào tường thành
         public float dt;
         public uint frame;
 
@@ -129,15 +200,18 @@ namespace HordeLab
 
             Unit u = units[i];
             UnitStats s = stats[u.type];
-            int team = Cfg.TeamOf(u.type);
+            int team = u.team;
+            float fwd = team == 0 ? 1f : -1f;
+            bool ghost = (s.flags & UFlag.Ghost) != 0;
             int cx = Cfg.CellX(u.pos.x), cy = Cfg.CellY(u.pos.y);
 
-            // --- Quét 3x3 ô quanh mình: đẩy nhau ra cho khỏi chồng + tìm địch sát bên ---
+            // --- Quét 3x3 ô quanh mình: đẩy nhau ra cho khỏi chồng + tìm địch sát bên + xem có đứng trong vùng buff không ---
             float2 sep = 0f;
             float bestD2 = float.MaxValue;
             int bestIdx = -1;
             float2 bestPos = 0f;
             int visited = 0;
+            int aura = 0;
             for (int y = math.max(cy - 1, 0); y <= math.min(cy + 1, Cfg.GridH - 1); y++)
             {
                 for (int x = math.max(cx - 1, 0); x <= math.min(cx + 1, Cfg.GridW - 1); x++)
@@ -149,9 +223,11 @@ namespace HordeLab
                         int j = sortedIndex[k];
                         if (j == i) continue;
                         visited++;
+                        int info = sortedInfo[k];
+                        bool enemy = (info & 1) != team;
                         float2 d = u.pos - sortedPos[k];
                         float d2 = math.lengthsq(d);
-                        if (d2 < SepRadius * SepRadius)
+                        if (d2 < SepRadius * SepRadius && !(enemy && (ghost || (info & 8) != 0)))
                         {
                             if (d2 < 1e-6f)
                             {
@@ -161,35 +237,47 @@ namespace HordeLab
                             float dist = math.sqrt(d2);
                             sep += d / dist * (SepRadius - dist);
                         }
-                        if (sortedTeam[k] != team && d2 < bestD2)
+                        if (enemy)
                         {
-                            bestD2 = d2;
-                            bestIdx = j;
-                            bestPos = sortedPos[k];
+                            if (d2 < bestD2)
+                            {
+                                bestD2 = d2;
+                                bestIdx = j;
+                                bestPos = sortedPos[k];
+                            }
                         }
+                        else if ((info & 6) != 0 && d2 < Fx.AuraRadius * Fx.AuraRadius) aura |= info;
                     }
                 }
             }
 
+            float heal = u.regen + ((aura & 2) != 0 ? Fx.HealRate : 0f);
+            if (heal > 0f) u.hp = math.min(u.maxHp, u.hp + heal * dt);
+            u.buffed = (aura & 4) != 0 ? 1 : 0;
+
             // --- Quét xa để tìm mục tiêu: mỗi lính chỉ làm 1 lần / 8 frame (chia việc theo thời gian) ---
+            bool melee = s.mode == Mode.Melee;
             bool rescan = (((uint)i + frame) & 7u) == 0u;
-            if (rescan && (s.ranged != 0 || bestIdx < 0))
+            if (rescan && (!melee || bestIdx < 0))
             {
-                int radius = s.ranged != 0 ? (int)math.ceil(s.range / Cfg.CellSize) + 1 : 8;
+                // Tầm nhìn phủ hết chiều cao chiến trường: lính ở góc xa vẫn thấy trận đánh và kéo tới, không đứng im ở vạch giữ trận
+                // Địch thì chỉ để ý lính ta ở gần (hoặc trong tầm bắn); không thì cứ tiến về tường, không đuổi theo từng tiểu đội mới ra
+                int radius = team == 0 ? SightCells : melee ? EnemySightCells : math.max(EnemySightCells, (int)math.ceil(s.range / Cfg.CellSize) + 1);
                 u.hasGoal = FindNearestEnemy(cx, cy, 1 - team, radius, u.pos, out float2 goal) ? 1 : 0;
                 u.goal = goal;
             }
 
-            float2 desired = team == 0 ? new float2(1f, 0f) : new float2(-1f, 0f);
-            bool attacking = false;
+            float2 desired = new float2(fwd, 0f);
+            bool attacking = false, idle = true, kite = false;
             int atk = -1;
             float3 shot = 0f;
 
-            if (s.ranged != 0)
+            if (!melee)
             {
                 if (bestIdx >= 0) { u.goal = bestPos; u.hasGoal = 1; }
                 if (u.hasGoal != 0)
                 {
+                    idle = false;
                     float2 to = u.goal - u.pos;
                     float dist = math.length(to);
                     if (dist <= s.range)
@@ -197,20 +285,77 @@ namespace HordeLab
                         attacking = true;
                         desired = 0f;
                         u.faceLeft = to.x < 0f ? 1 : 0;
-                        if (u.cooldown <= 0f)
+                        if ((s.flags & UFlag.Kite) != 0)
+                        {
+                            // vừa chạy ngang vừa bắn; địch áp sát thì lùi
+                            kite = true;
+                            float side = (math.hash(new uint2((uint)i, frame / 150u)) & 1u) == 0u ? 1f : -1f;
+                            if (u.pos.y * side > Cfg.HalfH - 4f) side = -side;
+                            desired = math.normalize(new float2(dist < s.range * 0.5f ? -fwd : 0f, side));
+                        }
+                        if (u.cooldown <= 0f && dist >= s.minRange)   // máy công thành không bắn được địch đã áp sát
                         {
                             shot = new float3(u.goal, 1f);
                             u.cooldown = s.cooldown * (0.8f + 0.4f * Hash01((uint)i, frame));
-                            u.animT = 0f;
+                            if (!kite) u.animT = 0f;
                         }
                     }
                     else desired = to / math.max(dist, 1e-4f);
+                }
+                else if (team == 1 && u.pos.x - Cfg.WallX <= s.range)
+                {
+                    // Không còn ai để bắn và tường đã trong tầm: đứng lại bắn tường
+                    idle = false;
+                    attacking = true;
+                    desired = 0f;
+                    u.faceLeft = 1;
+                    if (u.cooldown <= 0f)
+                    {
+                        shot = new float3(Cfg.WallX - 0.4f, u.pos.y, 2f);      // z = 2: mục tiêu là tường thành
+                        u.cooldown = s.cooldown * (0.8f + 0.4f * Hash01((uint)i, frame));
+                        u.animT = 0f;
+                    }
+                }
+            }
+            else if (team == 1 && u.pos.x <= Cfg.WallX + s.range + 0.5f)
+            {
+                // Cận chiến đã áp sát tường: đứng đánh tường, mỗi đòn trừ 1 máu thành (không lao qua tự sát nữa).
+                // Đã tới tường thì không quay ra đuổi lính nữa → quân ta không thể câu giờ mãi bằng cách ra lính liên tục.
+                idle = false;
+                attacking = true;
+                desired = 0f;
+                u.faceLeft = 1;
+                if (u.cooldown <= 0f)
+                {
+                    atk = -2;                                                  // -2 = đánh tường
+                    u.cooldown = s.cooldown * (0.8f + 0.4f * Hash01((uint)i, frame));
+                    u.animT = 0f;
+                }
+            }
+            else if ((s.flags & UFlag.Flank) != 0 && u.aux < 1f)
+            {
+                // Đánh vòng: thấy địch thì tạt ra mép bản đồ, chạy dọc mép cho tới khi địch gần nhất đã ở SAU lưng mình
+                if (bestIdx >= 0 || u.hasGoal != 0)
+                {
+                    float2 g = bestIdx >= 0 ? bestPos : u.goal;
+                    if (u.aux <= 0f) u.aux = 0.001f;
+                    if ((g.x - u.pos.x) * fwd < -4f) u.aux = 1f;
+                }
+                if (u.aux > 0f)
+                {
+                    idle = false;
+                    u.aux += dt / 25f;                                      // vòng lâu quá thì thôi, nhập trận luôn
+                    if (u.pos.x * fwd > Cfg.HalfW - 10f) u.aux = 1f;        // đã tới sát mép bên kia
+                    float edgeY = ((i & 1) == 0 ? 1f : -1f) * (Cfg.HalfH - 3f);
+                    float dy = edgeY - u.pos.y;
+                    desired = math.abs(dy) > 1.5f ? math.normalize(new float2(fwd * 0.5f, math.sign(dy))) : new float2(fwd, 0f);
                 }
             }
             else
             {
                 if (bestIdx >= 0)
                 {
+                    idle = false;
                     float dist = math.sqrt(bestD2);
                     float2 to = bestPos - u.pos;
                     float2 dir = to / math.max(dist, 1e-4f);
@@ -230,6 +375,7 @@ namespace HordeLab
                 }
                 else if (u.hasGoal != 0)
                 {
+                    idle = false;
                     float2 to = u.goal - u.pos;
                     float dist = math.length(to);
                     if (dist > 1f) desired = to / dist;
@@ -237,21 +383,38 @@ namespace HordeLab
                 }
             }
 
+            // Quân ta không thấy địch thì dừng giữ trận tuyến, không kéo sang tận chỗ địch xuất hiện
+            if (idle && team == 0 && u.pos.x > Cfg.HoldX) desired = 0f;
+
+            // Địch còn ở ngoài mép phải: chỉ được đi thẳng vào, chưa đánh / bắn / né gì cả.
+            // Đã vào trong rồi thì không bao giờ ra lại được (kẻo quân vừa bắn vừa lùi trốn ra ngoài, không ai đánh tới).
+            bool outside = team == 1 && u.pos.x > Cfg.HalfW - 1f;
+            if (outside)
+            {
+                desired = new float2(-1f, 0f);
+                attacking = false; kite = false;
+                atk = -1; shot = 0f;
+            }
+
             // --- Di chuyển ---
-            float2 vel = desired * s.speed + sep * SepStrength;
-            float maxV = s.speed * 1.6f;
+            float speed = s.speed * (u.slow > 0f ? Fx.SlowFactor : 1f);
+            float2 vel = desired * speed + sep * SepStrength;
+            float maxV = speed * 1.6f;
             float vl = math.length(vel);
-            if (vl > maxV) vel *= maxV / vl;
+            if (vl > maxV) { vel *= maxV / vl; vl = maxV; }
+            if (outside) vel.x = math.min(vel.x, -0.5f * speed);     // chen nhau cũng không bị đẩy ngược ra
             u.pos += vel * dt;
-            u.pos.x = math.clamp(u.pos.x, -Cfg.HalfW + 0.5f, Cfg.HalfW - 0.5f);
+            u.pos.x = math.clamp(u.pos.x, team == 0 ? Cfg.WallX + 0.6f : Cfg.WallX + 0.5f,
+                                 team == 0 ? Cfg.HalfW - 0.5f : outside ? Cfg.HalfW + 14f : Cfg.HalfW - 1f);
             u.pos.y = math.clamp(u.pos.y, -Cfg.HalfH + 0.6f, Cfg.HalfH - 0.6f);
             if (!attacking && math.abs(vel.x) > 0.2f) u.faceLeft = vel.x < 0f ? 1 : 0;
 
-            u.state = attacking ? 1 : 0;
+            u.state = attacking && !kite ? 1 : 0;
             u.animT += dt;
             u.cooldown -= dt;
             u.flash = math.max(0f, u.flash - dt * 8f);
-            if (u.type == UnitType.Cavalry && !attacking && math.length(vel) > s.speed * 0.5f)
+            u.slow = math.max(0f, u.slow - dt);
+            if (s.chargeBonus > 0f && !attacking && vl > speed * 0.5f)
                 u.charge = math.min(1f, u.charge + dt * Fx.ChargeRate);
 
             units[i] = u;
@@ -267,23 +430,19 @@ namespace HordeLab
             bool any = false;
             for (int r = 0; r <= radius; r++)
             {
-                int y0 = cy - r, y1 = cy + r;
-                for (int y = y0; y <= y1; y++)
+                int x0 = cx - r, x1 = cx + r, y0 = cy - r, y1 = cy + r;
+                if (x0 < 0 && y0 < 0 && x1 >= Cfg.GridW && y1 >= Cfg.GridH) break;   // vòng này đã nằm ngoài bản đồ hoàn toàn
+                int xa = math.max(x0, 0), xb = math.min(x1, Cfg.GridW - 1);
+                for (int y = math.max(y0, 0); y <= math.min(y1, Cfg.GridH - 1); y++)
                 {
-                    if (y < 0 || y >= Cfg.GridH) continue;
-                    int step = (y == y0 || y == y1) ? 1 : 2 * r;
-                    for (int x = cx - r; x <= cx + r; x += step)
+                    if (y == y0 || y == y1)
                     {
-                        if (x < 0 || x >= Cfg.GridW) continue;
-                        int c = y * Cfg.GridW + x;
-                        if (teamCount[c * 2 + enemyTeam] == 0) continue;
-                        int end = cellStart[c + 1];
-                        for (int k = cellStart[c]; k < end; k++)
-                        {
-                            if (sortedTeam[k] != enemyTeam) continue;
-                            float d2 = math.lengthsq(sortedPos[k] - from);
-                            if (d2 < best) { best = d2; found = sortedPos[k]; any = true; }
-                        }
+                        for (int x = xa; x <= xb; x++) Scan(y * Cfg.GridW + x, enemyTeam, from, ref best, ref found, ref any);   // cạnh trên / dưới của vòng
+                    }
+                    else
+                    {
+                        if (x0 >= 0) Scan(y * Cfg.GridW + x0, enemyTeam, from, ref best, ref found, ref any);                    // 2 ô ở cạnh trái / phải
+                        if (x1 < Cfg.GridW) Scan(y * Cfg.GridW + x1, enemyTeam, from, ref best, ref found, ref any);
                     }
                 }
                 if (any) return true;
@@ -291,26 +450,40 @@ namespace HordeLab
             return false;
         }
 
+        void Scan(int c, int enemyTeam, float2 from, ref float best, ref float2 found, ref bool any)
+        {
+            if (teamCount[c * 2 + enemyTeam] == 0) return;      // ô không có địch: bỏ qua ngay
+            int end = cellStart[c + 1];
+            for (int k = cellStart[c]; k < end; k++)
+            {
+                int info = sortedInfo[k];
+                if ((info & 1) != enemyTeam || (info & 16) != 0) continue;   // bit 16 = còn ở ngoài màn hình, chưa nhắm tới
+                float d2 = math.lengthsq(sortedPos[k] - from);
+                if (d2 < best) { best = d2; found = sortedPos[k]; any = true; }
+            }
+        }
+
         static float Hash01(uint a, uint b) => (math.hash(new uint2(a, b)) & 0xFFFFFFu) / 16777216f;
     }
 
     // =====================================================================
-    // 3) Áp dụng đòn chém và tạo mũi tên. Chạy 1 luồng (vài micro giây) để khỏi tranh chấp khi
+    // 3) Áp dụng đòn chém, tạo đạn, sóng âm, triệu hồi. Chạy 1 luồng (vài micro giây) để khỏi tranh chấp khi
     //    nhiều lính cùng chém 1 mục tiêu.
     // =====================================================================
     [BurstCompile(CompileSynchronously = true)]
     struct ResolveJob : IJob
     {
-        const float ArrowSpeed = 22f;
-
         public NativeArray<Unit> units;
         [ReadOnly] public NativeArray<UnitStats> stats;
         [ReadOnly] public NativeArray<int> attackTarget;
         [ReadOnly] public NativeArray<float3> shots;
+        [ReadOnly] public NativeArray<int> cellStart;
+        [ReadOnly] public NativeArray<int> sortedIndex;
         public NativeArray<Arrow> arrows;
         public NativeArray<Particle> particles;
         public NativeArray<int> counters;
         public uint seed;
+        public int summonCount;
 
         public void Execute()
         {
@@ -319,54 +492,138 @@ namespace HordeLab
             for (int i = 0; i < n; i++)
             {
                 int t = attackTarget[i];
-                if (t >= 0)
+                if (t == -2)
+                {
+                    // Đánh tường: mỗi đòn đúng 1 máu thành, bất kể con gì đánh
+                    Unit a = units[i];
+                    counters[C.Breach] = counters[C.Breach] + 1;
+                    float2 wallHit = new float2(Cfg.WallX, a.pos.y + 0.3f);
+                    Fx.Spray(particles, counters, ref rng, wallHit, 0.6f, 3, PKind.Dust, 2.5f, 4f);
+                    Fx.Spray(particles, counters, ref rng, wallHit, 0.8f, 1, PKind.Spark, 3f, 3f);
+                    if (a.charge > 0f) { a.charge = 0f; units[i] = a; }
+                }
+                else if (t >= 0)
                 {
                     Unit a = units[i];
+                    UnitStats sa = stats[a.type];
                     Unit v = units[t];
+                    UnitStats sv = stats[v.type];
                     float2 hit = math.lerp(a.pos, v.pos, 0.6f);
-                    float mult = 1f + Fx.ChargeBonus * a.charge;   // xung phong (chỉ kỵ binh có charge > 0)
-                    v.hp -= stats[a.type].damage * mult * rng.NextFloat(0.75f, 1.25f);
-                    v.flash = 1f;
-                    if (a.charge > 0.25f)
+                    float mult = a.dmgMul * (1f + sa.chargeBonus * a.charge) * (a.buffed != 0 ? 1f + Fx.PowerBonus : 1f);
+                    float dmg = sa.damage * mult * rng.NextFloat(0.75f, 1.25f);
+
+                    if (sa.splash > 0f)
                     {
-                        float2 d = v.pos - a.pos;
-                        v.pos += d / math.max(math.length(d), 1e-4f) * Fx.ChargeKnockback * a.charge;   // hất văng
-                        Fx.Spray(particles, counters, ref rng, hit, 0.2f, 4, PKind.Dust, 3f, 3f);
+                        // đòn quét: mọi địch quanh mục tiêu đều dính
+                        Fx.Splash(units, cellStart, sortedIndex, n, v.pos, sa.splash, 1 - a.team, dmg, sa.slow);
+                        Fx.Spray(particles, counters, ref rng, hit, 0.5f, 3, sv.blood, 2.5f, 5f);
+                    }
+                    else if (rng.NextFloat() < sv.dodge)
+                    {
+                        Fx.Spray(particles, counters, ref rng, hit, 0.6f, 2, PKind.Spark, 3f, 3f);   // né được
+                    }
+                    else
+                    {
+                        v.hp -= dmg;
+                        v.flash = 1f;
+                        if (sa.slow > 0f) v.slow = math.max(v.slow, sa.slow);
+                        float knock = sa.knock * (sa.chargeBonus > 0f ? a.charge : 1f);
+                        if (knock > 0.2f)
+                        {
+                            float2 d = v.pos - a.pos;
+                            v.pos += d / math.max(math.length(d), 1e-4f) * knock;   // hất văng
+                            Fx.Spray(particles, counters, ref rng, hit, 0.2f, 3, PKind.Dust, 3f, 3f);
+                        }
+                        units[t] = v;
+                        Fx.Spray(particles, counters, ref rng, hit, 0.5f, 2, sv.blood, 2.5f, 5f);
+                        Fx.Spray(particles, counters, ref rng, hit, 0.6f, 1, PKind.Spark, 3f, 3f);
+                    }
+
+                    if (a.charge > 0f)   // đà xung phong luôn xả hết vào đòn này
+                    {
                         a.charge = 0f;
                         units[i] = a;
                     }
-                    units[t] = v;
-                    Fx.Spray(particles, counters, ref rng, hit, 0.5f, 2, Fx.BloodKind(v.type), 2.5f, 5f);
-                    Fx.Spray(particles, counters, ref rng, hit, 0.6f, 1, PKind.Spark, 3f, 3f);
                 }
 
                 float3 sh = shots[i];
-                if (sh.z > 0f)
+                if (sh.z <= 0f) continue;
                 {
-                    int count = counters[C.Arrows];
-                    if (count >= arrows.Length) continue;
                     Unit a = units[i];
-                    float2 from = a.pos + new float2(a.faceLeft != 0 ? -0.3f : 0.3f, 0.2f);
-                    float2 to = sh.xy + rng.NextFloat2Direction() * rng.NextFloat(0f, 1.8f);
-                    float dist = math.max(math.distance(from, to), 1f);
-                    arrows[count] = new Arrow
+                    UnitStats sa = stats[a.type];
+                    float power = a.dmgMul * (a.buffed != 0 ? 1f + Fx.PowerBonus : 1f);
+                    bool atWall = sh.z > 1.5f;
+
+                    if (sa.mode == Mode.Blast && atWall)
                     {
-                        from = from,
-                        to = to,
-                        t = 0f,
-                        invDuration = ArrowSpeed / dist,
-                        arc = dist * 0.22f + 0.4f,
-                        damage = stats[a.type].damage,
-                        team = Cfg.TeamOf(a.type)
-                    };
-                    counters[C.Arrows] = count + 1;
+                        counters[C.Breach] = counters[C.Breach] + 1;
+                        Fx.Ring(particles, counters, sh.xy, 1.5f, 8, PKind.VoidGoo);
+                    }
+                    else if (sa.mode == Mode.Blast)
+                    {
+                        Fx.Splash(units, cellStart, sortedIndex, n, sh.xy, sa.splash, 1 - a.team, sa.damage * power, sa.slow);
+                        Fx.Ring(particles, counters, sh.xy, sa.splash, 14, PKind.VoidGoo);
+                    }
+                    else if (sa.mode == Mode.Summon)
+                    {
+                        float scale = a.maxHp / math.max(sa.maxHp, 1f);   // quân con thừa hưởng độ mạnh của chủ
+                        for (int k = 0; k < summonCount; k++)
+                        {
+                            int m = counters[C.Units];
+                            if (m >= units.Length) break;
+                            float hp = stats[UnitType.Voidling].maxHp * scale;
+                            units[m] = new Unit
+                            {
+                                pos = a.pos + rng.NextFloat2Direction() * rng.NextFloat(0.6f, 1.4f),
+                                hp = hp, maxHp = hp, dmgMul = a.dmgMul, type = UnitType.Voidling, team = a.team,
+                                faceLeft = a.team, animT = rng.NextFloat()
+                            };
+                            units[m] = Clamp(units[m]);
+                            counters[C.Units] = m + 1;
+                        }
+                        Fx.Spray(particles, counters, ref rng, a.pos, 0.4f, 8, PKind.VoidGoo, 3f, 6f);
+                    }
+                    else
+                    {
+                        int count = counters[C.Arrows];
+                        if (count >= arrows.Length) continue;
+                        float speed = 22f, arcK = 0.22f, arc0 = 0.4f, scatter = 1.8f;
+                        switch (sa.proj)
+                        {
+                            case Proj.Bolt: speed = 28f; arcK = 0.1f; scatter = 0.8f; break;
+                            case Proj.Rock: speed = 15f; arcK = 0.35f; arc0 = 2f; scatter = 1.5f; break;
+                            case Proj.Cannonball: speed = 30f; arcK = 0.1f; arc0 = 0.6f; scatter = 1.5f; break;
+                            case Proj.Javelin: speed = 19f; arcK = 0.3f; arc0 = 1.5f; scatter = 1f; break;
+                            case Proj.NatureOrb: case Proj.VoidOrb: case Proj.LightOrb: speed = 15f; arcK = 0.05f; arc0 = 0.8f; scatter = 0.8f; break;
+                        }
+                        float2 from = a.pos + new float2(a.faceLeft != 0 ? -0.3f : 0.3f, 0.2f);
+                        float2 to = atWall ? sh.xy + new float2(0f, rng.NextFloat(-0.8f, 0.8f)) : sh.xy + rng.NextFloat2Direction() * rng.NextFloat(0f, scatter);
+                        float dist = math.max(math.distance(from, to), 1f);
+                        arrows[count] = new Arrow
+                        {
+                            from = from, to = to, t = 0f,
+                            invDuration = speed / dist,
+                            arc = dist * arcK + arc0,
+                            damage = sa.damage * power,
+                            splash = sa.splash, slow = sa.slow,
+                            team = a.team, kind = sa.proj, wall = atWall ? 1 : 0
+                        };
+                        counters[C.Arrows] = count + 1;
+                    }
                 }
             }
+        }
+
+        static Unit Clamp(Unit u)
+        {
+            u.pos.x = math.clamp(u.pos.x, Cfg.WallX + 0.6f, Cfg.HalfW - 0.5f);
+            u.pos.y = math.clamp(u.pos.y, -Cfg.HalfH + 0.6f, Cfg.HalfH - 0.6f);
+            return u;
         }
     }
 
     // =====================================================================
-    // 4) Mũi tên bay: chỉ là tăng t. Vị trí tính bằng công thức parabol, không có vật lý.
+    // 4) Đạn bay: chỉ là tăng t. Vị trí tính bằng công thức parabol, không có vật lý.
     // =====================================================================
     [BurstCompile(CompileSynchronously = true)]
     struct ArrowStepJob : IJobParallelFor
@@ -385,7 +642,7 @@ namespace HordeLab
     }
 
     // =====================================================================
-    // 5) Mũi tên chạm đất: tra lưới xem trúng ai, rồi xoá mũi tên (đổi chỗ với phần tử cuối).
+    // 5) Đạn chạm đất: tra lưới xem trúng ai (hoặc nổ lan), rồi xoá viên đạn (đổi chỗ với phần tử cuối).
     // =====================================================================
     [BurstCompile(CompileSynchronously = true)]
     struct ArrowLandJob : IJob
@@ -394,6 +651,7 @@ namespace HordeLab
 
         public NativeArray<Arrow> arrows;
         public NativeArray<Unit> units;
+        [ReadOnly] public NativeArray<UnitStats> stats;
         public NativeArray<Particle> particles;
         public NativeArray<float4> stamps;
         public NativeArray<int> counters;
@@ -405,29 +663,64 @@ namespace HordeLab
         {
             var rng = new Random(seed);
             int n = counters[C.Arrows];
+            int nu = counters[C.Units];
             int i = 0;
             while (i < n)
             {
                 Arrow a = arrows[i];
                 if (a.t < 1f) { i++; continue; }
 
-                int victim = FindVictim(a.to, 1 - a.team);
-                if (victim >= 0)
+                if (a.wall != 0)
                 {
-                    Unit v = units[victim];
-                    v.hp -= a.damage * rng.NextFloat(0.8f, 1.2f);
-                    v.flash = 1f;
-                    units[victim] = v;
-                    Fx.Spray(particles, counters, ref rng, v.pos, 0.5f, 3, Fx.BloodKind(v.type), 2f, 6f);
+                    counters[C.Breach] = counters[C.Breach] + 1;     // trúng tường: 1 máu thành
+                    Fx.Spray(particles, counters, ref rng, a.to, 0.6f, 3, PKind.Dust, 2.5f, 4f);
+                }
+                else if (a.splash > 0f)
+                {
+                    Fx.Splash(units, cellStart, sortedIndex, nu, a.to, a.splash, 1 - a.team, a.damage * rng.NextFloat(0.85f, 1.15f), a.slow);
+                    if (a.kind == Proj.Cannonball)
+                    {
+                        Fx.Flames(particles, counters, ref rng, a.to, a.splash * 0.6f, 22, PKind.Fire, 0.9f);
+                        Fx.Flames(particles, counters, ref rng, a.to, a.splash * 0.6f, 8, PKind.Smoke, 2f);
+                        Fx.Stamp(stamps, counters, a.to, StampCell.Scorch + rng.NextInt(0, 4), rng.NextInt(0, 8));
+                    }
+                    else if (a.kind == Proj.Rock)
+                    {
+                        Fx.Spray(particles, counters, ref rng, a.to, 0.2f, 14, PKind.Dust, 4f, 6f);
+                        Fx.Stamp(stamps, counters, a.to, StampCell.Ash + rng.NextInt(0, 4), rng.NextInt(0, 8));
+                    }
+                    else Fx.Spray(particles, counters, ref rng, a.to, 0.3f, 10, a.kind == Proj.VoidOrb ? PKind.VoidGoo : PKind.GreenSpark, 3f, 4f);
                 }
                 else
                 {
-                    Fx.Spray(particles, counters, ref rng, a.to, 0f, 2, PKind.Dust, 1.5f, 3f);
-                    if (rng.NextFloat() < 0.3f)
+                    int victim = FindVictim(a.to, 1 - a.team, nu);
+                    if (victim >= 0)
                     {
-                        int cell = (a.team == 0 ? StampCell.ArrowKingdom : StampCell.ArrowUndead) + rng.NextInt(0, 2);
-                        Fx.Stamp(stamps, counters, a.to, cell, rng.NextBool() ? 4 : 0);
+                        Unit v = units[victim];
+                        UnitStats sv = stats[v.type];
+                        if (rng.NextFloat() < sv.dodge)
+                        {
+                            Fx.Spray(particles, counters, ref rng, v.pos, 0.6f, 2, PKind.Spark, 3f, 3f);
+                        }
+                        else
+                        {
+                            v.hp -= a.damage * rng.NextFloat(0.8f, 1.2f);
+                            v.flash = 1f;
+                            if (a.slow > 0f) v.slow = math.max(v.slow, a.slow);
+                            units[victim] = v;
+                            Fx.Spray(particles, counters, ref rng, v.pos, 0.5f, 3, sv.blood, 2f, 6f);
+                        }
                     }
+                    else if (a.kind <= Proj.Bolt || a.kind == Proj.Javelin)
+                    {
+                        Fx.Spray(particles, counters, ref rng, a.to, 0f, 2, PKind.Dust, 1.5f, 3f);
+                        if (rng.NextFloat() < 0.3f)
+                        {
+                            int cell = StampCell.StuckArrow + (a.kind == Proj.ElfArrow ? 2 : 0) + rng.NextInt(0, 2);
+                            Fx.Stamp(stamps, counters, a.to, cell, rng.NextBool() ? 4 : 0);
+                        }
+                    }
+                    else Fx.Spray(particles, counters, ref rng, a.to, 0.2f, 3, a.kind == Proj.VoidOrb ? PKind.VoidGoo : a.kind == Proj.LightOrb ? PKind.Holy : PKind.GreenSpark, 2f, 3f);
                 }
 
                 n--;
@@ -436,7 +729,7 @@ namespace HordeLab
             counters[C.Arrows] = n;
         }
 
-        int FindVictim(float2 p, int enemyTeam)
+        int FindVictim(float2 p, int enemyTeam, int unitCount)
         {
             int cx = Cfg.CellX(p.x), cy = Cfg.CellY(p.y);
             float best = HitRadius * HitRadius;
@@ -450,8 +743,9 @@ namespace HordeLab
                     for (int k = cellStart[c]; k < end; k++)
                     {
                         int j = sortedIndex[k];
+                        if (j >= unitCount) continue;
                         Unit u = units[j];
-                        if (Cfg.TeamOf(u.type) != enemyTeam || u.hp <= 0f) continue;
+                        if (u.team != enemyTeam || u.hp <= 0f) continue;
                         float d2 = math.lengthsq(u.pos - p);
                         if (d2 < best) { best = d2; bi = j; }
                     }
@@ -530,6 +824,9 @@ namespace HordeLab
     struct DeathJob : IJob
     {
         public NativeArray<Unit> units;
+        [ReadOnly] public NativeArray<UnitStats> stats;
+        [ReadOnly] public NativeArray<int> cellStart;
+        [ReadOnly] public NativeArray<int> sortedIndex;
         public NativeArray<Particle> particles;
         public NativeArray<float4> stamps;
         public NativeArray<int> counters;
@@ -539,47 +836,49 @@ namespace HordeLab
         {
             var rng = new Random(seed);
             int n = counters[C.Units];
-            int i = 0;
-            while (i < n)
+
+            // Nổ khi chết (Kẻ dị dạng). Làm TRƯỚC khi xoá để chỉ số trong lưới còn đúng.
+            for (int i = 0; i < n; i++)
             {
                 Unit u = units[i];
-                bool breach = Cfg.TeamOf(u.type) == 1 && u.pos.x < Cfg.WallX;
-                if (u.hp > 0f && !breach) { i++; continue; }
+                if (u.hp > 0f) continue;
+                UnitStats s = stats[u.type];
+                if (s.explodeDmg <= 0f) continue;
+                Fx.Splash(units, cellStart, sortedIndex, n, u.pos, s.explodeRadius, 1 - u.team, s.explodeDmg * u.dmgMul, 0f);
+                Fx.Ring(particles, counters, u.pos, s.explodeRadius, 8, PKind.VoidGoo);
+            }
 
-                if (breach)
+            int w = 0;
+            while (w < n)
+            {
+                Unit u = units[w];
+                if (u.hp > 0f) { w++; continue; }
+
                 {
-                    counters[C.Breach] = counters[C.Breach] + 1;
-                    Fx.Spray(particles, counters, ref rng, u.pos, 0.5f, 6, PKind.GreenSpark, 3f, 6f);
-                }
-                else
-                {
-                    int deadIdx = Cfg.TeamOf(u.type) == 1 ? C.DeadUndead : C.DeadKingdom;
-                    counters[deadIdx] = counters[deadIdx] + 1;
-                    if (u.type != UnitType.Skeleton)
+                    int blood = stats[u.type].blood;
+                    counters[C.Dead0 + u.team] = counters[C.Dead0 + u.team] + 1;
+                    if (blood == PKind.Blood || blood == PKind.DarkBlood || blood == PKind.VoidGoo)
                     {
-                        int splat = u.type == UnitType.Zombie ? StampCell.BloodDark : StampCell.BloodRed;
+                        int splat = blood == PKind.Blood ? StampCell.BloodRed : StampCell.BloodDark;
                         Fx.Stamp(stamps, counters, u.pos + rng.NextFloat2(-0.3f, 0.3f), splat + rng.NextInt(0, 4), rng.NextInt(0, 8));
                     }
-                    if (u.type == UnitType.Cavalry)   // ngựa nằm nghiêng: xoay 90° trái/phải, có thể lật
-                        Fx.Stamp(stamps, counters, u.pos, StampCell.HorseCorpse + rng.NextInt(0, 2), (rng.NextBool() ? 1 : 3) | (rng.NextBool() ? 4 : 0));
-                    else
-                    {
-                        int corpse = (rng.NextBool() ? StampCell.Corpse : StampCell.CorpseAlt) + u.type;
-                        Fx.Stamp(stamps, counters, u.pos, corpse, rng.NextBool() ? 4 : 0);
-                    }
-                    Fx.Spray(particles, counters, ref rng, u.pos, 0.6f, 7, Fx.BloodKind(u.type), 3f, 7f);
+                    Fx.Stamp(stamps, counters, u.pos, StampCell.Corpse + u.type * 2 + rng.NextInt(0, 2), rng.NextBool() ? 4 : 0);
+                    Fx.Spray(particles, counters, ref rng, u.pos, 0.6f, 7, blood, 3f, 7f);
                 }
 
                 n--;
-                units[i] = units[n];
+                units[w] = units[n];
             }
             counters[C.Units] = n;
 
+            counters[C.Team0] = 0;
+            counters[C.Team1] = 0;
             for (int t = 0; t < UnitType.Count; t++) counters[C.Type0 + t] = 0;
             for (int k = 0; k < n; k++)
             {
-                int idx = C.Type0 + units[k].type;
-                counters[idx] = counters[idx] + 1;
+                Unit u = units[k];
+                counters[C.Type0 + u.type] = counters[C.Type0 + u.type] + 1;
+                counters[C.Team0 + u.team] = counters[C.Team0 + u.team] + 1;
             }
         }
     }
@@ -591,6 +890,7 @@ namespace HordeLab
     struct PackUnitsJob : IJobParallelFor
     {
         [ReadOnly] public NativeArray<Unit> units;
+        [ReadOnly] public NativeArray<UnitStats> stats;
         [ReadOnly] public NativeArray<int> counters;
         public NativeArray<float4> gpu;
 
@@ -599,15 +899,11 @@ namespace HordeLab
             if (i >= counters[C.Units]) return;
             Unit u = units[i];
             int frame;
-            if (u.state == 0)
-            {
-                float fps = u.type == UnitType.Zombie ? 6f : u.type == UnitType.Cavalry ? 12f : 9f;
-                frame = (int)(u.animT * fps) & 3;
-            }
+            if (u.state == 0) frame = (int)(u.animT * stats[u.type].animFps) & 3;
             else frame = u.animT < 0.4f ? math.min(3, (int)(u.animT * 10f)) : 0;
 
             int row = u.type * 2 + u.state;
-            int flags = u.faceLeft | (u.flash > 0.25f ? 2 : 0);
+            int flags = u.faceLeft | (u.flash > 0.25f ? 2 : 0) | (u.slow > 0f ? 4 : 0);
             gpu[i] = new float4(u.pos, row * 4 + frame, flags);
         }
     }
@@ -630,7 +926,7 @@ namespace HordeLab
             float vh = a.arc * 4f * (1f - 2f * t) * a.invDuration;
             gpu[i] = new ArrowGpu
             {
-                a = new float4(g, h, a.team),
+                a = new float4(g, h, a.kind),
                 b = new float4(math.atan2(vg.y + vh, vg.x), math.atan2(vg.y, vg.x), 0f, 0f)
             };
         }
@@ -665,6 +961,10 @@ namespace HordeLab
                     color = f < 0.5f ? 11 : 12;
                     break;
                 case PKind.Ember: color = f < 0.4f ? 8 : 15; break;
+                case PKind.VoidGoo: color = 0; break;
+                case PKind.Leaf: color = 3; break;
+                case PKind.Splinter: color = 5; break;
+                case PKind.Holy: color = 7; break;
                 default: color = 13; break;
             }
             gpu[i] = new float4(p.pos, p.h, color + 16 * (size - 1));
@@ -693,7 +993,8 @@ namespace HordeLab
             float n = ValueNoise(r1.x / 110f, r1.y / 110f, seed) * 0.6f
                     + ValueNoise(r2.x / 28f, r2.y / 28f, seed + 7u) * 0.3f
                     + ValueNoise(p.x / 7f, p.y / 7f, seed + 13u) * 0.1f;
-            n += 0.16f * math.exp(-(worldX * worldX) / (2f * 32f * 32f)); // giữa trận bị giẫm nát, nhiều đất hơn
+            float mid = worldX - Cfg.HoldX;                               // trận tuyến thường nằm quanh vạch giữ trận
+            n += 0.16f * math.exp(-(mid * mid) / (2f * 14f * 14f));       // chỗ giao tranh bị giẫm nát, nhiều đất hơn
             n += (Hash(x, y, seed + 99u) - 0.5f) * 0.08f;                 // dither cho ra chất pixel
 
             UnityEngine.Color32 c;

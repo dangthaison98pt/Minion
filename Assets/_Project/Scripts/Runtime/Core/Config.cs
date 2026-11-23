@@ -5,63 +5,121 @@ namespace HordeLab
     /// <summary>Hằng số chung của trận đánh.</summary>
     public static class Cfg
     {
-        // 1 đơn vị thế giới = 10 pixel nghệ thuật. Mỗi lính là 1 ô 10x10 pixel.
+        // 1 đơn vị thế giới = 10 pixel nghệ thuật. Lính bộ là 1 ô 10x10 pixel, quân to (kỵ binh, máy bắn đá...) 16x16.
         public const int PPU = 10;
 
-        // Chiến trường 192 x 108 đơn vị = 1920 x 1080 pixel nghệ thuật
-        public const float HalfW = 96f, HalfH = 54f;
-        public const int GroundW = 1920, GroundH = 1080;
+        // Thế giới 96 x 54 đơn vị = 960 x 540 pixel nghệ thuật, mặc định phóng x2 lên màn hình 1080p (lính to, dễ nhìn).
+        // 26 đơn vị bên trái là bên trong thành (chỗ đặt lưới công trình), phần còn lại là chiến trường.
+        public const float HalfW = 48f, HalfH = 27f;
+        public const int GroundW = 960, GroundH = 540;
+        public const int CastlePx = 260;       // bề rộng phần "trong thành" trên texture mặt đất
+        public const int WallPx = 16;          // bề dày tường thành
 
         // Lưới không gian để tìm hàng xóm
         public const float CellSize = 2f;
-        public const int GridW = 96, GridH = 54, Cells = GridW * GridH;
+        public const int GridW = 48, GridH = 27, Cells = GridW * GridH;
 
-        public const int MaxUnits = 32768;     // đủ cho màn 20k lính (mỗi lính ~48 byte → vài MB tổng cộng)
+        public const int MaxUnits = 32768;     // đủ cho màn 20k lính (mỗi lính ~80 byte → vài MB tổng cộng)
         public const int MaxArrows = 16384;
         public const int MaxParticles = 65536;
         public const int MaxStamps = 16384;
 
-        // Xác sống vượt qua vạch này là phá tường thành
-        public const float WallX = -91f;
+        // Mặt ngoài tường thành. Quân địch (phe 1) vượt qua vạch này là lọt vào thành.
+        public const float WallX = -HalfW + (CastlePx + WallPx) / (float)PPU;   // = -20.4
+        public const float PlayerSpawnX = WallX + 3.5f;   // quân ta xuất hiện ngay ngoài cổng thành
+        public const float EnemySpawnX = HalfW + 4f;      // quân địch xuất hiện NGOÀI mép phải rồi đi bộ vào màn hình
+        public const float HoldX = WallX + 22f;                 // quân ta không thấy địch thì dừng ở đây giữ trận tuyến
 
         public static int CellX(float x) => math.clamp((int)math.floor((x + HalfW) / CellSize), 0, GridW - 1);
         public static int CellY(float y) => math.clamp((int)math.floor((y + HalfH) / CellSize), 0, GridH - 1);
-        public static int TeamOf(int type) => (type == UnitType.Zombie || type == UnitType.Skeleton) ? 1 : 0;
     }
 
     /// <summary>Chỉ số trong mảng counters dùng chung giữa các Job.</summary>
     public static class C
     {
         public const int Units = 0, Arrows = 1, Particles = 2, Stamps = 3;
-        public const int DeadKingdom = 4, DeadUndead = 5, Breach = 6;
-        public const int Type0 = 8; // 8..12: số lượng mỗi loại lính
-        public const int Length = 16;
+        public const int Dead0 = 4, Dead1 = 5, Breach = 6;   // Dead0 = quân ta tử trận, Dead1 = quân địch bị diệt, Breach = số đòn địch đã đánh trúng tường thành
+        public const int Team0 = 8, Team1 = 9;               // số lính còn sống mỗi phe
+        public const int Type0 = 16;                         // 16.. : số lượng mỗi loại lính
+        public const int Length = Type0 + UnitType.Count;
     }
 
-    /// <summary>Loại lính. Vương quốc: Footman, Archer, Cavalry. Xác sống: Zombie, Skeleton (dùng Cfg.TeamOf để biết phe).</summary>
+    /// <summary>5 phe trong GDD. Mỗi phe 5 loại quân: loại = phe * 5 + vị trí.</summary>
+    public static class Faction
+    {
+        public const int Human = 0, Elf = 1, Dwarf = 2, Beast = 3, Void = 4;
+        public const int Count = 5;
+        public static int Of(int unitType) => unitType == UnitType.Voidling ? Void : unitType / 5;
+    }
+
     public static class UnitType
     {
-        public const int Footman = 0, Archer = 1, Zombie = 2, Skeleton = 3, Cavalry = 4;
-        public const int Count = 5;
+        // Người
+        public const int Swordsman = 0, Archer = 1, Cavalry = 2, Monk = 3, Catapult = 4;
+        // Tiên
+        public const int Treant = 5, ForestArcher = 6, BladeDancer = 7, Druid = 8, DeerRider = 9;
+        // Người lùn
+        public const int ShieldWarrior = 10, Crossbow = 11, Axeman = 12, Cannon = 13, GoatRider = 14;
+        // Người hoá thú
+        public const int Bear = 15, Wolf = 16, Leopard = 17, Shaman = 18, Eagle = 19;
+        // The Void
+        public const int Aberration = 20, Shade = 21, Eye = 22, Summoner = 23, Screamer = 24;
+        public const int Voidling = 25;      // quân con do Kẻ triệu hồi sinh ra, không có nhà lính
+        public const int Buildable = 25;
+        public const int Count = 26;
+    }
+
+    /// <summary>Cách tấn công của một loại quân.</summary>
+    public static class Mode
+    {
+        public const int Melee = 0;      // áp sát rồi chém
+        public const int Shoot = 1;      // đứng xa bắn đạn bay theo parabol
+        public const int Blast = 2;      // đứng xa, gây sát thương vùng tức thì (sóng âm)
+        public const int Summon = 3;     // đứng xa, sinh quân con
+    }
+
+    public static class UFlag
+    {
+        public const int Flank = 1;      // chạy vòng ra mép bản đồ rồi đánh từ sau lưng
+        public const int Kite = 2;       // vừa chạy vừa bắn
+        public const int Ghost = 4;      // đi xuyên qua hàng địch
+        public const int Big = 8;        // sprite 16x16
+        public const int HealAura = 16;  // hồi máu đồng đội đứng gần
+        public const int PowerAura = 32; // tăng sát thương đồng đội đứng gần
+    }
+
+    /// <summary>Hình dạng viên đạn (hàng trong texture đạn).</summary>
+    public static class Proj
+    {
+        public const int Arrow = 0, ElfArrow = 1, Bolt = 2, Rock = 3, Cannonball = 4, Javelin = 5, NatureOrb = 6, VoidOrb = 7, LightOrb = 8;
+        public const int Count = 9;
     }
 
     public static class PKind
     {
-        public const int Blood = 0, DarkBlood = 1, Spark = 2, Dust = 3, Bone = 4, Fire = 5, Smoke = 6, Ember = 7, GreenSpark = 8;
+        public const int Blood = 0, DarkBlood = 1, Spark = 2, Dust = 3, Bone = 4, Fire = 5, Smoke = 6, Ember = 7, GreenSpark = 8,
+                         VoidGoo = 9, Leaf = 10, Splinter = 11, Holy = 12;
     }
 
-    /// <summary>Ô trong atlas "dấu in" lên mặt đất.</summary>
+    /// <summary>Ô trong atlas "dấu in" lên mặt đất (8 cột).</summary>
     public static class StampCell
     {
-        public const int BloodRed = 0, BloodDark = 4, Corpse = 8, CorpseAlt = 12, Drop = 16,
-                         ArrowKingdom = 20, ArrowUndead = 22, Scorch = 24, Ash = 28,
-                         HorseCorpse = 32; // 32 = ngựa chết, 33 = ngựa + kỵ sĩ chết
+        public const int BloodRed = 0, BloodDark = 4, Drop = 8, StuckArrow = 12, Scorch = 16, Ash = 20,
+                         Corpse = 24;   // 24 + loại * 2 + (0/1: hai kiểu nằm)
     }
 
     public struct UnitStats
     {
         public float maxHp, damage, cooldown, range, speed;
-        public int ranged;
+        public int mode, flags, proj, blood;
+        public float minRange;       // máy công thành: địch áp sát gần hơn ngần này thì không bắn được
+        public float splash;         // bán kính sát thương vùng (đạn nổ / đòn quét)
+        public float slow;           // số giây làm chậm nạn nhân
+        public float dodge;          // xác suất né đòn
+        public float knock;          // hất văng nạn nhân mỗi đòn
+        public float chargeBonus;    // kỵ binh: đòn xung phong mạnh gấp (1 + chargeBonus) lần khi đầy đà
+        public float explodeDmg, explodeRadius;   // nổ khi chết
+        public float animFps;
     }
 
     /// <summary>Một người lính chỉ là struct này, không có GameObject nào cả.</summary>
@@ -69,22 +127,29 @@ namespace HordeLab
     {
         public float2 pos;
         public float2 goal;     // vị trí địch gần nhất tìm được lần quét gần nhất
-        public float hp;
+        public float hp, maxHp;
         public float cooldown;
         public float animT;
         public float flash;     // nháy trắng khi trúng đòn
+        public float charge;    // kỵ binh: đà xung phong 0..1, tích khi phi, xả hết vào đòn đâm kế tiếp
+        public float slow;      // > 0: đang bị làm chậm
+        public float dmgMul;    // hệ số sát thương (đặc trưng phe, Xưởng rèn, độ khó của đợt...)
+        public float regen;     // máu hồi mỗi giây (Bệnh xá)
+        public float aux;       // quân đánh vòng: 0 = chưa thấy địch, 0..1 = đang vòng, >= 1 = đã nhập trận
         public int type;
+        public int team;        // 0 = quân của người chơi (đi sang phải), 1 = quân địch (đi sang trái)
         public int state;       // 0 = đi, 1 = đánh
         public int hasGoal;
         public int faceLeft;
-        public float charge;    // kỵ binh: đà xung phong 0..1, tích khi phi, xả hết vào đòn đâm kế tiếp
+        public int buffed;      // đang đứng trong vùng tăng sức mạnh của pháp sư bộ lạc
     }
 
     public struct Arrow
     {
         public float2 from, to;
-        public float t, invDuration, arc, damage;
-        public int team;
+        public float t, invDuration, arc, damage, splash, slow;
+        public int team, kind;
+        public int wall;        // 1 = bắn vào tường thành: chạm đích thì trừ 1 máu thành
     }
 
     public struct Particle
@@ -94,10 +159,10 @@ namespace HordeLab
         public int kind, landed;
     }
 
-    /// <summary>Dữ liệu 1 mũi tên gửi lên GPU (32 byte).</summary>
+    /// <summary>Dữ liệu 1 viên đạn gửi lên GPU (32 byte).</summary>
     public struct ArrowGpu
     {
-        public float4 a; // xy = vị trí trên mặt đất, z = độ cao, w = phe
+        public float4 a; // xy = vị trí trên mặt đất, z = độ cao, w = loại đạn
         public float4 b; // x = góc bay trên màn hình, y = góc của bóng
     }
 }

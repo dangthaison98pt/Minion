@@ -22,6 +22,23 @@ namespace HordeLab.EditorTools
             AssetDatabase.SaveAssets();
         }
 
+        /// <summary>Xuất atlas sprite ra Docs/Screenshots để xem hình các loại quân mà không cần chạy game.</summary>
+        [MenuItem("Horde Lab/Xuất atlas sprite ra PNG")]
+        public static void DumpAtlases()
+        {
+            Directory.CreateDirectory("Docs/Screenshots");
+            HordeLab.PixelArt.SaveAtlases("Docs/Screenshots");
+            Debug.Log("[HordeLab] Đã xuất Docs/Screenshots/atlas_units.png và atlas_stamps.png");
+        }
+
+        /// <summary>Mặc định Build/HordeLab.exe; chạy dòng lệnh có thể thêm  -buildPath "thư mục/HordeLab.exe"  (dùng khi bản trong Build/ đang mở nên bị khoá).</summary>
+        static string BuildPath()
+        {
+            var args = System.Environment.GetCommandLineArgs();
+            int i = System.Array.IndexOf(args, "-buildPath");
+            return i >= 0 && i + 1 < args.Length ? args[i + 1] : "Build/HordeLab.exe";
+        }
+
         [MenuItem("Horde Lab/Build Windows (.exe)")]
         public static void BuildWindows()
         {
@@ -41,7 +58,7 @@ namespace HordeLab.EditorTools
             var report = BuildPipeline.BuildPlayer(new BuildPlayerOptions
             {
                 scenes = new[] { ScenePath },
-                locationPathName = "Build/HordeLab.exe",
+                locationPathName = BuildPath(),
                 target = BuildTarget.StandaloneWindows64,
                 options = BuildOptions.None
             });

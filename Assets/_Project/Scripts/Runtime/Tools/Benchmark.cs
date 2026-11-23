@@ -22,6 +22,7 @@ namespace HordeLab
         const int WarmupFrames = 60;     // 1 giây game: Burst/bộ nhớ ổn định
         const int MeasureFrames = 1200;  // 20 giây game (dt cố định 1/60)
         const uint Seed = 12345u;
+        const int DefaultUnits = 9000;
 
         string outPath;
         int stress;
@@ -48,8 +49,9 @@ namespace HordeLab
         IEnumerator Start()
         {
             Battle battle = null;
-            while (battle == null) { battle = FindAnyObjectByType<Battle>(); yield return null; }
+            while (battle == null || Game.I == null) { battle = FindAnyObjectByType<Battle>(); yield return null; }
 
+            Game.I.savingEnabled = false;
             QualitySettings.vSyncCount = 0;
             Application.targetFrameRate = -1;   // chạy nhanh hết mức, thời gian game vẫn cố định nhờ fixedDt
             battle.fixedSeed = Seed;
@@ -59,9 +61,7 @@ namespace HordeLab
             var results = new List<Result>();
             for (int r = 0; r < Rounds; r++)
             {
-                if (stress > 0) AutoShot.ApplyStress(battle, stress);
-                battle.castleMaxHp = 1000000;   // không bao giờ thua giữa lượt đo (thua là mô phỏng dừng)
-                battle.Restart();
+                Game.I.StartSandbox(stress > 0 ? stress : DefaultUnits);   // hai bên tự bơm quân, không thẻ bài, không bao giờ kết thúc
 
                 for (int f = 0; f < WarmupFrames; f++) yield return null;
                 int unitsStart = battle.Counter(C.Units);
@@ -90,7 +90,7 @@ namespace HordeLab
         string Report(List<Result> results)
         {
             var sb = new StringBuilder();
-            sb.AppendLine($"BENCHMARK  stress={(stress > 0 ? stress.ToString() : "mặc định")}  seed={Seed}  dt=1/60  " +
+            sb.AppendLine($"BENCHMARK  lính={(stress > 0 ? stress : DefaultUnits)}  seed={Seed}  dt=1/60  " +
                           $"{Rounds} lượt x {MeasureFrames} frame (sau {WarmupFrames} frame khởi động)");
             sb.AppendLine($"cpu: {SystemInfo.processorType} ({SystemInfo.processorCount} luồng), burst {Unity.Burst.BurstCompiler.IsEnabled}");
             sb.AppendLine();

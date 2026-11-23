@@ -11,11 +11,13 @@ using Random = Unity.Mathematics.Random;
 namespace HordeLab
 {
     /// <summary>
-    /// Bộ não của trận đánh. Mỗi frame:
+    /// Chiến trường: giữ toàn bộ dữ liệu mô phỏng và vẽ nó. KHÔNG biết gì về thẻ bài, công trình hay đợt —
+    /// phần đó nằm ở <see cref="Game"/>, gọi vào đây qua SpawnSquad / ResetField / onStep.
+    /// Mỗi bước mô phỏng:
     ///   1. Xếp lính vào lưới            (BuildGridJob)
     ///   2. Suy nghĩ + di chuyển          (ThinkMoveJob, song song)
-    ///   3. Áp đòn chém, tạo mũi tên      (ResolveJob)
-    ///   4. Mũi tên bay / chạm đất        (ArrowStepJob, ArrowLandJob)
+    ///   3. Áp đòn chém, tạo đạn, phép    (ResolveJob)
+    ///   4. Đạn bay / chạm đất            (ArrowStepJob, ArrowLandJob)
     ///   5. Hạt hiệu ứng                  (ParticleStepJob, ParticleCompactJob)
     ///   6. Lính chết → in xác lên đất    (DeathJob)
     ///   7. Đóng gói dữ liệu cho GPU      (Pack*Job)
@@ -23,28 +25,16 @@ namespace HordeLab
     /// </summary>
     public class Battle : MonoBehaviour
     {
-        [Header("Quân số ban đầu")]
-        public int startFootmen = 2200;
-        public int startArchers = 1000;
-        public int startCavalry = 400;
-        public int startZombies = 3800;
-        public int startSkeletons = 700;
-
-        [Header("Viện binh")]
-        public int kingdomCap = 6500;
-        public int undeadCap = 8500;
-        public float kingdomRate = 55f;
-        public float undeadRate = 60f;
-        public float undeadRateGrowth = 0.6f;   // quái đến nhanh dần theo thời gian
-        [Range(0f, 1f)] public float archerChance = 0.3f;    // tỉ lệ tiểu đội viện binh là cung thủ
-        [Range(0f, 1f)] public float cavalryChance = 0.15f;  // ... là kỵ binh (còn lại là kiếm sĩ)
-
-        [Header("Tường thành")]
-        public int castleMaxHp = 250;
-
         [Header("Hiệu năng")]
         [Tooltip("Giới hạn FPS bằng CPU thay cho VSync. GPU tích hợp (Intel) hạ xung khi dùng VSync nên hay tụt xuống 30-45 FPS.")]
         public int targetFps = 60;
+
+        // ---- Điều khiển từ Game ----
+        [System.NonSerialized] public bool simulate;       // false = đứng yên (đang chuẩn bị giữa các đợt)
+        [System.NonSerialized] public bool paused;
+        [System.NonSerialized] public int speed = 1;       // số bước mô phỏng mỗi frame (x1, x2, x4)
+        /// <summary>Gọi ngay trước mỗi bước mô phỏng, lúc không có job nào đang chạy → được phép sinh quân.</summary>
+        public System.Action<float> onStep;
 
         // ---- Đo hiệu năng (Tools/Benchmark.cs dùng) ----
         [System.NonSerialized] public uint fixedSeed;      // 0 = ngẫu nhiên theo đồng hồ
@@ -77,7 +67,7 @@ namespace HordeLab
         NativeArray<int> counters;
         NativeArray<int> cellStart, cursor, teamCount, cellOf, sortedIndex;
         NativeArray<float2> sortedPos;
-        NativeArray<byte> sortedTeam;
+        NativeArray<byte> sortedInfo;
         NativeArray<int> attackTarget;
         NativeArray<float3> shots;
         NativeArray<float4> unitGpu, particleGpu;
@@ -86,7 +76,7 @@ namespace HordeLab
         // ---- Đồ hoạ ----
         GraphicsBuffer unitBuf, arrowBuf, particleBuf, stampBuf;
         Material groundMat, unitMat, arrowMat, shadowMat, particleMat, stampMat;
-        Texture2D groundTex;
+        Texture2D groundTex, unitAtlas;
         RenderTexture groundRT;
         CommandBuffer stampCmd;
         RenderParams rpGround, rpUnits, rpArrows, rpShadows, rpParticles;
@@ -97,32 +87,22 @@ namespace HordeLab
         bool groundDirty = true;
         Random rng;
         uint frame;
-        float kingdomAcc, undeadAcc, elapsed, volleyCd, fireCd;
-        bool paused, defeated;
-        int castleHp;
+        float elapsed;
 
         float simMs, fps = 60f, fpsTimer;
         int fpsFrames;
         readonly Stopwatch sw = new Stopwatch();
-        GUIStyle label, small, big;
-        Rect hudRect = new Rect(10, 10, 470, 214);
 
         public PixelView View => view;
         public float Elapsed => elapsed;
         public float SimMs => simMs;
         public float Fps => fps;
+        public ref Random Rng => ref rng;
         public int Counter(int idx) => counters[idx];
-        public int KingdomCount => counters[C.Type0 + UnitType.Footman] + counters[C.Type0 + UnitType.Archer] + counters[C.Type0 + UnitType.Cavalry];
-        public int UndeadCount => counters[C.Type0 + UnitType.Zombie] + counters[C.Type0 + UnitType.Skeleton];
+        public int TypeCount(int type) => counters[C.Type0 + type];
         public RenderTexture GroundTexture => groundRT;
         public Texture2D GroundSource => groundTex;
-
-        // Bấm Play ở scene trống cũng chạy được
-        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
-        static void AutoCreate()
-        {
-            if (FindAnyObjectByType<Battle>() == null) new GameObject("Battle").AddComponent<Battle>();
-        }
+        public Texture2D UnitAtlas => unitAtlas;
 
         void Awake()
         {
@@ -138,7 +118,7 @@ namespace HordeLab
             view.Create(transform);
             Allocate();
             CreateGraphics();
-            Restart();
+            ResetField();
         }
 
         // ------------------------------------------------------------------
@@ -149,12 +129,7 @@ namespace HordeLab
             var p = Allocator.Persistent;
             units = new NativeArray<Unit>(Cfg.MaxUnits, p);
             stats = new NativeArray<UnitStats>(UnitType.Count, p);
-            stats[UnitType.Footman] = new UnitStats { maxHp = 40f, damage = 7f, cooldown = 0.9f, range = 1.0f, speed = 3.0f };
-            stats[UnitType.Archer] = new UnitStats { maxHp = 18f, damage = 6f, cooldown = 1.7f, range = 24f, speed = 2.8f, ranged = 1 };
-            stats[UnitType.Zombie] = new UnitStats { maxHp = 32f, damage = 6f, cooldown = 1.1f, range = 1.0f, speed = 2.2f };
-            stats[UnitType.Skeleton] = new UnitStats { maxHp = 14f, damage = 5f, cooldown = 2.2f, range = 20f, speed = 2.5f, ranged = 1 };
-            // Kỵ binh: nhanh gấp ~2 lính bộ, trâu; đòn thường vừa phải, mạnh nhất khi xung phong (xem Fx.ChargeBonus)
-            stats[UnitType.Cavalry] = new UnitStats { maxHp = 75f, damage = 9f, cooldown = 1.0f, range = 1.2f, speed = 5.5f };
+            for (int t = 0; t < UnitType.Count; t++) stats[t] = GameData.Units[t].stats;
 
             arrows = new NativeArray<Arrow>(Cfg.MaxArrows, p);
             particles = new NativeArray<Particle>(Cfg.MaxParticles, p);
@@ -167,7 +142,7 @@ namespace HordeLab
             cellOf = new NativeArray<int>(Cfg.MaxUnits, p);
             sortedIndex = new NativeArray<int>(Cfg.MaxUnits, p);
             sortedPos = new NativeArray<float2>(Cfg.MaxUnits, p);
-            sortedTeam = new NativeArray<byte>(Cfg.MaxUnits, p);
+            sortedInfo = new NativeArray<byte>(Cfg.MaxUnits, p);
             attackTarget = new NativeArray<int>(Cfg.MaxUnits, p);
             shots = new NativeArray<float3>(Cfg.MaxUnits, p);
 
@@ -185,7 +160,7 @@ namespace HordeLab
 
         void CreateGraphics()
         {
-            var unitAtlas = PixelArt.BuildUnitAtlas();
+            unitAtlas = PixelArt.BuildUnitAtlas();
             var stampAtlas = PixelArt.BuildStampAtlas();
             var arrowTex = PixelArt.BuildArrowTexture();
             var palette = PixelArt.BuildPalette();
@@ -215,10 +190,11 @@ namespace HordeLab
             unitMat.SetBuffer("_Units", unitBuf);
             unitMat.SetVector("_Atlas", new Vector4(PixelArt.UnitCols, PixelArt.UnitRows, PixelArt.UnitCell / (float)Cfg.PPU, Cfg.PPU));
 
+            var arrowSize = new Vector4(PixelArt.ProjW / (float)Cfg.PPU, PixelArt.ProjH / (float)Cfg.PPU, Cfg.PPU, Proj.Count);
             arrowMat = LoadMat("Arrows");
             arrowMat.mainTexture = arrowTex;
             arrowMat.SetBuffer("_Arrows", arrowBuf);
-            arrowMat.SetVector("_ArrowSize", new Vector4(1.2f, 0.3f, Cfg.PPU, 0f));
+            arrowMat.SetVector("_ArrowSize", arrowSize);
             arrowMat.SetFloat("_Shadow", 0f);
             arrowMat.SetFloat("_SrcBlend", (float)BlendMode.One);
             arrowMat.SetFloat("_DstBlend", (float)BlendMode.Zero);
@@ -228,7 +204,7 @@ namespace HordeLab
             shadowMat = LoadMat("Arrows");
             shadowMat.mainTexture = arrowTex;
             shadowMat.SetBuffer("_Arrows", arrowBuf);
-            shadowMat.SetVector("_ArrowSize", new Vector4(1.2f, 0.3f, Cfg.PPU, 0f));
+            shadowMat.SetVector("_ArrowSize", arrowSize);
             shadowMat.SetFloat("_Shadow", 1f);
             shadowMat.SetFloat("_SrcBlend", (float)BlendMode.SrcAlpha);
             shadowMat.SetFloat("_DstBlend", (float)BlendMode.OneMinusSrcAlpha);
@@ -263,172 +239,57 @@ namespace HordeLab
             stampCmd = new CommandBuffer { name = "Stamp corpses & blood" };
         }
 
-        public void Restart()
+        // ------------------------------------------------------------------
+        // API cho Game
+        // ------------------------------------------------------------------
+        /// <summary>Dọn sạch chiến trường (lính, đạn, hạt, xác) để bắt đầu đợt mới.</summary>
+        public void ResetField()
         {
             simHandle.Complete();
             for (int i = 0; i < C.Length; i++) counters[i] = 0;
             rng = new Random(fixedSeed != 0 ? fixedSeed : ((uint)System.Environment.TickCount | 1u));
             groundDirty = true;   // vẽ lại mặt đất sạch ở frame kế tiếp (lúc GPU sẵn sàng)
-
             elapsed = 0f;
-            kingdomAcc = undeadAcc = 0f;
-            volleyCd = fireCd = 0f;
-            castleHp = castleMaxHp;
-            paused = defeated = false;
-
-            SpawnBlock(UnitType.Footman, startFootmen, new float2(-58f, -50f), new float2(-30f, 50f));
-            SpawnBlock(UnitType.Archer, startArchers, new float2(-72f, -50f), new float2(-62f, 50f));
-            SpawnBlock(UnitType.Cavalry, startCavalry, new float2(-86f, -48f), new float2(-76f, 48f));
-            SpawnBlock(UnitType.Zombie, startZombies, new float2(28f, -51f), new float2(72f, 51f));
-            SpawnBlock(UnitType.Skeleton, startSkeletons, new float2(74f, -50f), new float2(84f, 50f));
+            drawUnits = drawArrows = drawParticles = 0;
+            simScheduled = false;   // nếu bị gọi sau khi frame này đã xếp lịch: bỏ kết quả cũ, đừng upload
         }
 
-        void SpawnUnit(int type, float2 pos)
+        public void SpawnUnit(int type, int team, float2 pos, float hpMul = 1f, float dmgMul = 1f, float regen = 0f)
         {
             int n = counters[C.Units];
             if (n >= Cfg.MaxUnits) return;
             var s = stats[type];
+            float hp = s.maxHp * hpMul;
             units[n] = new Unit
             {
                 pos = pos,
                 goal = pos,
-                hp = s.maxHp,
+                hp = hp,
+                maxHp = hp,
                 cooldown = rng.NextFloat(0f, s.cooldown),
                 animT = rng.NextFloat(0f, 1f),
                 type = type,
-                faceLeft = Cfg.TeamOf(type)
+                team = team,
+                faceLeft = team,
+                dmgMul = dmgMul,
+                regen = regen
             };
             counters[C.Units] = n + 1;
+            counters[C.Team0 + team]++;
+            counters[C.Type0 + type]++;
         }
 
-        void SpawnBlock(int type, int count, float2 min, float2 max)
+        /// <summary>Gọi 1 tiểu đội side x side lính xếp hàng quanh <paramref name="center"/>. Trả về số lính.</summary>
+        public int SpawnSquad(int type, int team, float2 center, int side, float hpMul = 1f, float dmgMul = 1f, float regen = 0f)
         {
-            for (int i = 0; i < count; i++) SpawnUnit(type, rng.NextFloat2(min, max));
-        }
-
-        void Reinforce(float dt)
-        {
-            int kingdom = KingdomCount;
-            int undead = UndeadCount;
-            kingdomAcc += kingdomRate * dt;
-            undeadAcc += (undeadRate + undeadRateGrowth * elapsed) * dt;
-
-            // Viện binh đến theo từng tiểu đội 5x5 cho giống đội hình hành quân
-            while (kingdomAcc >= SquadSize)
-            {
-                kingdomAcc -= SquadSize;
-                if (kingdom >= kingdomCap) continue;
-                float roll = rng.NextFloat();
-                if (roll < archerChance) kingdom += SpawnSquad(UnitType.Archer, -88f);
-                else if (roll < archerChance + cavalryChance) kingdom += SpawnSquad(UnitType.Cavalry, -86f);
-                else kingdom += SpawnSquad(UnitType.Footman, -85f);
-            }
-            while (undeadAcc >= SquadSize)
-            {
-                undeadAcc -= SquadSize;
-                if (undead >= undeadCap) continue;
-                bool skeletons = rng.NextFloat() < 0.18f;
-                undead += SpawnSquad(skeletons ? UnitType.Skeleton : UnitType.Zombie, skeletons ? 91f : 88f);
-            }
-        }
-
-        const int SquadSide = 5, SquadSize = SquadSide * SquadSide;
-
-        int SpawnSquad(int type, float x)
-        {
-            float y = rng.NextFloat(-49f, 49f);
-            for (int r = 0; r < SquadSide; r++)
-                for (int c = 0; c < SquadSide; c++)
-                    SpawnUnit(type, new float2(x + (c - 2) * 0.9f, y + (r - 2) * 0.9f) + rng.NextFloat2(-0.15f, 0.15f));
-            return SquadSize;
-        }
-
-        // ------------------------------------------------------------------
-        // Kỹ năng của người chơi
-        // ------------------------------------------------------------------
-        /// <summary>Mưa tên: 400 mũi tên bắn từ tường thành xuống chỗ con trỏ.</summary>
-        public void CastVolley(float2 at)
-        {
-            for (int k = 0; k < 400; k++)
-            {
-                int n = counters[C.Arrows];
-                if (n >= Cfg.MaxArrows) break;
-                float2 from = new float2(rng.NextFloat(-95f, -91f), math.clamp(at.y + rng.NextFloat(-30f, 30f), -53f, 53f));
-                float2 to = at + rng.NextFloat2Direction() * math.sqrt(rng.NextFloat()) * 8f;
-                to = math.clamp(to, new float2(-Cfg.HalfW, -Cfg.HalfH), new float2(Cfg.HalfW, Cfg.HalfH));
-                arrows[n] = new Arrow
-                {
-                    from = from,
-                    to = to,
-                    t = -rng.NextFloat(0f, 0.25f),          // bắn so le chứ không cùng lúc
-                    invDuration = 1f / rng.NextFloat(1.3f, 1.9f),
-                    arc = math.distance(from, to) * 0.1f + 6f,
-                    damage = 14f,
-                    team = 0
-                };
-                counters[C.Arrows] = n + 1;
-            }
-            volleyCd = 0.6f;
-        }
-
-        /// <summary>Hoả ngục: thiêu xác sống trong bán kính 7, để lại vết cháy trên mặt đất.</summary>
-        public void CastFire(float2 at)
-        {
-            const float R = 7f;
-            int n = counters[C.Units];
-            for (int i = 0; i < n; i++)
-            {
-                Unit u = units[i];
-                if (Cfg.TeamOf(u.type) == 0) continue;
-                float d = math.distance(u.pos, at);
-                if (d > R) continue;
-                u.hp -= 70f * (1f - 0.5f * d / R);
-                u.flash = 1f;
-                units[i] = u;
-            }
-
-            for (int k = 0; k < 900; k++)
-            {
-                Fx.Emit(particles, counters, new Particle
-                {
-                    pos = at + rng.NextFloat2Direction() * math.sqrt(rng.NextFloat()) * R,
-                    vel = rng.NextFloat2Direction() * rng.NextFloat(0f, 2f),
-                    h = rng.NextFloat(0f, 1f),
-                    vh = rng.NextFloat(2f, 9f),
-                    maxLife = rng.NextFloat(0.5f, 1.6f),
-                    kind = PKind.Fire
-                });
-            }
-            for (int k = 0; k < 250; k++)
-            {
-                Fx.Emit(particles, counters, new Particle
-                {
-                    pos = at + rng.NextFloat2Direction() * math.sqrt(rng.NextFloat()) * R,
-                    vel = rng.NextFloat2Direction() * rng.NextFloat(0f, 1f),
-                    h = rng.NextFloat(1f, 3f),
-                    vh = rng.NextFloat(2f, 4f),
-                    maxLife = rng.NextFloat(1.5f, 3f),
-                    kind = PKind.Smoke
-                });
-            }
-            for (int k = 0; k < 160; k++)
-            {
-                Fx.Emit(particles, counters, new Particle
-                {
-                    pos = at + rng.NextFloat2Direction() * rng.NextFloat(0f, R * 0.5f),
-                    vel = rng.NextFloat2Direction() * rng.NextFloat(4f, 10f),
-                    h = 0.5f,
-                    vh = rng.NextFloat(6f, 14f),
-                    maxLife = 3f,
-                    kind = PKind.Ember
-                });
-            }
-            for (int k = 0; k < 45; k++)
-            {
-                float2 p = at + rng.NextFloat2Direction() * math.sqrt(rng.NextFloat()) * R * 0.85f;
-                Fx.Stamp(stamps, counters, p, StampCell.Scorch + rng.NextInt(0, 4), rng.NextInt(0, 8));
-            }
-            fireCd = 2.5f;
+            simHandle.Complete();
+            float gap = (stats[type].flags & UFlag.Big) != 0 ? 1.3f : 0.9f;
+            float half = (side - 1) * 0.5f;
+            center.y = math.clamp(center.y, -Cfg.HalfH + 1f + half * gap, Cfg.HalfH - 1f - half * gap);
+            for (int r = 0; r < side; r++)
+                for (int c = 0; c < side; c++)
+                    SpawnUnit(type, team, center + new float2((c - half) * gap, (r - half) * gap) + rng.NextFloat2(-0.15f, 0.15f), hpMul, dmgMul, regen);
+            return side * side;
         }
 
         // ------------------------------------------------------------------
@@ -437,30 +298,23 @@ namespace HordeLab
         void Update()
         {
             view.Update();
-            if (Input.GetKeyDown(KeyCode.R)) Restart();
-            if (Input.GetKeyDown(KeyCode.Space)) paused = !paused;
 
             fpsFrames++;
             fpsTimer += Time.unscaledDeltaTime;
             if (fpsTimer >= 0.5f) { fps = fpsFrames / fpsTimer; fpsFrames = 0; fpsTimer = 0f; }
             simScheduled = false;
-            if (paused || defeated) return;
-
-            float dt = fixedDt > 0f ? fixedDt : math.min(Time.deltaTime, 1f / 30f);
-            elapsed += dt;
-            volleyCd -= dt;
-            fireCd -= dt;
-
-            if (!MouseOverHud())
-            {
-                float2 mouse = view.MouseWorld;
-                if (Input.GetMouseButton(0) && volleyCd <= 0f) CastVolley(mouse);
-                if (Input.GetMouseButton(1) && fireCd <= 0f) CastFire(mouse);
-            }
-            Reinforce(dt);
+            if (!simulate || paused) return;
 
             sw.Restart();
-            ScheduleSimulation(dt);
+            int steps = math.max(1, speed);
+            for (int s = 0; s < steps; s++)
+            {
+                float dt = fixedDt > 0f ? fixedDt : math.min(Time.deltaTime, 1f / 30f);
+                elapsed += dt;
+                onStep?.Invoke(dt);
+                ScheduleSimulation(dt);
+                if (s < steps - 1) simHandle.Complete();   // tua nhanh: chạy xong bước này mới tới bước sau
+            }
             simScheduled = true;
         }
 
@@ -473,23 +327,23 @@ namespace HordeLab
 
             var h = new BuildGridJob
             {
-                units = units, counters = counters, cellStart = cellStart, cursor = cursor, teamCount = teamCount,
-                cellOf = cellOf, sortedIndex = sortedIndex, sortedPos = sortedPos, sortedTeam = sortedTeam
+                units = units, stats = stats, counters = counters, cellStart = cellStart, cursor = cursor, teamCount = teamCount,
+                cellOf = cellOf, sortedIndex = sortedIndex, sortedPos = sortedPos, sortedInfo = sortedInfo
             }.Schedule();
             h = Mark(0, h);
 
             h = new ThinkMoveJob
             {
                 units = units, stats = stats, counters = counters, cellStart = cellStart, teamCount = teamCount,
-                sortedIndex = sortedIndex, sortedPos = sortedPos, sortedTeam = sortedTeam,
+                sortedIndex = sortedIndex, sortedPos = sortedPos, sortedInfo = sortedInfo,
                 attackTarget = attackTarget, shots = shots, dt = dt, frame = frame
             }.Schedule(nu, 64, h);
             h = Mark(1, h);
 
             h = new ResolveJob
             {
-                units = units, stats = stats, attackTarget = attackTarget, shots = shots, arrows = arrows,
-                particles = particles, counters = counters, seed = rng.NextUInt() | 1u
+                units = units, stats = stats, attackTarget = attackTarget, shots = shots, cellStart = cellStart, sortedIndex = sortedIndex,
+                arrows = arrows, particles = particles, counters = counters, seed = rng.NextUInt() | 1u, summonCount = GameData.SummonCount
             }.Schedule(h);
             h = Mark(2, h);
 
@@ -498,7 +352,7 @@ namespace HordeLab
 
             h = new ArrowLandJob
             {
-                arrows = arrows, units = units, particles = particles, stamps = stamps, counters = counters,
+                arrows = arrows, units = units, stats = stats, particles = particles, stamps = stamps, counters = counters,
                 cellStart = cellStart, sortedIndex = sortedIndex, seed = rng.NextUInt() | 1u
             }.Schedule(h);
             h = Mark(4, h);
@@ -507,10 +361,14 @@ namespace HordeLab
             h = Mark(5, h);
             h = new ParticleCompactJob { particles = particles, stamps = stamps, counters = counters, seed = rng.NextUInt() | 1u }.Schedule(h);
             h = Mark(6, h);
-            h = new DeathJob { units = units, particles = particles, stamps = stamps, counters = counters, seed = rng.NextUInt() | 1u }.Schedule(h);
+            h = new DeathJob
+            {
+                units = units, stats = stats, cellStart = cellStart, sortedIndex = sortedIndex,
+                particles = particles, stamps = stamps, counters = counters, seed = rng.NextUInt() | 1u
+            }.Schedule(h);
             h = Mark(7, h);
 
-            var p1 = new PackUnitsJob { units = units, counters = counters, gpu = unitGpu }.Schedule(Cfg.MaxUnits, 256, h);
+            var p1 = new PackUnitsJob { units = units, stats = stats, counters = counters, gpu = unitGpu }.Schedule(Cfg.MaxUnits, 256, h);
             var p2 = new PackArrowsJob { arrows = arrows, counters = counters, gpu = arrowGpu }.Schedule(Cfg.MaxArrows, 256, h);
             var p3 = new PackParticlesJob { particles = particles, counters = counters, gpu = particleGpu }.Schedule(Cfg.MaxParticles, 1024, h);
             simHandle = JobHandle.CombineDependencies(p1, p2, p3);
@@ -522,6 +380,8 @@ namespace HordeLab
             JobHandle.ScheduleBatchedJobs();
         }
 
+        int drawUnits, drawArrows, drawParticles;   // số phần tử đã đóng gói lần gần nhất (vẫn vẽ được khi mô phỏng đứng yên)
+
         void LateUpdate()
         {
             if (simScheduled)
@@ -529,17 +389,21 @@ namespace HordeLab
                 simHandle.Complete();
                 sw.Stop();
                 simMs = math.lerp(simMs, (float)sw.Elapsed.TotalMilliseconds, 0.1f);
-                castleHp = math.max(0, castleMaxHp - counters[C.Breach]);
-                if (castleHp == 0) defeated = true;
+                drawUnits = counters[C.Units];
+                drawArrows = counters[C.Arrows];
+                drawParticles = counters[C.Particles];
+                unitBuf.SetData(unitGpu, 0, 0, drawUnits);
+                arrowBuf.SetData(arrowGpu, 0, 0, drawArrows);
+                particleBuf.SetData(particleGpu, 0, 0, drawParticles);
             }
-            UploadAndDraw();
+            StampAndDraw();
         }
 
-        void UploadAndDraw()
+        void StampAndDraw()
         {
-            int nu = counters[C.Units], na = counters[C.Arrows], np = counters[C.Particles], ns = counters[C.Stamps];
+            int ns = counters[C.Stamps];
 
-            // Mặt đất sạch (cỏ, tường, nghĩa địa). Làm lại nếu driver đánh mất nội dung RenderTexture.
+            // Mặt đất sạch (cỏ, thành). Làm lại nếu driver đánh mất nội dung RenderTexture.
             stampCmd.Clear();
             if (groundDirty || !groundRT.IsCreated())
             {
@@ -558,89 +422,14 @@ namespace HordeLab
             }
             if (stampCmd.sizeInBytes > 0) Graphics.ExecuteCommandBuffer(stampCmd);
 
-            unitBuf.SetData(unitGpu, 0, 0, nu);
-            arrowBuf.SetData(arrowGpu, 0, 0, na);
-            particleBuf.SetData(particleGpu, 0, 0, np);
-
             Graphics.RenderPrimitives(rpGround, MeshTopology.Triangles, 6, 1);
-            if (nu > 0) Graphics.RenderPrimitives(rpUnits, MeshTopology.Triangles, 6, nu);          // 1 lệnh vẽ cho mọi lính
-            if (na > 0)
+            if (drawUnits > 0) Graphics.RenderPrimitives(rpUnits, MeshTopology.Triangles, 6, drawUnits);   // 1 lệnh vẽ cho mọi lính
+            if (drawArrows > 0)
             {
-                Graphics.RenderPrimitives(rpShadows, MeshTopology.Triangles, 6, na);
-                Graphics.RenderPrimitives(rpArrows, MeshTopology.Triangles, 6, na);
+                Graphics.RenderPrimitives(rpShadows, MeshTopology.Triangles, 6, drawArrows);
+                Graphics.RenderPrimitives(rpArrows, MeshTopology.Triangles, 6, drawArrows);
             }
-            if (np > 0) Graphics.RenderPrimitives(rpParticles, MeshTopology.Triangles, 6, np);
-        }
-
-        // ------------------------------------------------------------------
-        // Giao diện
-        // ------------------------------------------------------------------
-        bool MouseOverHud()
-        {
-            Vector3 m = Input.mousePosition;
-            return hudRect.Contains(new Vector2(m.x, Screen.height - m.y));
-        }
-
-        void EnsureStyles()
-        {
-            if (label != null) return;
-            label = new GUIStyle(GUI.skin.label) { fontSize = 15, fontStyle = FontStyle.Bold, richText = true };
-            label.normal.textColor = new Color(0.93f, 0.91f, 0.86f);
-            small = new GUIStyle(label) { fontSize = 13, fontStyle = FontStyle.Normal, alignment = TextAnchor.MiddleCenter };
-            big = new GUIStyle(label) { fontSize = 34, alignment = TextAnchor.MiddleCenter };
-        }
-
-        static void Fill(Rect r, Color c)
-        {
-            var old = GUI.color;
-            GUI.color = c;
-            GUI.DrawTexture(r, Texture2D.whiteTexture);
-            GUI.color = old;
-        }
-
-        void OnGUI()
-        {
-            if (Event.current.type == EventType.Repaint) view.DrawToScreen();
-            if (!counters.IsCreated) return;
-            EnsureStyles();
-
-            int k0 = counters[C.Type0 + UnitType.Footman], k1 = counters[C.Type0 + UnitType.Archer], k2 = counters[C.Type0 + UnitType.Cavalry];
-            int u0 = counters[C.Type0 + 2], u1 = counters[C.Type0 + 3];
-            int t = (int)elapsed;
-
-            Fill(hudRect, new Color(0.05f, 0.04f, 0.07f, 0.78f));
-            float x = hudRect.x + 12f, y = hudRect.y + 8f, w = hudRect.width - 24f;
-            void Line(string s) { GUI.Label(new Rect(x, y, w, 22f), s, label); y += 22f; }
-
-            Line($"<color=#8fb8ff>VƯƠNG QUỐC</color>  {k0 + k1 + k2:N0} lính   <color=#aaaaaa>({k0:N0} kiếm · {k1:N0} cung · {k2:N0} kỵ)</color>");
-            Line($"<color=#9fe07a>XÁC SỐNG</color>  {u0 + u1:N0} con   <color=#aaaaaa>({u0:N0} zombie · {u1:N0} cung xương)</color>");
-            Line($"Mũi tên đang bay: <color=#ffe08a>{counters[C.Arrows]:N0}</color>    Hạt hiệu ứng: <color=#ffb070>{counters[C.Particles]:N0}</color>");
-            Line($"Đã diệt: <color=#9fe07a>{counters[C.DeadUndead]:N0}</color>    Tử trận: <color=#ff8f8f>{counters[C.DeadKingdom]:N0}</color>");
-            Line($"Thời gian {t / 60:00}:{t % 60:00}    Quái kéo đến: {undeadRate + undeadRateGrowth * elapsed:0}/giây");
-            Line($"FPS <color=#ffffff>{fps:0}</color>    Mô phỏng (Jobs + Burst): <color=#ffffff>{simMs:0.00} ms</color>");
-
-            y += 4f;
-            var bar = new Rect(x, y, w, 16f);
-            Fill(bar, new Color(0.25f, 0.06f, 0.06f));
-            Fill(new Rect(bar.x, bar.y, bar.width * castleHp / (float)castleMaxHp, bar.height), new Color(0.35f, 0.62f, 1f));
-            GUI.Label(new Rect(bar.x, bar.y - 3f, bar.width, 22f), $"Tường thành {castleHp}/{castleMaxHp}", small);
-            y += 22f;
-            string volley = volleyCd <= 0f ? "<color=#9fe07a>sẵn sàng</color>" : $"{volleyCd:0.0}s";
-            string fire = fireCd <= 0f ? "<color=#9fe07a>sẵn sàng</color>" : $"{fireCd:0.0}s";
-            Line($"Mưa tên: {volley}    Hoả ngục: {fire}");
-
-            var help = new Rect(0f, Screen.height - 28f, Screen.width, 28f);
-            Fill(help, new Color(0.05f, 0.04f, 0.07f, 0.78f));
-            GUI.Label(help, $"Chuột trái: Mưa tên    Chuột phải: Hoả ngục    Lăn chuột / + -: Phóng to (x{view.Scale})    WASD / giữ chuột giữa: Di chuyển    Space: Tạm dừng    R: Chơi lại", small);
-
-            if (paused) GUI.Label(new Rect(0f, Screen.height * 0.5f - 30f, Screen.width, 60f), "TẠM DỪNG", big);
-            if (defeated)
-            {
-                var r = new Rect(Screen.width * 0.5f - 330f, Screen.height * 0.5f - 60f, 660f, 120f);
-                Fill(r, new Color(0.08f, 0.02f, 0.02f, 0.85f));
-                GUI.Label(new Rect(r.x, r.y + 10f, r.width, 50f), "THÀNH ĐÃ THẤT THỦ!", big);
-                GUI.Label(new Rect(r.x, r.y + 70f, r.width, 30f), $"Trụ được {t / 60:00}:{t % 60:00} — diệt {counters[C.DeadUndead]:N0} xác sống. Nhấn R để chơi lại.", small);
-            }
+            if (drawParticles > 0) Graphics.RenderPrimitives(rpParticles, MeshTopology.Triangles, 6, drawParticles);
         }
 
         // ------------------------------------------------------------------
@@ -650,7 +439,7 @@ namespace HordeLab
             void D<T>(ref NativeArray<T> a) where T : struct { if (a.IsCreated) a.Dispose(); }
             D(ref units); D(ref stats); D(ref arrows); D(ref particles); D(ref stamps); D(ref counters);
             D(ref cellStart); D(ref cursor); D(ref teamCount); D(ref cellOf); D(ref sortedIndex);
-            D(ref sortedPos); D(ref sortedTeam); D(ref attackTarget); D(ref shots);
+            D(ref sortedPos); D(ref sortedInfo); D(ref attackTarget); D(ref shots);
             D(ref unitGpu); D(ref arrowGpu); D(ref particleGpu);
 
             unitBuf?.Release(); arrowBuf?.Release(); particleBuf?.Release(); stampBuf?.Release();

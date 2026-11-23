@@ -1,4 +1,4 @@
-// Mũi tên + bóng của nó. Cùng 1 shader, 2 material: _Shadow = 0 (mũi tên) / 1 (bóng trên mặt đất).
+// Đạn (mũi tên, đá, lao, cầu phép...) + bóng của nó. Cùng 1 shader, 2 material: _Shadow = 0 (mũi tên) / 1 (bóng trên mặt đất).
 Shader "Horde/Arrows"
 {
     Properties
@@ -26,11 +26,11 @@ Shader "Horde/Arrows"
             #include "UnityCG.cginc"
             #include "HordeCommon.cginc"
 
-            struct ArrowGpu { float4 a; float4 b; };   // a: xy mặt đất, z độ cao, w phe | b: x góc bay, y góc bóng
+            struct ArrowGpu { float4 a; float4 b; };   // a: xy mặt đất, z độ cao, w loại đạn | b: x góc bay, y góc bóng
             StructuredBuffer<ArrowGpu> _Arrows;
             sampler2D _MainTex;
             float _Shadow;
-            float4 _ArrowSize;                         // x = dài, y = rộng, z = PPU
+            float4 _ArrowSize;                         // x = dài, y = rộng, z = PPU, w = số loại đạn (số hàng trong texture)
 
             struct v2f
             {
@@ -55,7 +55,7 @@ Shader "Horde/Arrows"
 
                 v2f o;
                 o.pos = mul(UNITY_MATRIX_VP, float4(SnapToPixel(basePos, _ArrowSize.z) + rotated, z, 1.0));
-                o.uv = float2(c.x + 0.5, ((c.y + 0.5) + (1.0 - g.a.w)) * 0.5);
+                o.uv = float2(c.x + 0.5, ((c.y + 0.5) + (_ArrowSize.w - 1.0 - g.a.w)) / _ArrowSize.w);   // hàng 0 nằm trên cùng
                 return o;
             }
 
