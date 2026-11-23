@@ -1,0 +1,15 @@
+# Giữ nguyên LF như Unity ghi ra, tránh diff giả do đổi xuống dòng
+* text=auto eol=lf
+
+# File nhị phân
+*.png binary
+*.jpg binary
+*.psd binary
+*.fbx binary
+*.wav binary
+*.mp3 binary
+*.ogg binary
+*.ttf binary
+*.otf binary
+*.dll binary
+*.exe binary
