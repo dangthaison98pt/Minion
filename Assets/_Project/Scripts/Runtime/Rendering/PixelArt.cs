@@ -11,7 +11,7 @@ namespace HordeLab
     /// </summary>
     public static partial class PixelArt
     {
-        // Ô atlas 16x16: lính bộ 10x10 vẽ ở giữa ô, quân to dùng trọn 16x16. 4 khung hình x (26 loại x 2 trạng thái)
+        // Ô atlas 16x16: lính bộ 10x10 (12x12 tính cả viền) vẽ ở giữa ô, quân to dùng trọn 16x16. 4 khung hình x (26 loại x 2 trạng thái)
         public const int UnitCell = 16, InfantryPx = 10, UnitCols = 4, UnitRows = UnitType.Count * 2;
         public const int StampPx = 20, StampCols = 8, StampRows = 3 + (UnitType.Count * 2 + StampCols - 1) / StampCols;
         public const int ProjW = 12, ProjH = 3;   // mỗi loại đạn 1 hàng 12x3 pixel
@@ -198,8 +198,27 @@ namespace HordeLab
             }
         }
 
-        /// <summary>Vẽ 1 khung hình của 1 loại quân, quay mặt sang phải. Lính bộ trả về 10x10, quân to 16x16.</summary>
+        /// <summary>
+        /// Vẽ 1 khung hình của 1 loại quân, quay mặt sang phải, đã có viền.
+        /// Lính bộ vẽ trong 10x10 rồi đặt vào khung 12x12 (chừa 1 pixel mỗi bên cho viền), quân to 16x16.
+        /// </summary>
         public static Canvas DrawUnit(int type, int state, int f)
+        {
+            var s = DrawBody(type, state, f);
+            if (s.W == InfantryPx)
+            {
+                var padded = new Canvas(InfantryPx + 2, InfantryPx + 2);
+                padded.Blit(s, 1, 1);
+                s = padded;
+            }
+            AddOutline(s);
+            return s;
+        }
+
+        /// <summary>Lính bộ (không phải quân to 16x16)?</summary>
+        public static bool IsInfantry(Canvas sprite) => sprite.W < UnitCell;
+
+        static Canvas DrawBody(int type, int state, int f)
         {
             switch (type)
             {
@@ -259,7 +278,6 @@ namespace HordeLab
 
             if (k.shield) { s.Set(2, 4 + bob, k.sh1); s.Set(2, 5 + bob, k.sh2); s.Set(2, 6 + bob, k.sh1); }
             Weapon(s, k, walk, f, bob);
-            AddOutline(s);
             return s;
         }
 
@@ -475,7 +493,6 @@ namespace HordeLab
                 }
             }
 
-            AddOutline(s);
             return s;
         }
 
@@ -502,21 +519,20 @@ namespace HordeLab
             s.Set(8, 10, BarkDark); s.Set(9, 8, BarkDark);
             // mắt + miệng
             s.Set(8, 7, Gold); s.Set(10, 7, Gold); s.Set(9, 9, Outline); s.Set(10, 9, Outline);
-            // tán lá
-            for (int y = 0; y <= 5; y++)
+            // tán lá (từ hàng 1, chừa hàng 0 cho viền)
+            for (int y = 1; y <= 6; y++)
                 for (int x = 2; x <= 13; x++)
                 {
-                    float dx = x - 7.5f - sway, dyy = (y - 3f) * 1.6f;
+                    float dx = x - 7.5f - sway, dyy = (y - 4f) * 1.6f;
                     if (dx * dx + dyy * dyy > 30f) continue;
-                    s.Set(x, y, ((x * 7 + y * 13) % 5 == 0) ? LeafLight : (x + sway < 6 || y > 4) ? LeafDark : Leaf);
+                    s.Set(x, y, ((x * 7 + y * 13) % 5 == 0) ? LeafLight : (x + sway < 6 || y > 5) ? LeafDark : Leaf);
                 }
-            // tay cành
+            // tay cành (không chạm cột 15 để còn chỗ cho viền)
             Box(s, 3, 7, 4, 8, BarkDark); s.Set(2, 9, BarkDark); s.Set(2, 6, Leaf);
             if (walk) { Box(s, 11, 7, 12, 8, Bark); s.Set(13, 9, Bark); s.Set(13, 6, Leaf); }
             else if (f == 0) { Box(s, 11, 5, 12, 6, Bark); s.Set(13, 4, Bark); s.Set(14, 3, Bark); s.Set(14, 2, Leaf); }       // giơ cành
-            else if (f == 1) { Box(s, 11, 6, 12, 7, Bark); s.Set(13, 6, Bark); s.Set(14, 5, Bark); s.Set(15, 5, Leaf); }
-            else { Box(s, 11, 8, 12, 9, Bark); s.Set(13, 9, Bark); s.Set(14, 10, Bark); s.Set(15, 11, Bark); s.Set(15, 10, Leaf); } // quật xuống
-            AddOutline(s);
+            else if (f == 1) { Box(s, 11, 6, 12, 7, Bark); s.Set(13, 6, Bark); s.Set(14, 5, Bark); s.Set(14, 4, Leaf); }
+            else { Box(s, 11, 8, 12, 9, Bark); s.Set(13, 9, Bark); s.Set(14, 10, Bark); s.Set(14, 11, Leaf); }                 // quật xuống
             return s;
         }
 
@@ -544,10 +560,9 @@ namespace HordeLab
             // tay trước + vuốt
             if (walk) { Box(s, 12, 7 + bob, 13, 9 + bob, FurBrown); s.Set(13, 10 + bob, White); }
             else if (f == 0) { Box(s, 12, 3, 13, 5, FurBrown); s.Set(13, 2, White); s.Set(14, 2, White); }                   // giơ vuốt
-            else if (f == 1) { Box(s, 12, 5, 14, 6, FurBrown); s.Set(15, 5, White); s.Set(15, 6, White); }
-            else if (f == 2) { Box(s, 12, 7, 14, 8, FurBrown); s.Set(15, 8, White); s.Set(15, 9, White); }                   // tát ngang
+            else if (f == 1) { Box(s, 12, 5, 13, 6, FurBrown); s.Set(14, 5, White); s.Set(14, 6, White); }
+            else if (f == 2) { Box(s, 12, 7, 13, 8, FurBrown); s.Set(14, 8, White); s.Set(14, 9, White); }                   // tát ngang
             else { Box(s, 12, 8, 13, 10, FurBrown); s.Set(14, 11, White); }
-            AddOutline(s);
             return s;
         }
 
@@ -578,11 +593,10 @@ namespace HordeLab
             }
             else
             {
-                s.Set(9, 5, wood); s.Set(10, 4, wood); s.Set(11, 3, wood); s.Set(11, 2, wood); s.Set(12, 1, wood);
-                Box(s, 12, 0, 13, 1, dark);
-                if (f == 2) s.Set(14, 0, Rgb(150, 146, 156));   // đá vừa rời muỗng
+                s.Set(9, 5, wood); s.Set(10, 4, wood); s.Set(11, 3, wood); s.Set(11, 2, wood);
+                Box(s, 12, 1, 13, 2, dark);
+                if (f == 2) s.Set(14, 1, Rgb(150, 146, 156));   // đá vừa rời muỗng
             }
-            AddOutline(s);
             return s;
         }
 
@@ -606,9 +620,8 @@ namespace HordeLab
             Box(s, 7, 11, 8, 12, walk && (f & 1) == 1 ? Steel : Wood);
             s.Set(6, 10, Wood); s.Set(9, 13, Wood); s.Set(9, 10, Wood); s.Set(6, 13, Wood);
             // lửa đầu nòng
-            if (!walk && f == 0) { Box(s, 13, 7, 15, 9, Rgb(255, 222, 80)); s.Set(15, 6, Rgb(255, 142, 30)); s.Set(15, 10, Rgb(255, 142, 30)); s.Set(14, 8, White); }
-            else if (!walk && f == 1) { s.Set(14, 7, Rgb(118, 112, 108)); s.Set(15, 6, Rgb(118, 112, 108)); s.Set(15, 8, Rgb(66, 60, 62)); }
-            AddOutline(s);
+            if (!walk && f == 0) { Box(s, 13, 7, 14, 9, Rgb(255, 222, 80)); s.Set(14, 6, Rgb(255, 142, 30)); s.Set(14, 10, Rgb(255, 142, 30)); s.Set(13, 8, White); }
+            else if (!walk && f == 1) { s.Set(13, 7, Rgb(118, 112, 108)); s.Set(14, 6, Rgb(118, 112, 108)); s.Set(14, 8, Rgb(66, 60, 62)); }
             return s;
         }
 
@@ -641,7 +654,6 @@ namespace HordeLab
                 else if (f == 2) { s.Set(8, 5, Void1); s.Set(9, 6, VoidGlow); }
                 else s.Set(8, 6, Void1);
             }
-            AddOutline(s);
             return s;
         }
 
@@ -664,7 +676,6 @@ namespace HordeLab
             else if (f == 1) { s.Set(7, 4, b); s.Set(8, 4, wisp); s.Set(9, 3, wisp); s.Set(9, 4, VoidEye); }
             else if (f == 2) { s.Set(7, 5, b); s.Set(8, 5, wisp); s.Set(9, 6, wisp); s.Set(9, 5, VoidEye); }
             else { s.Set(7, 5, b); s.Set(8, 6, wisp); s.Set(8, 7, VoidEye); }
-            AddOutline(s);
             return s;
         }
 
@@ -691,7 +702,6 @@ namespace HordeLab
             s.Set(5, 7 + bob, Void2); s.Set(5 + w, 8, Void1);
             s.Set(6, 7 + bob, Void2);
             if (glow) { s.Set(8, 3 + bob, VoidGlow); s.Set(9, 4 + bob, VoidGlow); }
-            AddOutline(s);
             return s;
         }
 
@@ -717,7 +727,6 @@ namespace HordeLab
                 int r = 8 + (f % 2);
                 s.Set(r, 1, VoidEye); s.Set(r + (r < 9 ? 1 : 0), 3, VoidEye); s.Set(r, 5, VoidEye);
             }
-            AddOutline(s);
             return s;
         }
 
@@ -732,7 +741,6 @@ namespace HordeLab
             s.Set(4, 4 - hop, Void2);                                                  // sừng nhỏ
             s.Set(3, 8, Void3); s.Set(6, 8, Void3);
             if (!walk && (f == 1 || f == 2)) { s.Set(7, 6, Void1); s.Set(8, 6, VoidGlow); }   // cắn
-            AddOutline(s);
             return s;
         }
 
@@ -779,7 +787,7 @@ namespace HordeLab
                 {
                     int cell = StampCell.Corpse + t * 2 + v;
                     // quân to (xe, thú cưỡi) nằm nguyên chiều, lính bộ ngã xoay 90°
-                    var lying = body.W > InfantryPx && (t == UnitType.Catapult || t == UnitType.Cannon) ? body : Rotate(body, v == 0);
+                    var lying = (t ==UnitType.Catapult || t == UnitType.Cannon) ? body : Rotate(body, v == 0);
                     a.Blit(lying, (cell % StampCols) * S + pad, (cell / StampCols) * S + pad);
                 }
             }

@@ -19,23 +19,31 @@ Phần mô phỏng vẫn là lõi "vạn quân" cũ: **Job System + Burst + GPU 
 3. Muốn ra file `.exe`: menu **Horde Lab → Build Windows (.exe)** → nằm ở `Build/HordeLab.exe`.
 
 ## Cách chơi
+0. **Menu chính:** *Continue* chơi tiếp lượt đang lưu, *New run* bắt đầu lượt mới (ghi đè bản lưu), *Quit*.
+   Lượt chơi **tự lưu** sau mỗi thay đổi lúc chuẩn bị và khi xong một đợt (file `run.json` trong `Application.persistentDataPath`).
+   Thoát giữa trận thì lần sau quay lại lúc chuẩn bị của đợt đó.
 1. **Chọn phe.** 3 trong 4 phe còn lại thành kẻ thù; mỗi đợt 1 phe trong số đó tấn công.
 2. **Chuẩn bị (giữa các đợt):**
-   - Kéo thẻ từ tay thả vào ô trống của lưới thành để xây (lưới bắt đầu 3×3).
+   - Kéo thẻ từ tay thả vào ô trống của lưới thành để xây (lưới bắt đầu 3×3). Hoặc bấm chọn thẻ rồi bấm vào ô.
+   - Lăn chuột trên lưới để đổi cỡ ô, giữ chuột phải / giữa để kéo lưới.
    - Kéo thẻ lên nhà cùng loại, cùng sao để **gộp** (tối đa 4 sao). Kéo công trình sang ô khác để gộp hoặc đổi chỗ.
    - Thẻ **Mở rộng đất**: thả vào ô sát cạnh lưới để mở thêm ô.
-   - **Cửa hàng** (góc phải): mua thẻ bằng Tinh thể năng lượng, có nút làm mới.
+   - **Cửa hàng** (góc phải): mua thẻ bằng Tinh thể năng lượng, có nút làm mới. Nút **Lock** giữ thẻ ở ô đó qua các lần làm mới.
+   - **Bán:** kéo thẻ hoặc công trình vào ô *SELL* để lấy Tinh thể (nhà n sao = 2^(n-1) nhà gộp lại nên được ngần ấy lần).
+     Công trình 1 sao còn kéo ngược về tay được; nhà đã gộp thì không tách ra được, chỉ bán.
    - Rê chuột vào thẻ / công trình để xem chi tiết; nhà buff sẽ tô viền vàng các ô nó tác động.
 3. **Bắt đầu đợt** → chỉ ngồi xem. Nhà lính viền đỏ = đã hồi xong nhưng đang chờ đủ tài nguyên.
 4. Hết đợt: chọn 1 trong 3 thẻ + nhận Tinh thể. Thành thất thủ thì mất 1 trong 3 tim nhưng vẫn sang đợt sau và vẫn nhận thưởng.
+5. Thắng hoặc thua cả lượt: chọn *New run* hoặc *Main menu*.
 
 | Phím | Tác dụng |
 |---|---|
+| Esc | Bỏ chọn thẻ, hoặc mở / đóng menu tạm dừng (*Save & quit to menu*, *Abandon run*) |
 | Space | Tạm dừng (trong trận) |
 | Tab | Tua nhanh x1 → x2 → x4 |
-| Lăn chuột / `+` `-` | Phóng to thêm tới 5 nấc (luôn pixel-perfect) |
-| WASD / giữ chuột giữa | Di chuyển camera |
-| R | Chơi lại (ở màn hình thắng / thua) |
+| Lăn chuột trên chiến trường / `+` `-` | Phóng to thêm tới 5 nấc (luôn pixel-perfect) |
+| WASD / phím mũi tên / giữ chuột giữa | Di chuyển camera |
+| Lăn chuột / giữ chuột phải trên lưới thành | Đổi cỡ ô / kéo lưới |
 
 ## Đã làm theo GDD
 - **Vòng lặp chính:** chuẩn bị bằng thẻ → trận tự động, kinh tế + chiến đấu thời gian thực, nhà lính chờ khi thiếu tài nguyên.
@@ -59,20 +67,24 @@ Tất cả nằm trong class `Tuning` và bảng dữ liệu ở [`GameData.cs`]
 | Gộp thẳng từ tay | Có (`MergeFromHand`) |
 | Gộp phải đứng cạnh nhau | Không |
 | Gộp lúc nào | Chỉ giữa các đợt |
-| Mỗi sao tăng gì | Nhà tài nguyên / nhà lính: sản lượng, số tiểu đội và chi phí ×1/2/4/8. Nhà buff: độ mạnh ×1/1.5/2/2.5 |
+| Mỗi sao tăng gì | Nhà tài nguyên: sản lượng ×1/2/4/8. Nhà lính: vẫn 1 tiểu đội mỗi lần gọi, máu + sát thương lính ×1/1.4/1.8/2.2, chi phí mỗi lần gọi ×1/1.5/2/2.5. Nhà buff: độ mạnh ×1/1.5/2/2.5, cộng dồn tối đa +150% (Kho quân nhu giảm chi phí tối đa 60%) |
+| Bán thẻ / công trình | 1 Tinh thể × số nhà 1 sao đã gộp vào |
+| Giới hạn quân ta | 4.000 lính trên sân; quá mức thì nhà lính tạm ngừng gọi |
 | Tinh thể thưởng mỗi đợt | `3 + đợt / 3` |
-| Cửa hàng | 4 thẻ, giá 3–5, roll giá 1, roll thay hết thẻ, tự làm mới miễn phí sau mỗi đợt |
+| Cửa hàng | 4 thẻ, giá 3–5, roll giá 1, roll thay mọi ô không bị khoá, tự làm mới miễn phí sau mỗi đợt |
 | Trùm | Chưa thiết kế → tạm là đợt đông hơn 60% và mạnh hơn 25% |
 | Phép hỗ trợ trong trận | Chưa có |
 | Công thức ghép khác loại | Chưa có |
 | Xác suất sự kiện đổi phe thù địch | 25% sau mỗi đợt |
 | Bộ thẻ khởi đầu | 2 nhà lính đầu của phe + 2 Nhà gỗ + Đồng lúa + Trại đốn gỗ + Mỏ vàng; kho 30 mỗi loại |
 | Tài nguyên giữa các đợt | Giữ nguyên, không reset |
-| Máu thành | 100, mỗi tên địch lọt qua tường trừ 1 |
+| Máu thành | 300, mỗi đòn địch đánh trúng tường thành trừ 1 |
 | Quy mô đợt địch | `5 + 2.2·đợt + 0.16·đợt²` tiểu đội, mạnh thêm 4% mỗi đợt |
 | Mọi chỉ số quân, chi phí, chu kỳ nhà | Số khởi điểm, chưa cân bằng |
 
-Ngoài GDD, có thêm 2 thứ cho dễ chơi: kéo công trình để **đổi chỗ**, và **tua nhanh** x2/x4. Còn một lưới an toàn:
+Ngoài GDD, có thêm vài thứ cho dễ chơi: kéo công trình để **đổi chỗ**, **tua nhanh** x2/x4, **bán** thẻ / công trình,
+**khoá ô** cửa hàng, **tự lưu** lượt chơi.
+Tầm bắn và tốc độ đi của mọi quân nhân 0,6 (`RangeScale`, `SpeedScale`) cho vừa chiến trường 96 × 54. Còn một lưới an toàn:
 nếu địch đã đến hết mà 150 giây sau trận vẫn chưa ngã ngũ thì tính là địch rút (phòng hai bên kẹt nhau mãi).
 
 ## Cấu trúc thư mục
@@ -86,10 +98,13 @@ Assets/
       │  ├─ Core/                  hằng số, struct dữ liệu, bảng công trình / quân / phe, số tạm
       │  ├─ Simulation/            Burst Job
       │  ├─ Rendering/             camera pixel-perfect, sprite vẽ bằng code
-      │  ├─ Gameplay/              lượt chơi, lưới thành, chiến trường, giao diện
+      │  ├─ Gameplay/              lượt chơi, lưới thành, chiến trường
+      │  ├─ UI/                    giao diện uGUI + TextMesh Pro
       │  └─ Tools/                 bot chơi thử, đo hiệu năng
       └─ Editor/                 ← assembly HordeLab.Editor (chỉ có trong Editor)
+Assets/TextMesh Pro/              ← tài nguyên mặc định của TextMesh Pro (Unity tạo, đừng sửa)
 Docs/GDD.md                      ← tài liệu thiết kế
+Docs/Screenshots/                ← ảnh chụp màn hình + atlas sprite xuất ra PNG
 Build/                           ← bản build (.gitignore)
 ```
 
@@ -98,16 +113,17 @@ Build/                           ← bản build (.gitignore)
 |---|---|
 | `Runtime/Core/Config.cs` | Hằng số, mã phe / loại quân, struct `Unit` / `Arrow` / `Particle` — mỗi lính chỉ là 1 struct |
 | `Runtime/Core/GameData.cs` | `Tuning` (mọi số tạm), bảng 5 phe, 26 loại quân, 49 lá thẻ / công trình |
-| `Runtime/Gameplay/Game.cs` | Lượt chơi: pha, tim, đợt, phe thù địch, thẻ trên tay, cửa hàng, phần thưởng, quân địch kéo đến |
+| `Runtime/Gameplay/Game.cs` | Lượt chơi: menu, lưu / nạp (`SaveData`), pha, tim, đợt, phe thù địch, thẻ trên tay, cửa hàng (khoá ô), bán, phần thưởng, quân địch kéo đến, sandbox nền menu |
 | `Runtime/Gameplay/City.cs` | Lưới thành: đặt / gộp / mở ô, tính buff, sinh tài nguyên, nhà lính gọi quân |
-| `Runtime/Gameplay/GameUI.cs` | Giao diện IMGUI + kéo thả thẻ |
+| `Runtime/UI/GameUi.cs` | Giao diện uGUI: menu chính, chọn phe, HUD, lưới thành, tay bài, cửa hàng, ô bán, phần thưởng, tooltip, kéo thả |
+| `Runtime/UI/UiKit.cs` | Hàm dựng giao diện bằng code (panel, nút, chữ TextMesh Pro, khung gỗ pixel) |
 | `Runtime/Gameplay/Battle.cs` | Chiến trường: cấp phát mảng, xếp lịch Job, upload lên GPU. Không biết gì về thẻ bài |
 | `Runtime/Simulation/SimJobs.cs` | Toàn bộ mô phỏng dạng Burst Job: lưới không gian, AI từng loại quân, đòn đánh, đạn, hạt, cái chết |
 | `Runtime/Rendering/PixelView.cs` | Camera pixel-perfect: vẽ vào RenderTexture độ phân giải thấp rồi phóng nguyên lần |
-| `Runtime/Rendering/PixelArt.cs` | "Vẽ" toàn bộ sprite bằng code (26 loại quân, xác, máu, đạn, mặt đất, thành, biểu tượng) |
+| `Runtime/Rendering/PixelArt.cs` | "Vẽ" toàn bộ sprite bằng code (26 loại quân, xác, máu, đạn, mặt đất, thành, biểu tượng). `DrawUnit` tự thêm viền đen |
 | `Runtime/Rendering/PixelArtTiles.cs` | Tranh ô công trình nhìn từ trên xuống (32×32 / ô, ghép từ nhà, cây, hàng rào...) và khung giao diện gỗ kiểu pixel |
 | `Resources/Shaders/*.shader` | Shader instancing đọc `StructuredBuffer`, tạo quad từ `SV_VertexID` |
-| `Runtime/Tools/AutoShot.cs` | Bot chơi thử + chụp màn hình: `-autoshot <thư mục> [-faction 0..4] [-waves N] [-stress 20000]` |
+| `Runtime/Tools/AutoShot.cs` | Bot chơi thử + chụp màn hình: `-autoshot <thư mục> [-faction 0..4] [-waves N] [-stress 20000] [-savetest]` |
 | `Runtime/Tools/Benchmark.cs` | Đo chi phí từng job, seed + dt cố định: `-batchmode -bench <file.txt> [-stress 20000]` |
 | `Editor/HordeBuild.cs` | Menu **Horde Lab**: tạo lại scene, xuất atlas sprite ra PNG, build file `.exe` |
 
@@ -117,6 +133,8 @@ Build/                           ← bản build (.gitignore)
 - **Thêm nhà buff:** thêm mã vào `B`, 1 dòng trong `BuildBuildings`, 1 `case` trong `City.Recompute`.
 - **Thay hình:** thay các hàm `Draw*` trong `PixelArt.cs`. Atlas lính: ô 16×16, 4 cột (khung hình) × 52 hàng
   (`loại * 2 + trạng thái`, 0 = đi, 1 = đánh), quay mặt sang phải; lính bộ vẽ 10×10 ở giữa ô.
+  Không tự gọi `AddOutline`: `DrawUnit` tự thêm viền (lính bộ được chừa sẵn 1 pixel mỗi bên). Quân to 16×16 phải
+  **chừa trống hàng / cột sát mép** cho viền, không thì chỗ đó bị hở viền.
 - **Thay tranh công trình:** mỗi công trình là 1 `case` trong `DrawTile` (PixelArtTiles.cs), vẽ trên ô 32×32.
   Menu **Horde Lab → Xuất atlas sprite ra PNG** để xem nhanh (`Docs/Screenshots/atlas_*.png`).
 
@@ -125,7 +143,8 @@ Build/                           ← bản build (.gitignore)
 Build\HordeLab.exe -autoshot ketqua -faction 0 -waves 5
 ```
 Bot chọn phe, đặt thẻ, mua đồ, đánh 5 đợt, chụp màn hình từng pha và ghi kết quả từng đợt vào `ketqua\stats.txt`.
-Thêm `-batchmode` để chạy ngầm, nhanh hết mức (không chụp hình).
+Thêm `-batchmode` để chạy ngầm, nhanh hết mức (không chụp hình). Bot mặc định không ghi file lưu, để khỏi đè lượt chơi thật;
+thêm `-savetest` để thử cả phần lưu / nạp (ghi vào `run_autotest.json`).
 
 ```
 Build\HordeLab.exe -batchmode -bench ketqua.txt -stress 20000

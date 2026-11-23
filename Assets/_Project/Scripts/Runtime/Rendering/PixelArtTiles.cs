@@ -526,10 +526,11 @@ namespace HordeLab
 
             // khoảnh đất phía trước + lính gác
             var guard = DrawUnit(unit, 0, 0);
-            int gx = TilePx - guard.W - (guard.W > InfantryPx ? 1 : 3), gy = TilePx - guard.H - (guard.W > InfantryPx ? 1 : 2);
-            if (f != Faction.Void) Patch(t, gx + guard.W / 2, gy + guard.H - 3, guard.W * 0.55f, 3.5f, D1, D2);
+            bool infantry = IsInfantry(guard);                                                  // lính bộ có sẵn 1 pixel viền trống quanh hình
+            int gx = TilePx - guard.W - (infantry ? 2 : 1), gy = TilePx - guard.H - 1;
+            if (f != Faction.Void) Patch(t, gx + guard.W / 2, gy + guard.H - (infantry ? 4 : 3), (infantry ? InfantryPx : guard.W) * 0.55f, 3.5f, D1, D2);
             t.Blit(guard, gx, gy);
-            if (guard.W <= InfantryPx)                                                          // lính bộ: thêm 1 người nữa cho ra dáng tiểu đội
+            if (infantry)                                                        // lính bộ: thêm 1 người nữa cho ra dáng tiểu đội
             {
                 var second = DrawUnit(unit, 0, 1);
                 t.Blit(second, gx - 9, gy + 1);
