@@ -526,7 +526,8 @@ namespace HordeLab
 
             crystalText.Set(g.crystals.ToString());
             if (Over(crystalHot)) tipText = "<b>Energy Crystal</b>\nSpent between waves only: buy cards and reroll the shop." +
-                $"\n\n<b>Interest</b>: at the end of each wave you get +1 for every {Tuning.InterestStep} you hold (max +{Tuning.InterestMax})." +
+                $"\n\nEach wave: +{Tuning.CrystalReward}, +{Tuning.WinBonus} more if the castle holds." +
+                $"\n<b>Interest</b>: at the end of each wave you get +1 for every {Tuning.InterestStep} you hold (max +{Tuning.InterestMax})." +
                 $"\nYou hold {g.crystals} now: <color=#8fe8ff>+{Tuning.Interest(g.crystals)}</color>";
             for (int i = 0; i < ResId.Count; i++)
             {
@@ -930,8 +931,11 @@ namespace HordeLab
                 rewardGroup.interactable = pop >= 1f && !PauseOpen;
                 ((RectTransform)reward.GetChild(0)).anchoredPosition = new Vector2(0f, -(1f - pop) * 50f);
                 rewardTitle.Set(g.lastWon ? $"<color=#9fe07a>WAVE {g.lastWave}: CASTLE HELD!</color>" : $"<color=#ff8f8f>WAVE {g.lastWave}: CASTLE FELL — 1 heart lost</color>");
-                rewardSub.Set($"You gain <color=#8fe8ff>+{g.lastCrystals + g.lastInterest} Energy Crystals</color>" +
-                              (g.lastInterest > 0 ? $" <color=#aaaaaa>({g.lastCrystals} reward + {g.lastInterest} interest)</color>" : "") +
+                var parts = new StringBuilder().Append(g.lastCrystals).Append(" reward");
+                if (g.lastWinBonus > 0) parts.Append(" + ").Append(g.lastWinBonus).Append(" win");
+                if (g.lastInterest > 0) parts.Append(" + ").Append(g.lastInterest).Append(" interest");
+                rewardSub.Set($"You gain <color=#8fe8ff>+{g.lastCrystals + g.lastWinBonus + g.lastInterest} Energy Crystals</color>" +
+                              $" <color=#aaaaaa>({parts})</color>" +
                               $". Pick 1 of {g.reward.Length} cards:");
                 rewardEvent.Set(string.IsNullOrEmpty(g.eventNote) ? "" : $"Event: {g.eventNote}");
                 for (int i = 0; i < rewardCards.Length; i++)

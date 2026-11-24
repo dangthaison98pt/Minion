@@ -39,7 +39,7 @@ Phần mô phỏng vẫn là lõi "vạn quân" cũ: **Job System + Burst + GPU 
      Công trình nào cũng kéo ngược về tay được (thành thẻ giữ số sao).
    - Rê chuột vào thẻ / công trình để xem chi tiết; nhà buff sẽ tô viền vàng các ô nó tác động.
 3. **Bắt đầu đợt** → chỉ ngồi xem. Góc trên ghi *Enemies left*: số địch còn lại / tổng quân cả đợt (tính cả các tiểu đội chưa kéo đến). Nhà lính viền đỏ = đã hồi xong nhưng đang chờ đủ tài nguyên.
-4. Hết đợt: chọn 1 trong 3 thẻ + nhận Tinh thể, cộng **lãi** +1 cho mỗi 10 Tinh thể đang giữ (tối đa +5, như TFT) nên để dành cũng có lợi. Thành thất thủ thì mất 1 trong 3 tim nhưng vẫn sang đợt sau và vẫn nhận thưởng.
+4. Hết đợt: chọn 1 trong 3 thẻ + nhận 5 Tinh thể (+1 nếu giữ được thành), cộng **lãi** +1 cho mỗi 10 Tinh thể đang giữ (tối đa +5, như TFT) nên để dành cũng có lợi. Thành thất thủ thì mất 1 trong 3 tim nhưng vẫn sang đợt sau và vẫn nhận thưởng.
 5. Thắng hoặc thua cả lượt: chọn *New run* hoặc *Main menu*.
 
 | Phím | Tác dụng |
@@ -76,7 +76,7 @@ Tất cả nằm trong class `Tuning` và bảng dữ liệu ở [`GameData.cs`]
 | Mỗi sao tăng gì | Nhà tài nguyên: sản lượng ×1/2/4/8. Nhà lính: vẫn 1 tiểu đội mỗi lần gọi, máu + sát thương lính ×1/1.4/1.8/2.2, chi phí mỗi lần gọi ×1/1.5/2/2.5. Nhà buff: độ mạnh ×1/1.5/2/2.5, cộng dồn tối đa +150% (Kho quân nhu giảm chi phí tối đa 60%) |
 | Bán thẻ / công trình | 1 Tinh thể × số nhà 1 sao đã gộp vào |
 | Giới hạn quân ta | 4.000 lính trên sân; quá mức thì nhà lính tạm ngừng gọi |
-| Tinh thể thưởng mỗi đợt | `6 + đợt / 2` (đợt 1: 6, đợt 10: 11, đợt 30: 21); vào game có sẵn 5 |
+| Tinh thể thưởng mỗi đợt | Cố định 5 như TFT, giữ được thành thêm +1, thua không có (`CrystalReward`, `WinBonus`); vào game có sẵn 5 |
 | Lãi Tinh thể | Hết mỗi đợt: +1 cho mỗi 10 Tinh thể đang giữ (tính trước khi cộng thưởng), tối đa +5 như TFT (`InterestStep`, `InterestMax`) |
 | Cửa hàng | 4 thẻ, giá 3–5, roll giá 1, roll thay mọi ô không bị khoá, tự làm mới miễn phí sau mỗi đợt |
 | Trùm | Chưa thiết kế → tạm là đợt đông hơn 60% và mạnh hơn 25% |

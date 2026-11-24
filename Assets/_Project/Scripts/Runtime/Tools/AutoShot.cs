@@ -164,7 +164,7 @@ namespace HordeLab
             {
                 if (game.phase == Phase.Reward)
                 {
-                    log.AppendLine($"    tinh thể: thưởng +{game.lastCrystals}, lãi +{game.lastInterest} → còn {game.crystals}");
+                    log.AppendLine($"    tinh thể: thưởng +{game.lastCrystals}, thắng +{game.lastWinBonus}, lãi +{game.lastInterest} → còn {game.crystals}");
                     if (played == 1 && !Headless)
                     {
                         yield return new WaitForSecondsRealtime(0.45f); Shot("05a_san_dang_toi.png");      // giữa lúc dọn sân
