@@ -721,8 +721,10 @@ namespace HordeLab
                     var u = GameData.Units[f * 5 + s];
                     var row = Img(p, White, Slot).At(18f, 204f + s * 74f, w - 36f, 68f);
                     Img(row.transform, UnitIcons[f * 5 + s], Color.white).At(2f, 2f, 64f, 64f);
-                    Txt(row.transform, u.name, 17f, TextAlignmentOptions.TopLeft, true).At(72f, 6f, w - 116f, 24f);
-                    Txt(row.transform, $"{u.role}\n<color=#888888>{u.cost.Describe()}</color>", 13f, TextAlignmentOptions.TopLeft, false, true, new Color(0.73f, 0.73f, 0.73f)).At(72f, 29f, w - 116f, 38f);
+                    // tên / vai trò / giá: mỗi thứ đúng 1 dòng, dài quá thì chữ tự thu nhỏ (không tràn ra ngoài ô)
+                    FitLine(Txt(row.transform, u.name, 17f, TextAlignmentOptions.MidlineLeft, true).At(72f, 4f, w - 120f, 22f), 12f);
+                    FitLine(Txt(row.transform, u.role, 13f, TextAlignmentOptions.MidlineLeft, false, false, new Color(0.73f, 0.73f, 0.73f)).At(72f, 27f, w - 120f, 18f), 9f);
+                    FitLine(Txt(row.transform, u.cost.Describe(), 12f, TextAlignmentOptions.MidlineLeft, false, false, new Color(0.53f, 0.53f, 0.53f)).At(72f, 46f, w - 120f, 17f), 9f);
                 }
                 Btn(p, $"Play {fd.name}", () => Go(() => g.StartRun(pick))).At(20f, h - 76f, w - 40f, 54f);
             }
@@ -742,6 +744,17 @@ namespace HordeLab
             diffNote.Set(sel == 2
                 ? "<color=#ff8f6a>Hard</color>: the full horde. For veterans."
                 : $"<color=#9fe07a>{Tuning.DiffName[sel]}</color>: {Pct(Tuning.DiffSquads[sel])} enemies at {Pct(Tuning.DiffPower[sel])} strength, bosses {Pct(Tuning.DiffBoss[sel])} HP, +{Tuning.DiffCrystals[sel]} starting crystals.");
+        }
+
+        /// <summary>Chữ 1 dòng, dài quá khung thì tự thu nhỏ (tới <paramref name="min"/>).</summary>
+        static TextMeshProUGUI FitLine(TextMeshProUGUI t, float min)
+        {
+            t.textWrappingMode = TextWrappingModes.NoWrap;
+            t.enableAutoSizing = true;
+            t.fontSizeMax = t.fontSize;
+            t.fontSizeMin = min;
+            t.overflowMode = TextOverflowModes.Ellipsis;
+            return t;
         }
 
         void BuildMenu()

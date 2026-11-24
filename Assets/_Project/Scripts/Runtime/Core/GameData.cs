@@ -314,7 +314,7 @@ namespace HordeLab
             new FactionDef { name = "The Void", color = new Color(0.68f, 0.40f, 0.92f), hpMul = 1.3f, dmgMul = 1.3f, popCostMul = 2f,
                 strength = "Troops are 30% stronger", weakness = "Every call costs double Pop" },
             new FactionDef { name = "Orc", color = new Color(0.46f, 0.74f, 0.28f), hpMul = 1.2f, rangeMul = 0.75f,
-                strength = "Brutes: troops have 20% more HP", weakness = "Wild aim: ranged troops have 25% less range" },
+                strength = "Brutes: troops have 20% more HP and never need Gold", weakness = "Wild aim: ranged troops have 25% less range" },
         };
 
         public static readonly UnitDef[] Units = BuildUnits();
@@ -576,10 +576,10 @@ namespace HordeLab
             u[UnitType.Grunt] = U("War Camp", "Orc Grunt", "Frontline (cleaves)", s, new Res(5, 6, 0, 0), 8f, 1, 5f);
             u[UnitType.SpearThrower] = U("Spear Pit", "Spear Thrower", "Ranged (heavy spears)", S(22, 10, 2.0f, 18f, 2.8f, Mode.Shoot, 0, Proj.Javelin), new Res(5, 0, 5, 0), 9f, 1, 3f);
             s = S(90, 10, 1.1f, 1.2f, 4.6f, Mode.Melee, UFlag.Big, 0, PKind.Blood, 11f); s.chargeBonus = 1.5f; s.knock = 1.0f;
-            u[UnitType.BoarRider] = U("Boar Pen", "Boar Rider", "Mobile (charge, knockback)", s, new Res(6, 7, 0, 3), 12f, 3, 1.5f);
-            u[UnitType.Drummer] = U("War Drum", "War Drummer", "Support (nearby allies attack faster)", S(30, 3, 1.5f, 1.0f, 2.8f), new Res(5, 0, 0, 6), 14f, 5, 1f);
+            u[UnitType.BoarRider] = U("Boar Pen", "Boar Rider", "Mobile (charge, knockback)", s, new Res(6, 9, 0, 0), 12f, 3, 1.5f);
+            u[UnitType.Drummer] = U("War Drum", "War Drummer", "Support (nearby allies attack faster)", S(30, 3, 1.5f, 1.0f, 2.8f), new Res(5, 3, 4, 0), 14f, 5, 1f);
             s = S(160, 16, 1.8f, 1.3f, 2.2f, Mode.Melee, UFlag.Big, 0, PKind.Blood, 6f); s.splash = 1.6f; s.knock = 0.8f;
-            u[UnitType.Troll] = U("Troll Cave", "Troll", "Brute (regenerates, area smash)", s, new Res(8, 10, 0, 6), 16f, 7, 1f);
+            u[UnitType.Troll] = U("Troll Cave", "Troll", "Brute (regenerates, area smash)", s, new Res(8, 14, 0, 0), 16f, 7, 1f);
 
             u[UnitType.Voidling] = U("", "Voidling", "Spawned by the Summoner", S(10, 3, 0.8f, 1.0f, 3.6f, Mode.Melee, 0, 0, PKind.VoidGoo, 12f), default, 0f, 99, 0f);
             u[UnitType.Spiderling] = U("", "Spiderling", "Spawned by the Broodmother (venomous bite)", S(14, 4, 0.8f, 1.0f, 4.2f, Mode.Melee, 0, 0, PKind.VoidGoo, 14f), default, 0f, 99, 0f);
