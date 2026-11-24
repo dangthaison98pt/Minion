@@ -383,10 +383,11 @@ namespace HordeLab
                 v.look.blocksRaycasts = false;
                 v.tile = Img(v.content.transform, null, Color.white);
                 v.tile.preserveAspect = true;
-                v.catStrip = Img(v.content.transform, White, new Color(0f, 0f, 0f, 0.55f));
+                v.catStrip = Img(v.content.transform, White, new Color(0f, 0f, 0f, 0f));
                 v.cat = Txt(v.catStrip.transform, "", 13f, TextAlignmentOptions.MidlineLeft, false, false, new Color(0.85f, 0.85f, 0.85f));
                 v.cat.Fill(6f, 0f, 6f, 0f);
-                v.name = Txt(v.content.transform, "", 17f, TextAlignmentOptions.MidlineLeft, true, false, Gold);
+                v.name = Txt(v.content.transform, "", 16f, TextAlignmentOptions.MidlineLeft, true, false, Gold);
+                v.name.enableAutoSizing = true; v.name.fontSizeMin = 11f; v.name.fontSizeMax = 16f;   // tên dài thì thu nhỏ, không cắt
                 v.price = Txt(v.content.transform, "", 18f, TextAlignmentOptions.MidlineRight, true);
                 v.priceIcon = Img(v.content.transform, Crystal, Color.white);
                 v.lockFrame = Frame(v.rt, new Color(1f, 0.82f, 0.3f, 0.95f));
@@ -1115,17 +1116,22 @@ namespace HordeLab
 
                 var d = GameData.Buildings[card];
                 v.tile.sprite = Tiles[card];
-                v.tile.At(6f, 6f, slotW - 12f, h - 46f);
-                v.catStrip.At(6f, 6f, slotW - 12f, 20f);
+                // 3 vùng riêng, không đè nhau: hàng trên (loại + ổ khoá) · hình x2 căn giữa · hàng dưới (tên + giá)
+                const float headH = 28f, footH = 34f;
+                v.catStrip.At(6f, 6f, slotW - 44f, headH - 6f);
                 v.cat.Set(d.cat == Cat.Barracks ? GameData.Units[d.unit].name : GameData.CatName[(int)d.cat]);
-                v.name.At(10f, h - 38f, slotW - 74f, 32f);
+                v.lockIcon.rectTransform.At(slotW - 32f, 5f, 26f, 26f);
+                v.lockIcon.sprite = StatIcons[g.shopLocked[i] ? PixelArt.StatLockOn : PixelArt.StatLock];   // bạc = chưa khoá, vàng = đã khoá
+                v.lockIcon.color = Color.white;
+                float area = h - headH - footH;
+                float img = Mathf.Min(PixelArt.TilePx * 2f, Mathf.Floor(Mathf.Min(slotW - 12f, area - 4f) / PixelArt.TilePx) * PixelArt.TilePx);   // phóng nguyên lần
+                v.tile.At(Mathf.Round((slotW - img) * 0.5f), headH + Mathf.Round((area - img) * 0.5f), img, img);
+                v.name.At(8f, h - footH, slotW - 60f, footH - 4f);
                 v.name.Set(d.name);
-                v.price.At(slotW - 62f, h - 38f, 26f, 32f);
+                v.price.At(slotW - 52f, h - footH, 22f, footH - 4f);
                 v.price.Set(g.Price(card).ToString());
-                v.priceIcon.At(slotW - 32f, h - 32f, 22f, 22f);
+                v.priceIcon.At(slotW - 28f, h - footH + 5f, 20f, 20f);
                 v.look.alpha = g.CanBuy(i) ? 1f : 0.45f;
-                v.lockIcon.rectTransform.At(slotW - 34f, 8f, 26f, 26f);
-                v.lockIcon.color = g.shopLocked[i] ? Color.white : new Color(1f, 1f, 1f, 0.35f);
 
                 if (modal) continue;
                 if (Over(v.lockIcon.rectTransform))

@@ -5,7 +5,7 @@ namespace HordeLab
     /// <summary>Icon chỉ số 9x9 cho tooltip (vẽ phần màu, viền đen tự thêm), để người chơi nhìn lướt thay vì đọc chữ.</summary>
     public static partial class PixelArt
     {
-        public const int StatDamage = 0, StatRange = 1, StatSpeed = 2, StatTime = 3, StatSplash = 4, StatBonus = 5, StatReroll = 6, StatLock = 7, StatCount = 8;
+        public const int StatDamage = 0, StatRange = 1, StatSpeed = 2, StatTime = 3, StatSplash = 4, StatBonus = 5, StatReroll = 6, StatLock = 7, StatLockOn = 8, StatCount = 9;   // StatLock = ổ bạc (chưa khoá), StatLockOn = ổ vàng (đã khoá)
 
         /// <summary>Vẽ từ chuỗi: '.' trống, a/b/c/d = 4 màu. Chừa 1 pixel mép rồi tự thêm viền.</summary>
         static Texture2D OutlinedIcon(string name, string[] rows, Color32 a, Color32 b, Color32 c, Color32 d)
@@ -60,6 +60,13 @@ namespace HordeLab
                 "..aaaacccaaaa..", ".aaaaccdbcaaaa.", ".aaaacdddcaaaa.", ".aaaaccdccaaaa.", "..aaaacccaaaa..",
                 "....aaaaaaa....", "...............", "...............", "...............", "...............",
             }, Rgb(116, 62, 168), Rgb(240, 90, 240), Rgb(140, 240, 255), Rgb(40, 22, 66)),
+        };
+
+        static readonly string[] LockRows =
+        {
+            "...............", "...............", ".....aaaaa.....", "....a.....a....", "....a.....a....",
+            "....a.....a....", "...bbbbbbbbb...", "...bdbbbbbbb...", "...bbbbcbbbb...", "...bbbbcbbbb...",
+            "...bbbbbbbbb...", "...bbbbbbbbb...", "...............", "...............", "...............",
         };
 
         public static Texture2D[] StatIcons() => new[]
@@ -149,13 +156,10 @@ namespace HordeLab
                 "..aaa..........", "..aa.......aa..", "..aa.......aa..", "..aa.......aa..", "..aaa.....aaa..",
                 "...aaa...aaa...", "....aaaaaaa....", ".....aaaaa.....", "...............", "...............",
             }, Rgb(255, 214, 70), Rgb(255, 236, 140), default, default),
-            // khoá ô cửa hàng: ổ khoá
-            OutlinedIcon("Lock", new[]
-            {
-                "...............", "...............", ".....aaaaa.....", "....a.....a....", "....a.....a....",
-                "....a.....a....", "...bbbbbbbbb...", "...bbbbbbbbb...", "...bbbbcbbbb...", "...bbbbcbbbb...",
-                "...bbbbbbbbb...", "...bbbbbbbbb...", "...............", "...............", "...............",
-            }, Rgb(196, 204, 218), Gold, Rgb(60, 44, 30), default),
+            // khoá ô cửa hàng: ổ bạc = chưa khoá
+            OutlinedIcon("Lock", LockRows, Rgb(150, 156, 170), Rgb(196, 202, 216), Rgb(70, 72, 84), Rgb(236, 240, 248)),
+            // ổ vàng = đã khoá
+            OutlinedIcon("LockOn", LockRows, Rgb(214, 160, 40), Rgb(255, 210, 70), Rgb(96, 60, 20), Rgb(255, 244, 170)),
         };
     }
 }
