@@ -42,7 +42,12 @@ namespace HordeLab
 
         // ---- bảng thành ----
         RectTransform leftPanel, gridView, gridContent, handArea, sellZone;
-        TextMeshProUGUI titleText, gridHint, handLabel, hostileText, waveInfo, battleInfo, sellText;
+        TextMeshProUGUI titleText, gridHint, handLabel, hostileText, waveInfo, battleInfo, sellText, nextLabel, waveTag;
+        Image titleEmblem, attackerEmblem, enemyEmblem;
+        readonly Image[] hostileEmblems = new Image[Tuning.MaxHostile];
+        RectTransform statsPanel; TextMeshProUGUI statsText; Button statsBtn, shopBtn; Image shopCrystalIcon;
+        bool statsOpen = true, shopOpenPrep = true, shopOpenBattle = true;
+        const float DockClosedH = 64f;
         Image sellGlow;
         readonly Dictionary<Vector2Int, CellView> cells = new Dictionary<Vector2Int, CellView>();
         readonly List<Vector2Int> wanted = new List<Vector2Int>(), highlight = new List<Vector2Int>();
@@ -162,6 +167,7 @@ namespace HordeLab
             hud.Fill();
             BuildLeftPanel();
             BuildDock();
+            BuildStats();
             BuildTopBar();
             perfText = Txt(hud, "", 13f, TextAlignmentOptions.BottomRight, false, false, Grey, "Perf");
             perfText.rectTransform.anchorMin = perfText.rectTransform.anchorMax = perfText.rectTransform.pivot = new Vector2(1f, 0f);
@@ -211,6 +217,8 @@ namespace HordeLab
             float x = pad + 16f;
             for (int i = 0; i < hearts.Length; i++, x += 46f) hearts[i] = Img(rt, Heart, Color.white).At(x, pad + (h - 40f) * 0.5f, 40f, 40f);
             waveText = Txt(rt, "", 22f, TextAlignmentOptions.MidlineLeft, true).At(x + 16f, pad, 470f, h);
+            enemyEmblem = Img(rt, null, Color.white);                   // phe tấn công đợt này (thay cho tên phe)
+            waveTag = Txt(rt, "", 20f, TextAlignmentOptions.MidlineLeft, true).At(0f, pad, 200f, h);
 
             castleBar = Img(rt, White, new Color(0.25f, 0.06f, 0.06f), false, false, "Castle bar").At(640f, pad + (h - 30f) * 0.5f, 220f, 30f).rectTransform;
             castleFill = Img(castleBar, White, new Color(0.35f, 0.62f, 1f), false, false, "Fill").rectTransform;
@@ -248,6 +256,7 @@ namespace HordeLab
             const float ox = 12f;                                   // bảng lùi sang trái 12 để giấu viền
 
             titleText = Txt(leftPanel, "", 22f, TextAlignmentOptions.MidlineLeft, true).At(ox + 16f, 10f, 300f, 30f);
+            titleEmblem = Img(leftPanel, null, Color.white);
             gridHint = Txt(leftPanel, "Wheel: zoom · Right-drag: move", 13f, TextAlignmentOptions.MidlineRight, false, false, Grey).At(ox + 196f, 12f, 314f, 26f);
 
             var view = Img(leftPanel, White, new Color(0.03f, 0.03f, 0.04f, 0.6f), false, true, "Grid view").At(ox + 10f, 44f, 500f, 500f);
@@ -275,14 +284,19 @@ namespace HordeLab
                 cards[i] = c;
             }
 
-            hostileText = Txt(leftPanel, "", 15f, TextAlignmentOptions.TopLeft, false, true).At(ox + 12f, 784f, 496f, 24f);
-            waveInfo = Txt(leftPanel, "", 15f, TextAlignmentOptions.TopLeft, false, true).At(ox + 12f, 808f, 496f, 44f);
+            // phe thù địch: biểu tượng (rê chuột xem tên)
+            hostileText = Txt(leftPanel, "Hostile", 15f, TextAlignmentOptions.MidlineLeft, false, false, Grey).At(ox + 12f, 782f, 70f, 34f);
+            for (int i = 0; i < hostileEmblems.Length; i++) hostileEmblems[i] = Img(leftPanel, null, Color.white).At(ox + 84f + i * 40f, 784f, 30f, 30f);
+            // đợt tới: biểu tượng phe + số quân + các loại quân sẽ gặp
+            nextLabel = Txt(leftPanel, "Next", 15f, TextAlignmentOptions.MidlineLeft, false, false, Grey).At(ox + 12f, 822f, 70f, 44f);
+            attackerEmblem = Img(leftPanel, null, Color.white).At(ox + 82f, 826f, 36f, 36f);
+            waveInfo = Txt(leftPanel, "", 17f, TextAlignmentOptions.MidlineLeft, true).At(ox + 124f, 822f, 120f, 44f);
             for (int i = 0; i < previewIcons.Length; i++)
             {
-                var bg = Img(leftPanel, White, Slot, false, false, "Enemy").At(ox + 12f + i * 50f, 856f, 44f, 44f);
+                var bg = Img(leftPanel, White, Slot, false, false, "Enemy").At(ox + 254f + i * 51f, 822f, 44f, 44f);
                 previewIcons[i] = Img(bg.transform, null, Color.white).AtCenter(0f, 0f, 52f, 52f);
             }
-            augOwned = Txt(leftPanel, "", 13f, TextAlignmentOptions.TopLeft, false, true).At(ox + 272f, 854f, 238f, 48f);
+            augOwned = Txt(leftPanel, "", 13f, TextAlignmentOptions.TopLeft, false, true).At(ox + 12f, 872f, 496f, 34f);
             battleInfo = Txt(leftPanel, "", 15f, TextAlignmentOptions.TopLeft, false, true).At(ox + 12f, 560f, 496f, 300f);
 
             // ô bán: luôn hiện lúc chuẩn bị
@@ -296,6 +310,27 @@ namespace HordeLab
             sellText.Fill();
         }
 
+        void ToggleShop()
+        {
+            if (g.phase == Phase.Battle) shopOpenBattle = !shopOpenBattle; else shopOpenPrep = !shopOpenPrep;
+        }
+
+        /// <summary>Bảng thống kê trận (góc trên chiến trường), có nút ẩn / hiện.</summary>
+        void BuildStats()
+        {
+            var p = Panel(hud, false, "Battle stats");
+            statsPanel = p.rectTransform;
+            statsPanel.anchorMin = statsPanel.anchorMax = statsPanel.pivot = new Vector2(0f, 1f);
+            statsPanel.anchoredPosition = new Vector2(PanelW + 20f, -(TopH + 10f));
+            statsPanel.sizeDelta = new Vector2(300f, 116f);
+            statsText = Txt(statsPanel, "", 15f, TextAlignmentOptions.TopLeft, false, true).At(16f, 44f, 270f, 64f);
+            statsBtn = Btn(hud, "STATS", () => statsOpen = !statsOpen, 15f);
+            var br = statsBtn.GetComponent<RectTransform>();
+            br.anchorMin = br.anchorMax = br.pivot = new Vector2(0f, 1f);
+            br.anchoredPosition = new Vector2(PanelW + 30f, -(TopH + 18f));
+            br.sizeDelta = new Vector2(96f, 30f);
+        }
+
         void BuildDock()
         {
             var panel = Panel(hud, false, "Shop dock");
@@ -303,8 +338,8 @@ namespace HordeLab
             dock.anchorMin = new Vector2(0f, 0f); dock.anchorMax = new Vector2(1f, 0f); dock.pivot = new Vector2(0f, 0f);
             dock.offsetMin = new Vector2(PanelW + 52f, 10f); dock.offsetMax = new Vector2(-10f, 10f + DockH);
 
-            Txt(dock, "SHOP", 22f, TextAlignmentOptions.MidlineLeft, true).At(20f, 14f, 90f, 30f);
-            Img(dock, Crystal, Color.white).At(22f, 50f, 26f, 26f);
+            shopBtn = Btn(dock, "SHOP", ToggleShop, 18f).At(14f, 10f, 124f, 40f);   // bấm để thu gọn / mở cửa hàng
+            shopCrystalIcon = Img(dock, Crystal, Color.white).At(22f, 50f, 26f, 26f);
             shopCrystals = Txt(dock, "", 22f, TextAlignmentOptions.MidlineLeft, true, false, new Color(0.56f, 0.91f, 1f)).At(54f, 46f, 80f, 34f);
             rollBtn = Btn(dock, "", () => g.PayRoll(), 17f).At(18f, 98f, 122f, 60f);
 
@@ -494,6 +529,7 @@ namespace HordeLab
                 var fd = GameData.Factions[f];
                 var p = Panel(factionScreen).AtCenter(-total * 0.5f + w * 0.5f + f * (w + gap), 20f, w, h).rectTransform;
                 Img(p, White, fd.color).At(14f, 14f, w - 28f, 5f);
+                Img(p, Emblems[f], Color.white).At(18f, 22f, 44f, 44f);
                 Txt(p, fd.name, 26f, TextAlignmentOptions.Center, true, false, fd.color).At(0f, 26f, w, 36f);
                 Txt(p, $"<color=#9fe07a>Strength:</color> {fd.strength}", 15f, TextAlignmentOptions.TopLeft, false, true).At(20f, 72f, w - 40f, 66f);
                 Txt(p, $"<color=#ff8f8f>Weakness:</color> {fd.weakness}", 15f, TextAlignmentOptions.TopLeft, false, true).At(20f, 142f, w - 40f, 50f);
@@ -604,7 +640,7 @@ namespace HordeLab
                 RefreshTopBar();
                 RefreshLeftPanel(modal);
                 RefreshDock(modal);
-                if (phase == Phase.Prep && !modal) HandleDragAndClick();
+                if ((phase == Phase.Prep || phase == Phase.Battle) && !modal) HandleDragAndClick(phase == Phase.Battle);
                 else { dragCard = pressCard = selectedCard = -1; dragFromCell = false; }
             }
             RefreshVeilAndModals();
@@ -628,7 +664,14 @@ namespace HordeLab
             for (int i = 0; i < hearts.Length; i++) hearts[i].color = new Color(1f, 1f, 1f, i < g.hearts ? 1f : 0.18f);
             string tag = (g.IsBoss(g.wave) ? "  <color=#ff8f6a>BOSS</color>" : "") +
                          (g.IsFullMoon(g.wave) && (g.attacker == Faction.Beast || g.faction == Faction.Beast) ? "  <color=#e8e6ff>Full moon</color>" : "");
-            waveText.Set($"Wave <color=#ffffff>{g.wave}</color>/{Tuning.Waves}    Enemy: {FactionTag(g.attacker)}{tag}");
+            waveText.Set($"Wave <color=#ffffff>{g.wave}</color>/{Tuning.Waves}    Enemy");
+            var wr = waveText.rectTransform;
+            float ex = wr.anchoredPosition.x + waveText.GetPreferredValues(waveText.text).x + 10f;
+            enemyEmblem.sprite = Emblems[g.attacker];
+            enemyEmblem.At(ex, 12f + (TopH - 14f - 36f) * 0.5f, 36f, 36f);
+            waveTag.Set(tag.Trim());
+            waveTag.At(ex + 44f, 12f, 200f, TopH - 14f);
+            if (Over(enemyEmblem.rectTransform)) tipText = FactionTip(g.attacker);
 
             bool fight = g.phase == Phase.Battle;
             castleBar.Show(fight); enemiesText.Show(fight); speedBtn.Show(fight); pauseBtn.Show(fight);
@@ -656,25 +699,82 @@ namespace HordeLab
         // ------------------------------------------------------------------
         // Bảng thành
         // ------------------------------------------------------------------
+        /// <summary>Tên phe + điểm mạnh / yếu khi rê chuột vào biểu tượng phe.</summary>
+        string FactionTip(int f)
+        {
+            var d = GameData.Factions[f];
+            return $"<b>{FactionTag(f)}</b>\n<color=#9fe07a>+</color> {d.strength}\n<color=#ff8f8f>-</color> {d.weakness}";
+        }
+
         void RefreshLeftPanel(bool modal)
         {
-            bool prep = g.phase == Phase.Prep;
-            titleText.Set($"CASTLE — {FactionTag(g.faction)}");
+            bool prep = g.phase == Phase.Prep, fight = g.phase == Phase.Battle;
+            bool shopPhase = prep || fight;
+            titleText.Set("CASTLE");
+            titleEmblem.sprite = Emblems[g.faction];
+            titleEmblem.At(28f + titleText.GetPreferredValues("CASTLE").x + 10f, 9f, 32f, 32f);
+            if (!modal && Over(titleEmblem.rectTransform)) tipText = FactionTip(g.faction);
             RefreshGrid(modal);
 
-            handLabel.Show(prep); handArea.Show(prep); sellZone.Show(prep); waveInfo.Show(prep); hostileText.Show(prep);
-            battleInfo.Show(!prep);
-            for (int i = 0; i < previewIcons.Length; i++) previewIcons[i].transform.parent.Show(false);
+            // tay bài + ô bán: cả lúc chuẩn bị lẫn đang đánh (như TFT)
+            handLabel.Show(shopPhase); handArea.Show(shopPhase); sellZone.Show(shopPhase);
+            battleInfo.Show(false);
 
-            var sb = new StringBuilder("Hostile factions: ");
-            for (int i = 0; i < g.hostile.Count; i++) sb.Append(i > 0 ? " · " : "").Append(FactionTag(g.hostile[i]));
-            string hostile = sb.ToString();
-
-            if (prep)
+            // phe thù địch
+            for (int i = 0; i < hostileEmblems.Length; i++)
             {
-                handLabel.Set(g.hand.Count == 0 ? "Hand (0) — buy cards from the shop below"
-                    : selectedCard >= 0 ? $"Hand ({g.hand.Count}/{Tuning.HandLimit}) — <color=#ffd84a>now click a tile to build</color>"
-                    : $"Hand ({g.hand.Count}/{Tuning.HandLimit}) — drag a card onto the grid, or click it then click a tile");
+                bool on = i < g.hostile.Count;
+                hostileEmblems[i].Show(on);
+                if (!on) continue;
+                hostileEmblems[i].sprite = Emblems[g.hostile[i]];
+                if (!modal && Over(hostileEmblems[i].rectTransform)) tipText = FactionTip(g.hostile[i]);
+            }
+
+            // đợt tới (lúc đánh: đợt đang đánh)
+            attackerEmblem.sprite = Emblems[g.attacker];
+            if (!modal && Over(attackerEmblem.rectTransform)) tipText = FactionTip(g.attacker);
+            waveInfo.Set($"x{g.EnemyPreviewCount():N0}" + (g.IsBoss(g.wave) ? "\n<size=13><color=#ff8f6a>BOSS</color></size>" : ""));
+            for (int i = 0; i < previewIcons.Length; i++) previewIcons[i].transform.parent.Show(false);
+            int k = 0;
+            for (int s = 0; s < 5; s++)
+            {
+                int t = g.attacker * 5 + s;
+                if (GameData.Units[t].minWave > g.wave) continue;
+                var bg = (RectTransform)previewIcons[k].transform.parent;
+                bg.Show(true);
+                previewIcons[k].sprite = UnitIcons[t];
+                previewUnit[k] = t;
+                if (!modal && Over(bg))
+                {
+                    var u = GameData.Units[t];
+                    tipText = $"<b>{u.name}</b>\n<color=#aaaaaa>{u.role}</color>\nHP {u.stats.maxHp:0} · Damage {u.stats.damage:0.#} · Range {u.stats.range:0.#} · Speed {u.stats.speed:0.#}";
+                }
+                k++;
+            }
+
+            // lõi đang có
+            if (g.Augments.Count == 0) augOwned.Set("<color=#aaaaaa>Augments: none yet</color>");
+            else
+            {
+                var ab = new StringBuilder("<color=#aaaaaa>Augments:</color> ");
+                for (int i = 0; i < g.Augments.Count; i++)
+                {
+                    var d = GameData.Augments[g.Augments[i]];
+                    ab.Append(i > 0 ? " · " : "").Append($"<color={AugHex[(int)d.cat]}>{d.name}</color>");
+                }
+                augOwned.Set(ab.ToString());
+            }
+            if (!modal && Over(augOwned.rectTransform))
+            {
+                var tb = new StringBuilder("<b>Augments</b>");
+                if (g.Augments.Count == 0) tb.Append($"\nPick 1 of {Tuning.AugmentChoices} after waves {string.Join(", ", Tuning.AugmentWaves)}.");
+                foreach (int a in g.Augments) tb.Append('\n').Append(AugLine(a));
+                tipText = tb.ToString();
+            }
+
+            if (shopPhase)
+            {
+                handLabel.Set($"Hand <color=#ffffff>{g.hand.Count}</color>/{Tuning.HandLimit}");
                 if (selectedCard >= g.hand.Count) selectedCard = -1;
                 for (int i = 0; i < cards.Length; i++)
                 {
@@ -687,10 +787,10 @@ namespace HordeLab
                     const float st = 14f;
                     c.starBg.Show(cs > 0);
                     c.starBg.At(4f, 4f, 4f + cs * (st - 1f), st + 3f);
-                    for (int s = 0; s < c.stars.Length; s++)
+                    for (int q = 0; q < c.stars.Length; q++)
                     {
-                        c.stars[s].Show(s < cs);
-                        if (s < cs) { c.stars[s].At(2f + s * (st - 1f), 1f, st, st); c.stars[s].sprite = StarFor(cs); }
+                        c.stars[q].Show(q < cs);
+                        if (q < cs) { c.stars[q].At(2f + q * (st - 1f), 1f, st, st); c.stars[q].sprite = StarFor(cs); }
                     }
                     c.group.alpha = dragCard == i ? 0.3f : 1f;
                     bool over = !modal && Over(c.rt);
@@ -699,61 +799,24 @@ namespace HordeLab
                     if (over) { infoDef = g.hand[i]; infoStars = g.HandStars(i); }
                 }
 
-                hostileText.Set(hostile);
-                if (g.Augments.Count == 0) augOwned.Set($"<color=#aaaaaa>Augments: none yet\n(pick one after wave {Tuning.AugmentWaves[0]})</color>");
-                else
-                {
-                    var ab = new StringBuilder("<color=#aaaaaa>Augments:</color> ");
-                    for (int i = 0; i < g.Augments.Count; i++)
-                    {
-                        var d = GameData.Augments[g.Augments[i]];
-                        ab.Append(i > 0 ? " · " : "").Append($"<color={AugHex[(int)d.cat]}>{d.name}</color>");
-                    }
-                    augOwned.Set(ab.ToString());
-                }
-                if (!modal && Over(augOwned.rectTransform))
-                {
-                    var tb = new StringBuilder("<b>Augments</b>\n");
-                    if (g.Augments.Count == 0) tb.Append($"Permanent bonuses for this run. Pick 1 of {Tuning.AugmentChoices} after waves {string.Join(", ", Tuning.AugmentWaves)}.");
-                    foreach (int a in g.Augments) tb.Append('\n').Append(AugLine(a));
-                    tipText = tb.ToString();
-                }
-                waveInfo.Set($"Wave {g.wave}: {FactionTag(g.attacker)} attack with about <color=#ffffff>{g.EnemyPreviewCount():N0}</color> troops." +
-                             (g.IsBoss(g.wave) ? " <color=#ff8f6a>Boss wave!</color>" : ""));
-                int k = 0;
-                for (int s = 0; s < 5; s++)
-                {
-                    int t = g.attacker * 5 + s;
-                    if (GameData.Units[t].minWave > g.wave) continue;
-                    var bg = (RectTransform)previewIcons[k].transform.parent;
-                    bg.Show(true);
-                    previewIcons[k].sprite = UnitIcons[t];
-                    previewUnit[k] = t;
-                    if (!modal && Over(bg))
-                    {
-                        var u = GameData.Units[t];
-                        tipText = $"<b>{u.name}</b>\n<color=#aaaaaa>{u.role}</color>\nHP {u.stats.maxHp:0} · Damage {u.stats.damage:0.#} · Range {u.stats.range:0.#} · Speed {u.stats.speed:0.#}";
-                    }
-                    k++;
-                }
-
                 // ô bán
                 bool card = dragCard >= 0 || selectedCard >= 0;
                 var db = dragFromCell ? city.Get(dragCell) : null;
                 bool overSell = !modal && Over(sellZone);
                 sellGlow.Show(overSell && (card || db != null));
-                sellText.Set(db != null ? $"SELL  <color=#8fe8ff>+{g.SellValue(db.stars)}</color> crystal(s)"
-                           : card ? $"SELL  <color=#8fe8ff>+{g.SellValue(1)}</color> crystal(s)" + (selectedCard >= 0 && dragCard < 0 ? "  — click here" : "")
-                           : "<color=#aaaaaa>Drag a card or building here to sell it</color>");
+                int sellStars = db != null ? db.stars : dragCard >= 0 ? g.HandStars(dragCard) : selectedCard >= 0 ? g.HandStars(selectedCard) : 1;
+                sellText.Set(db != null || card ? $"SELL  <color=#8fe8ff>+{g.SellValue(sellStars)}</color>" : "<color=#888888>SELL</color>");
             }
-            else
+
+            // bảng thống kê trận (ẩn / hiện bằng nút STATS)
+            statsBtn.GetComponent<RectTransform>().Show(fight);
+            statsPanel.Show(fight && statsOpen);
+            statsBtn.Label().Set(statsOpen ? "STATS  -" : "STATS  +");
+            if (fight && statsOpen)
             {
                 int t = (int)g.waveTime;
-                battleInfo.Set(g.phase != Phase.Battle ? hostile :
-                    $"{hostile}\n\nYour troops: <color=#8fb8ff>{g.AlliesAlive:N0}</color>    Enemies left: <color=#ff8f8f>{g.EnemiesRemaining:N0}</color>/{g.EnemiesTotal:N0}" +
-                    (g.squadsLeft > 0 ? $"  <color=#aaaaaa>({g.EnemiesAlive:N0} on the field)</color>" : "") +
-                    $"\nKilled: <color=#9fe07a>{battle.Counter(C.Dead1):N0}</color>    Lost: <color=#ff8f8f>{battle.Counter(C.Dead0):N0}</color>    Time {t / 60:00}:{t % 60:00}" +
-                    "\n\n<color=#aaaaaa>A red frame on a troop building means it is waiting for resources.\nEnemies that reach the wall hit it for 1 damage per attack.\n\nSpace: pause · Tab: fast forward · Esc: menu\nMouse wheel: zoom the battlefield · WASD: pan</color>");
+                statsText.Set($"Troops <color=#8fb8ff>{g.AlliesAlive:N0}</color>    Enemies <color=#ff8f8f>{g.EnemiesRemaining:N0}</color>/{g.EnemiesTotal:N0}\n" +
+                              $"Killed <color=#9fe07a>{battle.Counter(C.Dead1):N0}</color>    Lost <color=#ff8f8f>{battle.Counter(C.Dead0):N0}</color>    {t / 60:00}:{t % 60:00}");
             }
         }
 
@@ -958,8 +1021,18 @@ namespace HordeLab
         void RefreshDock(bool modal)
         {
             bool prep = g.phase == Phase.Prep;
-            dock.Show(prep);
-            if (!prep) return;
+            dock.Show(g.ShopOpen);
+            if (!g.ShopOpen) return;
+            bool open = prep ? shopOpenPrep : shopOpenBattle;
+            dock.offsetMax = new Vector2(dock.offsetMax.x, 10f + (open ? DockH : DockClosedH));
+            shopBtn.Label().Set(open ? "SHOP  -" : "SHOP  +");
+            rollBtn.GetComponent<RectTransform>().Show(open);
+            // thu gọn: tinh thể nằm cùng hàng với nút SHOP
+            shopCrystalIcon.At(open ? 22f : 152f, open ? 50f : 19f, 26f, 26f);
+            shopCrystals.At(open ? 54f : 184f, open ? 46f : 15f, 80f, 34f);
+            for (int i = 0; i < shopSlots.Length; i++) shopSlots[i].rt.Show(open);
+            startBtn.GetComponent<RectTransform>().Show(prep);
+            startHint.Show(prep && open);
 
             float w = dock.rect.width;
             const float left = 152f, right = 276f, gap = 10f;
@@ -968,7 +1041,7 @@ namespace HordeLab
             rollBtn.Label().Set(g.RollCost == 0 ? "Reroll\n<size=14><color=#9fe07a>FREE</color></size>" : $"Reroll\n<size=14>{g.RollCost} crystal</size>");
             rollBtn.SetOn(g.CanRoll);
 
-            for (int i = 0; i < shopSlots.Length; i++)
+            for (int i = 0; i < shopSlots.Length && open; i++)
             {
                 var v = shopSlots[i];
                 v.rt.At(left + i * (slotW + gap), 14f, slotW, DockH - 28f);
@@ -996,17 +1069,17 @@ namespace HordeLab
                 else if (Over(v.rt)) infoDef = card;
             }
 
-            startBtn.At(w - right + 14f, 14f, right - 30f, 104f);
+            startBtn.At(w - right + 14f, open ? 14f : 8f, right - 30f, open ? 104f : DockClosedH - 16f);
             startBtn.Label().Set($"START WAVE {g.wave}");
             startHint.At(w - right + 14f, 122f, right - 30f, 40f);
             startHint.Set(g.hand.Count >= Tuning.HandLimit ? "<color=#ff8f8f>Hand is full</color>"
-                        : city.EmptyCount() == city.cells.Count ? "<color=#ffd84a>Place some buildings first</color>" : "The shop refreshes for free after each wave.");
+                        : city.EmptyCount() == city.cells.Count ? "<color=#ffd84a>Place some buildings first</color>" : "");
         }
 
         // ------------------------------------------------------------------
         // Kéo-thả và bấm chọn (chỉ lúc chuẩn bị)
         // ------------------------------------------------------------------
-        void HandleDragAndClick()
+        void HandleDragAndClick(bool fighting)
         {
             if (fakeMouse.HasValue) return;
             bool down = Input.GetMouseButtonDown(0), up = Input.GetMouseButtonUp(0);
@@ -1019,7 +1092,7 @@ namespace HordeLab
                 for (int i = 0; i < g.hand.Count; i++)
                     if (Over(cards[i].rt)) { pressCard = i; break; }
 
-                if (pressCard < 0 && hoverCellValid && Over(gridView))
+                if (pressCard < 0 && hoverCellValid && Over(gridView) && !fighting)       // đang đánh: không đụng lưới
                 {
                     var target = city.Get(hoverCell);
                     // bấm chọn thẻ rồi bấm ô: chỉ xây vào ô trống / mở ô / gộp. Bấm vào nhà khác loại thì KHÔNG thay nhà đó
@@ -1050,7 +1123,7 @@ namespace HordeLab
             if (dragCard >= 0)
             {
                 if (Over(sellZone)) g.SellCard(dragCard);
-                else if (hoverCellValid && Over(gridView)) g.PlayCard(dragCard, hoverCell);
+                else if (hoverCellValid && Over(gridView) && !fighting) g.PlayCard(dragCard, hoverCell);
             }
             else if (dragFromCell)
             {

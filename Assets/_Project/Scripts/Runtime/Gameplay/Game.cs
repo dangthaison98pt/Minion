@@ -316,13 +316,15 @@ namespace HordeLab
 
         public void ToggleLock(int slot)
         {
-            if (phase == Phase.Prep && shop[slot] >= 0) shopLocked[slot] = !shopLocked[slot];
+            if (ShopOpen && shop[slot] >= 0) shopLocked[slot] = !shopLocked[slot];
             SaveRun();
         }
 
         /// <summary>Giá lần roll kế tiếp (Lucky Dice: lần đầu mỗi lần chuẩn bị miễn phí).</summary>
         public int RollCost => Has(Aug.FreeRoll) && rollsThisPrep < Aug.FreeRolls ? 0 : Tuning.RollCost;
-        public bool CanRoll => phase == Phase.Prep && crystals >= RollCost;
+        /// <summary>Như TFT: mua / bán / roll được cả lúc chuẩn bị lẫn đang đánh (chỉ đặt thẻ lên lưới là phải đợi chuẩn bị).</summary>
+        public bool ShopOpen => phase == Phase.Prep || phase == Phase.Battle;
+        public bool CanRoll => ShopOpen && crystals >= RollCost;
 
         public bool PayRoll()
         {
@@ -337,7 +339,7 @@ namespace HordeLab
         public int Price(int card) => Mathf.Max(1, Tuning.CardPrice(GameData.Buildings[card].cat) - (Has(Aug.Bargain) ? Aug.BargainCut : 0));
 
         public bool CanBuy(int slot) =>
-            phase == Phase.Prep && shop[slot] >= 0 && crystals >= Price(shop[slot]) && hand.Count < Tuning.HandLimit;
+            ShopOpen && shop[slot] >= 0 && crystals >= Price(shop[slot]) && hand.Count < Tuning.HandLimit;
 
         public bool Buy(int slot)
         {
@@ -404,7 +406,7 @@ namespace HordeLab
 
         public bool SellCard(int index)
         {
-            if (phase != Phase.Prep || index < 0 || index >= hand.Count) return false;
+            if (!ShopOpen || index < 0 || index >= hand.Count) return false;
             crystals += SellValue(HandStars(index));
             RemoveCard(index);
             SaveRun();

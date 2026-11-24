@@ -23,6 +23,7 @@ namespace HordeLab
         public static Sprite StarFor(int stars) => Stars[Mathf.Clamp(stars, 1, Stars.Length) - 1];
         public static Sprite[] ResIcons, Tiles, UnitIcons, Shapes, StatIcons;
         public static Sprite MeteorIcon, BoltIcon;     // lấy từ texture đạn, dùng cho thẻ lõi
+        public static Sprite[] Emblems;                // biểu tượng phe (thay cho tên phe trên giao diện)
 
         public static void Load(Texture2D unitAtlas)
         {
@@ -40,6 +41,9 @@ namespace HordeLab
             Sprite ProjCell(int kind) => Sprite.Create(proj, new Rect(0f, proj.height - (kind + 1) * PixelArt.ProjH, PixelArt.ProjW, PixelArt.ProjH), new Vector2(0.5f, 0.5f), 100f);
             MeteorIcon = ProjCell(Proj.Meteor);
             BoltIcon = ProjCell(Proj.BigBolt);
+            var emb = PixelArt.FactionEmblems();
+            Emblems = new Sprite[emb.Length];
+            for (int i = 0; i < emb.Length; i++) Emblems[i] = Whole(emb[i]);
             var stat = PixelArt.StatIcons();
             StatIcons = new Sprite[stat.Length];
             for (int i = 0; i < stat.Length; i++) StatIcons[i] = Whole(stat[i]);

@@ -38,7 +38,10 @@ Phần mô phỏng vẫn là lõi "vạn quân" cũ: **Job System + Burst + GPU 
    - **Bán:** kéo thẻ hoặc công trình vào ô *SELL* để lấy Tinh thể (nhà n sao = 2^(n-1) nhà gộp lại nên được ngần ấy lần).
      Công trình nào cũng kéo ngược về tay được (thành thẻ giữ số sao).
    - Rê chuột vào thẻ / công trình để xem chi tiết; nhà buff sẽ tô viền vàng các ô nó tác động.
-3. **Bắt đầu đợt** → chỉ ngồi xem. Góc trên ghi *Enemies left*: số địch còn lại / tổng quân cả đợt (tính cả các tiểu đội chưa kéo đến). Nhà lính viền đỏ = đã hồi xong nhưng đang chờ đủ tài nguyên.
+3. **Bắt đầu đợt** → lính tự đánh. Như TFT, **trong trận vẫn mua / bán / roll / khoá** được ở cửa hàng và bán thẻ trên tay
+   (chỉ đặt thẻ lên lưới là phải đợi chuẩn bị). Cửa hàng và bảng **STATS** (quân ta, địch còn, đã diệt, đã mất, thời gian)
+   có nút thu gọn / mở. Phe hiển thị bằng **biểu tượng** (rê chuột để xem tên + điểm mạnh / yếu).
+   Góc trên ghi *Enemies left*: số địch còn lại / tổng quân cả đợt (tính cả các tiểu đội chưa kéo đến). Nhà lính viền đỏ = đã hồi xong nhưng đang chờ đủ tài nguyên.
 4. Hết đợt: chọn 1 trong 3 thẻ + nhận 5 Tinh thể (+1 nếu giữ được thành), cộng **lãi** +1 cho mỗi 10 Tinh thể đang giữ (tối đa +5, như TFT) nên để dành cũng có lợi. Thành thất thủ thì mất 1 trong 3 tim nhưng vẫn sang đợt sau và vẫn nhận thưởng.
    Xong **đợt 1** và **mỗi đợt trùm** (6, 12, 18, 24) thì được **chọn 1 trong 3 lõi** (giống Augment của TFT): thưởng vĩnh viễn cho cả lượt.
    Như TFT, **mỗi ô lõi có 1 lượt đổi** (nút *Reroll*, miễn phí): đổi ô nào ra lõi khác ở ô đó, 2 ô kia giữ nguyên.

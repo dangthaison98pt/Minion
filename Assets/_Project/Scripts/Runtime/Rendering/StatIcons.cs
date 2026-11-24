@@ -22,6 +22,46 @@ namespace HordeLab
             return cv.ToTexture(name);
         }
 
+        /// <summary>Biểu tượng 5 phe (15x15, viền tự thêm), dùng thay cho tên phe trên giao diện. Thứ tự = Faction.*</summary>
+        public static Texture2D[] FactionEmblems() => new[]
+        {
+            // Người: khiên xanh, chữ thập trắng, viền vàng
+            OutlinedIcon("EmblemHuman", new[]
+            {
+                "...............", ".aaaaaaaaaaaaa.", ".abbbbbcbbbbba.", ".abbbbbcbbbbba.", ".abbbbbcbbbbba.",
+                ".accccccccccca.", ".abbbbbcbbbbba.", ".abbbbbcbbbbba.", "..abbbbcbbbba..", "...abbbcbbba...",
+                "....abbcbba....", ".....abcba.....", "......aba......", ".......a.......", "...............",
+            }, Gold, Rgb(56, 100, 200), Rgb(240, 240, 246), default),
+            // Tiên: chiếc lá
+            OutlinedIcon("EmblemElf", new[]
+            {
+                "...............", "..........aaa..", "........aabbba.", "......aabbbcba.", ".....abbbbcbba.",
+                "....abbbbcbbba.", "...abbbbcbbbba.", "...abbbcbbbba..", "..abbbcbbbba...", "..abbcbbbba....",
+                "..abcbbbaa.....", "..acbaaa.......", "..dc...........", ".d.............", "...............",
+            }, Rgb(54, 116, 50), Rgb(96, 178, 72), Rgb(176, 226, 124), Rgb(120, 80, 46)),
+            // Người lùn: búa
+            OutlinedIcon("EmblemDwarf", new[]
+            {
+                "...............", "...............", "..bbbbbbbbbbb..", "..baaaaaaaaaa..", "..baaaaaaaaaa..",
+                "..baaaaaaaaaa..", "..baaaaaaaaaa..", "......dcc......", "......dcc......", "......dcc......",
+                "......dcc......", "......dcc......", "......dcc......", "......dcc......", "...............",
+            }, Rgb(150, 158, 176), Rgb(218, 224, 234), Rgb(170, 116, 62), Rgb(112, 72, 42)),
+            // Người hoá thú: dấu chân
+            OutlinedIcon("EmblemBeast", new[]
+            {
+                "...............", "....aa...aa....", "...aaaa.aaaa...", "...aaaa.aaaa...", "....aa...aa....",
+                ".aa.........aa.", ".aaa.......aaa.", ".aa...aaa...aa.", ".....aaaaa.....", "....aaaaaaa....",
+                "...aaabaaaaa...", "...aabbaaaaa...", "...aaaaaaaaa...", "....aaaaaaa....", "...............",
+            }, Rgb(150, 98, 58), Rgb(206, 156, 102), default, default),
+            // The Void: con mắt
+            OutlinedIcon("EmblemVoid", new[]
+            {
+                "...............", "...............", "...............", "...............", "....bbbbbbb....",
+                "..aaaacccaaaa..", ".aaaaccdbcaaaa.", ".aaaacdddcaaaa.", ".aaaaccdccaaaa.", "..aaaacccaaaa..",
+                "....aaaaaaa....", "...............", "...............", "...............", "...............",
+            }, Rgb(116, 62, 168), Rgb(240, 90, 240), Rgb(140, 240, 255), Rgb(40, 22, 66)),
+        };
+
         public static Texture2D[] StatIcons() => new[]
         {
             // sát thương: kiếm chéo
