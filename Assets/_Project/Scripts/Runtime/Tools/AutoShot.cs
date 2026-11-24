@@ -187,7 +187,15 @@ namespace HordeLab
             for (int i = 0; i < 30; i++) yield return null;
             Shot("00_menu.png");
             yield return Frames(3);
-            game.BotAct(botFaction);              // menu → màn chọn phe
+            if (!Headless)
+            {
+                // chuyển cảnh mượt: chụp giữa lúc tối dần, rồi chờ xong và kiểm tra đã sang màn chọn phe
+                game.ui.Go(game.NewGame);
+                yield return new WaitForSecondsRealtime(0.15f); Shot("00b_chuyen_canh.png");
+                while (game.ui.Fading) yield return null;
+                log.AppendLine($"FADE TEST: {(game.phase == Phase.PickFaction ? "OK" : "FAIL")} (menu -> {game.phase})");
+            }
+            else game.BotAct(botFaction);         // menu → màn chọn phe
             yield return Frames(5);
             Shot("01_chon_phe.png");
             yield return Frames(3);

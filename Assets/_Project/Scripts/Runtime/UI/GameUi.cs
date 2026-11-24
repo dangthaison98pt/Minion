@@ -167,6 +167,12 @@ namespace HordeLab
             var vr = viewImage.rectTransform;
             vr.anchorMin = vr.anchorMax = vr.pivot = Vector2.zero;
 
+            // lớp mờ chuyển cảnh: nằm trên mọi thứ, chỉ bật khi đang chuyển
+            var fadeCanvas = NewCanvas("Fade Canvas", 100, true);
+            fader = Img(fadeCanvas.transform, White, new Color(0.03f, 0.02f, 0.04f, 0f), false, true, "Fader");
+            fader.rectTransform.Fill();
+            fader.gameObject.SetActive(false);
+
             var canvas = NewCanvas("UI Canvas", 0, true);
             root = (RectTransform)canvas.transform;
 
@@ -195,6 +201,42 @@ namespace HordeLab
             BuildFactionScreen();
             BuildMenu();
             BuildPause();
+        }
+
+        // ------------------------------------------------------------------
+        // Chuyển cảnh mượt giữa menu / chọn phe / màn chơi: tối dần → đổi cảnh → sáng dần
+        // ------------------------------------------------------------------
+        Image fader;
+        bool fading;
+        public bool Fading => fading;
+        const float FadeOut = 0.25f, FadeIn = 0.35f;
+
+        /// <summary>Chạy <paramref name="act"/> giữa lúc màn hình tối hẳn. Đang chuyển thì bỏ qua (không bấm 2 lần).</summary>
+        public void Go(System.Action act)
+        {
+            if (fading) return;
+            StartCoroutine(FadeRoutine(act));
+        }
+
+        System.Collections.IEnumerator FadeRoutine(System.Action act)
+        {
+            fading = true;
+            fader.gameObject.SetActive(true);                  // chặn bấm trong lúc chuyển
+            for (float t = 0f; t < FadeOut; t += Time.unscaledDeltaTime)
+            {
+                fader.color = new Color(0.03f, 0.02f, 0.04f, Smooth(t / FadeOut));
+                yield return null;
+            }
+            fader.color = new Color(0.03f, 0.02f, 0.04f, 1f);
+            act();
+            yield return null; yield return null;                // để cảnh mới dựng xong rồi mới sáng lên
+            for (float t = 0f; t < FadeIn; t += Time.unscaledDeltaTime)
+            {
+                fader.color = new Color(0.03f, 0.02f, 0.04f, 1f - Smooth(t / FadeIn));
+                yield return null;
+            }
+            fader.gameObject.SetActive(false);
+            fading = false;
         }
 
         Canvas NewCanvas(string name, int order, bool scaled)
@@ -602,8 +644,8 @@ namespace HordeLab
             endGroup = end.gameObject.AddComponent<CanvasGroup>();
             endTitle = Txt(p, "", 40f, TextAlignmentOptions.Center, true).At(0f, 26f, 720f, 60f);
             endText = Txt(p, "", 17f, TextAlignmentOptions.Center).At(0f, 98f, 720f, 30f);
-            Btn(p, "New run", g.NewGame).At(110f, 170f, 240f, 52f);
-            Btn(p, "Main menu", g.EnterMenu).At(370f, 170f, 240f, 52f);
+            Btn(p, "New run", () => Go(g.NewGame)).At(110f, 170f, 240f, 52f);
+            Btn(p, "Main menu", () => Go(g.EnterMenu)).At(370f, 170f, 240f, 52f);
         }
 
         void BuildFactionScreen()
@@ -639,9 +681,9 @@ namespace HordeLab
                     Txt(row.transform, u.name, 17f, TextAlignmentOptions.TopLeft, true).At(72f, 6f, w - 116f, 24f);
                     Txt(row.transform, $"{u.role}\n<color=#888888>{u.cost.Describe()}</color>", 13f, TextAlignmentOptions.TopLeft, false, true, new Color(0.73f, 0.73f, 0.73f)).At(72f, 29f, w - 116f, 38f);
                 }
-                Btn(p, $"Play {fd.name}", () => g.StartRun(pick)).At(20f, h - 76f, w - 40f, 54f);
+                Btn(p, $"Play {fd.name}", () => Go(() => g.StartRun(pick))).At(20f, h - 76f, w - 40f, 54f);
             }
-            var back = Btn(factionScreen, "Back", g.EnterMenu, 18f);
+            var back = Btn(factionScreen, "Back", () => Go(g.EnterMenu), 18f);
             back.At(30f, 30f, 120f, 46f);
         }
 
@@ -655,11 +697,11 @@ namespace HordeLab
             Txt(p, "Horde Lab", 60f, TextAlignmentOptions.Center, true, false, Gold).At(0f, 34f, 520f, 76f);
             Txt(p, "Build the castle. Watch the horde.", 17f, TextAlignmentOptions.Center, false, false, Grey).At(0f, 112f, 520f, 26f);
 
-            continueBtn = Btn(p, "Continue", () => g.ContinueRun(), 24f).At(60f, 170f, 400f, 64f);
+            continueBtn = Btn(p, "Continue", () => Go(() => g.ContinueRun()), 24f).At(60f, 170f, 400f, 64f);
             continueInfo = Txt(p, "", 15f, TextAlignmentOptions.Center, false, false, Grey).At(0f, 238f, 520f, 24f);
-            Btn(p, "New Game", g.NewGame, 24f).At(60f, 282f, 400f, 64f);
+            Btn(p, "New Game", () => Go(g.NewGame), 24f).At(60f, 282f, 400f, 64f);
             newGameNote = Txt(p, "", 14f, TextAlignmentOptions.Center, false, false, Grey).At(0f, 350f, 520f, 22f);
-            Btn(p, "Quit", Application.Quit, 24f).At(60f, 394f, 400f, 64f);
+            Btn(p, "Quit", () => Go(Application.Quit), 24f).At(60f, 394f, 400f, 64f);
             Txt(p, "Your run is saved automatically between waves.", 14f, TextAlignmentOptions.Center, false, false, Grey).At(0f, 494f, 520f, 22f);
         }
 
@@ -668,8 +710,8 @@ namespace HordeLab
             pause = Modal("Pause", 0.6f, out var p, 520f, 420f);
             Txt(p, "Paused", 36f, TextAlignmentOptions.Center, true).At(0f, 28f, 520f, 50f);
             Btn(p, "Resume", TogglePause, 22f).At(70f, 104f, 380f, 60f);
-            Btn(p, "Save & quit to menu", () => { ClosePause(); g.QuitToMenu(); }, 22f).At(70f, 176f, 380f, 60f);
-            Btn(p, "Abandon run", () => { ClosePause(); g.DeleteSave(); g.EnterMenu(); }, 22f).At(70f, 248f, 380f, 60f);
+            Btn(p, "Save & quit to menu", () => Go(() => { ClosePause(); g.QuitToMenu(); }), 22f).At(70f, 176f, 380f, 60f);
+            Btn(p, "Abandon run", () => Go(() => { ClosePause(); g.DeleteSave(); g.EnterMenu(); }), 22f).At(70f, 248f, 380f, 60f);
             Txt(p, "Quitting during a battle returns you to the preparation\nbefore that wave when you continue.", 14f, TextAlignmentOptions.Center, false, true, Grey).At(20f, 328f, 480f, 60f);
             pause.gameObject.SetActive(false);
         }
