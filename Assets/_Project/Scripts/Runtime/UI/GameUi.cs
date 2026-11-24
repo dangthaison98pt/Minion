@@ -70,6 +70,7 @@ namespace HordeLab
         TextMeshProUGUI augTitle, augSub, augOwned;
         readonly TextMeshProUGUI[] augCards = new TextMeshProUGUI[Tuning.AugmentChoices];
         readonly Image[] augBands = new Image[Tuning.AugmentChoices];
+        readonly Button[] augRolls = new Button[Tuning.AugmentChoices];
         static readonly Color[] AugColor = { new Color(1f, 0.85f, 0.29f), new Color(1f, 0.52f, 0.4f), new Color(0.56f, 0.91f, 1f), new Color(0.84f, 0.6f, 1f), new Color(0.62f, 0.88f, 0.48f) };
         static readonly string[] AugHex = { "#ffd84a", "#ff8466", "#8fe8ff", "#d79bff", "#9fe07a" };
         static readonly string[] AugCatName = { "Economy", "Military", "Utility", "Legendary", "Specialist" };
@@ -359,17 +360,18 @@ namespace HordeLab
 
         void BuildAugment()
         {
-            augScreen = Modal("Augment", 0.55f, out var p, 840f, 380f);
+            augScreen = Modal("Augment", 0.55f, out var p, 840f, 430f);
             augGroup = augScreen.gameObject.AddComponent<CanvasGroup>();
             augTitle = Txt(p, "", 26f, TextAlignmentOptions.Center, true).At(0f, 22f, 840f, 40f);
             augSub = Txt(p, "", 16f, TextAlignmentOptions.Center).At(0f, 64f, 840f, 28f);
             for (int i = 0; i < augCards.Length; i++)
             {
                 int pick = i;
-                var card = Panel(p, true, "Augment card").At(30f + i * 265f, 104f, 250f, 246f);
+                var card = Panel(p, true, "Augment card").At(30f + i * 265f, 104f, 250f, 296f);
                 augBands[i] = Img(card.transform, White, Color.white).At(14f, 14f, 222f, 6f);
-                augCards[i] = Txt(card.transform, "", 15f, TextAlignmentOptions.TopLeft, false, true).At(18f, 30f, 214f, 150f);
-                Btn(card.transform, "Choose", () => g.PickAugment(pick)).At(18f, 188f, 214f, 42f);
+                augCards[i] = Txt(card.transform, "", 15f, TextAlignmentOptions.TopLeft, false, true).At(18f, 30f, 214f, 200f);
+                Btn(card.transform, "Choose", () => g.PickAugment(pick)).At(18f, 238f, 138f, 42f);
+                augRolls[i] = Btn(card.transform, "Reroll", () => g.RerollAugment(pick), 15f).At(162f, 238f, 70f, 42f);   // mỗi ô đổi được 1 lần
             }
         }
 
@@ -1012,6 +1014,11 @@ namespace HordeLab
                 for (int i = 0; i < augCards.Length; i++)
                 {
                     var d = GameData.Augments[g.augChoices[i]];
+                    bool canRoll = g.CanRerollAugment(i);
+                    augRolls[i].SetOn(canRoll);
+                    augRolls[i].Label().Set(g.augRerolled[i] ? "<color=#888888>Used</color>" : "Reroll");
+                    if (!PauseOpen && Over(augRolls[i].GetComponent<RectTransform>()))
+                        tipText = g.augRerolled[i] ? "This slot was already rerolled." : "<b>Reroll this augment</b>\nFree, once per slot. The other two stay.";
                     augBands[i].color = AugColor[(int)d.cat];
                     augCards[i].Set($"<color={AugHex[(int)d.cat]}><size=13>{AugCatName[(int)d.cat].ToUpper()}{(d.unit >= 0 ? " · " + GameData.Units[d.unit].name.ToUpper() : "")}{(d.leaderSkill ? " · LEADER" : "")}</size></color>\n" +
                                     $"<b><size=21><color=#ffe69e>{d.name}</color></size></b>\n\n{d.desc}");

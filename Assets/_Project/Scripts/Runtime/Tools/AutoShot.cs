@@ -140,7 +140,7 @@ namespace HordeLab
             log.AppendLine($"SWAP TEST: {(swapped && back && kept && intact ? "OK" : "FAIL")} (đổi={swapped}, đổi ngược={back}, về tay giữ sao={kept}, không mất nhà={intact})");
         }
 
-        bool augShot, ownedShot;
+        bool augShot, ownedShot, augRollTested;
         static readonly bool allAugs = System.Array.IndexOf(System.Environment.GetCommandLineArgs(), "-allaugs") >= 0;
 
         /// <summary>Kiểm tra lõi (chạy cùng -savetest): bật tạm từng lõi, so số liệu trước / sau, rồi gỡ ra.</summary>
@@ -206,6 +206,19 @@ namespace HordeLab
                 if (game.phase == Phase.Augment)
                 {
                     if (!Headless && !augShot) { yield return new WaitForSecondsRealtime(1.7f); Shot("05b_chon_loi.png"); yield return Frames(3); augShot = true; }
+                    if (saveTest && !augRollTested)
+                    {
+                        // thử đổi 1 ô lõi: ô 0 đổi được đúng 1 lần, ra lõi khác, không trùng 2 ô còn lại
+                        augRollTested = true;
+                        int before = game.augChoices[0];
+                        bool can1 = game.CanRerollAugment(0);
+                        game.RerollAugment(0);
+                        int after = game.augChoices[0];
+                        bool can2 = game.CanRerollAugment(0);
+                        bool distinct = after != game.augChoices[1] && after != game.augChoices[2];
+                        log.AppendLine($"AUG REROLL TEST: {(can1 && !can2 && after != before && distinct ? "OK" : "FAIL")} ({GameData.Augments[before].name} -> {GameData.Augments[after].name}, đổi lần 2 bị chặn={!can2})");
+                        if (!Headless) { yield return Frames(3); Shot("05e_doi_loi.png"); yield return Frames(3); }
+                    }
                     game.BotAct(botFaction);
                     log.AppendLine($"    lõi: chọn {GameData.Augments[game.Augments[game.Augments.Count - 1]].name}");
                     yield return null;

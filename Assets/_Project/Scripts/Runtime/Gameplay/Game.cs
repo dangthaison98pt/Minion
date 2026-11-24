@@ -15,6 +15,7 @@ namespace HordeLab
         public int[] hostile, hand, shop, reward;
         public int[] handStars;                          // bản lưu cũ không có → coi như 1 sao
         public int[] augments, augChoices;               // lõi đã có + 3 lõi đang chờ chọn (pha Augment)
+        public bool[] augRerolled;                       // ô lõi nào đã dùng lượt đổi
         public bool[] shopLocked;
         public string eventNote;
         public bool lastWon;
@@ -55,6 +56,7 @@ namespace HordeLab
         public readonly bool[] shopLocked = new bool[Tuning.ShopSlots];   // ô bị khoá thì roll / tự làm mới không đổi thẻ ở ô đó
         public readonly int[] reward = new int[Tuning.RewardChoices];
         public readonly int[] augChoices = new int[Tuning.AugmentChoices];   // 3 lõi đang chờ chọn (pha Augment)
+        public readonly bool[] augRerolled = new bool[Tuning.AugmentChoices]; // như TFT: mỗi ô đổi được 1 lần
         public List<int> Augments => city.augments;
         public bool Has(int aug) => city.Has(aug);
         int rollsThisPrep;               // số lần roll trong lần chuẩn bị này (Lucky Dice: lần đầu miễn phí)
@@ -169,7 +171,7 @@ namespace HordeLab
                 hostile = hostile.ToArray(), hand = hand.ToArray(), handStars = handStars.ToArray(), shop = (int[])shop.Clone(), reward = (int[])reward.Clone(),
                 shopLocked = (bool[])shopLocked.Clone(), eventNote = eventNote, lastWon = lastWon, lastWave = lastWave, lastCrystals = lastCrystals, lastInterest = lastInterest, lastWinBonus = lastWinBonus,
                 pop = city.res.pop, food = city.res.food, wood = city.res.wood, gold = city.res.gold,
-                augments = city.augments.ToArray(), augChoices = (int[])augChoices.Clone()
+                augments = city.augments.ToArray(), augChoices = (int[])augChoices.Clone(), augRerolled = (bool[])augRerolled.Clone()
             };
             int n = city.cells.Count, k = 0;
             d.cellX = new int[n]; d.cellY = new int[n]; d.cellDef = new int[n]; d.cellStars = new int[n];
@@ -222,6 +224,8 @@ namespace HordeLab
             if (d.augments != null) foreach (int a in d.augments) if (a >= 0 && a < Aug.Count && !city.augments.Contains(a)) city.augments.Add(a);
             bool augPending = d.phase == (int)Phase.Augment && d.augChoices != null && d.augChoices.Length == augChoices.Length;
             if (augPending) d.augChoices.CopyTo(augChoices, 0);
+            System.Array.Clear(augRerolled, 0, augRerolled.Length);
+            if (augPending && d.augRerolled != null && d.augRerolled.Length == augRerolled.Length) d.augRerolled.CopyTo(augRerolled, 0);
             city.Recompute();
 
             battle.simulate = false;
@@ -642,27 +646,56 @@ namespace HordeLab
         /// </summary>
         bool RollAugments()
         {
-            var general = new List<int>();
-            var unit = new List<int>();
+            AugmentPools(out var general, out var unit, -1);
+            if (general.Count + unit.Count < augChoices.Length) return false;
+            System.Array.Clear(augRerolled, 0, augRerolled.Length);
+            for (int i = 0; i < augChoices.Length; i++) augChoices[i] = DrawAugment(i, general, unit);
+            return true;
+        }
+
+        /// <summary>Lõi còn bốc được: chưa có, chưa nằm ở ô khác (trừ ô <paramref name="skipSlot"/>), lõi chuyên quân thì phải có nhà lính.</summary>
+        void AugmentPools(out List<int> general, out List<int> unit, int skipSlot)
+        {
+            general = new List<int>();
+            unit = new List<int>();
             var owned = new HashSet<int>();
             foreach (var b in city.cells.Values) if (b != null && b.Def.cat == Cat.Barracks) owned.Add(b.Def.unit);
             for (int a = 0; a < Aug.Count; a++)
             {
                 if (Has(a)) continue;
+                if (skipSlot >= 0 && System.Array.IndexOf(augChoices, a) >= 0) continue;   // đổi 1 ô: không ra trùng 3 ô đang hiện
                 var d = GameData.Augments[a];
                 if (d.unit < 0) general.Add(a);
                 else if (owned.Contains(d.unit)) unit.Add(a);
             }
-            if (general.Count + unit.Count < augChoices.Length) return false;
-            for (int i = 0; i < augChoices.Length; i++)
-            {
-                bool pickUnit = unit.Count > 0 && (general.Count == 0 || rnd.NextDouble() < (i == 0 ? 0.7 : 0.25));
-                var pool = pickUnit ? unit : general;
-                int k = rnd.Next(pool.Count);
-                augChoices[i] = pool[k];
-                pool.RemoveAt(k);
-            }
-            return true;
+        }
+
+        /// <summary>Bốc 1 lõi cho ô <paramref name="slot"/> và bỏ nó khỏi túi. Ô đầu nghiêng về lõi chuyên quân (70%), ô sau 25%.</summary>
+        int DrawAugment(int slot, List<int> general, List<int> unit)
+        {
+            bool pickUnit = unit.Count > 0 && (general.Count == 0 || rnd.NextDouble() < (slot == 0 ? 0.7 : 0.25));
+            var pool = pickUnit ? unit : general;
+            int k = rnd.Next(pool.Count);
+            int a = pool[k];
+            pool.RemoveAt(k);
+            return a;
+        }
+
+        /// <summary>Như TFT: mỗi ô lõi đổi được 1 lần (miễn phí) mỗi lần chọn lõi.</summary>
+        public bool CanRerollAugment(int i)
+        {
+            if (phase != Phase.Augment || i < 0 || i >= augChoices.Length || augRerolled[i]) return false;
+            AugmentPools(out var general, out var unit, i);
+            return general.Count + unit.Count > 0;
+        }
+
+        public void RerollAugment(int i)
+        {
+            if (!CanRerollAugment(i)) return;
+            AugmentPools(out var general, out var unit, i);
+            augChoices[i] = DrawAugment(i, general, unit);
+            augRerolled[i] = true;
+            SaveRun();
         }
 
         public void PickAugment(int i)
