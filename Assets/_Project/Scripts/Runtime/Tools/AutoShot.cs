@@ -187,6 +187,7 @@ namespace HordeLab
             for (int i = 0; i < 30; i++) yield return null;
             Shot("00_menu.png");
             yield return Frames(3);
+            if (!Headless) { game.ui.OpenSettings(); yield return Frames(4); Shot("00c_settings.png"); yield return Frames(2); game.ui.CloseSettings(); yield return Frames(2); }
             if (!Headless)
             {
                 // chuyển cảnh mượt: chụp giữa lúc tối dần, rồi chờ xong và kiểm tra đã sang màn chọn phe

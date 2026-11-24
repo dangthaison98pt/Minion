@@ -201,6 +201,7 @@ namespace HordeLab
             BuildFactionScreen();
             BuildMenu();
             BuildPause();
+            BuildSettings();
         }
 
         // ------------------------------------------------------------------
@@ -691,32 +692,79 @@ namespace HordeLab
         {
             menu = Node("Main menu", root);
             menu.Fill();
-            var shade = Img(menu, White, new Color(0.02f, 0.02f, 0.04f, 0.45f), false, true, "Shade");
-            shade.Fill();
-            var p = Panel(menu).At(120f, 250f, 520f, 560f).rectTransform;
+            var p = Panel(menu).At(120f, 250f, 520f, 560f).rectTransform;   // không làm mờ trận đánh nền
+            menuPanel = p;
             Txt(p, "Horde Lab", 60f, TextAlignmentOptions.Center, true, false, Gold).At(0f, 34f, 520f, 76f);
             Txt(p, "Build the castle. Watch the horde.", 17f, TextAlignmentOptions.Center, false, false, Grey).At(0f, 112f, 520f, 26f);
 
             continueBtn = Btn(p, "Continue", () => Go(() => g.ContinueRun()), 24f).At(60f, 170f, 400f, 64f);
             continueInfo = Txt(p, "", 15f, TextAlignmentOptions.Center, false, false, Grey).At(0f, 238f, 520f, 24f);
-            Btn(p, "New Game", () => Go(g.NewGame), 24f).At(60f, 282f, 400f, 64f);
-            newGameNote = Txt(p, "", 14f, TextAlignmentOptions.Center, false, false, Grey).At(0f, 350f, 520f, 22f);
-            Btn(p, "Quit", () => Go(Application.Quit), 24f).At(60f, 394f, 400f, 64f);
-            Txt(p, "Your run is saved automatically between waves.", 14f, TextAlignmentOptions.Center, false, false, Grey).At(0f, 494f, 520f, 22f);
+            newGameBtn = Btn(p, "New Game", () => Go(g.NewGame), 24f);
+            newGameNote = Txt(p, "", 14f, TextAlignmentOptions.Center, false, false, Grey);
+            menuSettingsBtn = Btn(p, "Settings", OpenSettings, 24f);
+            quitBtn = Btn(p, "Quit", () => Go(Application.Quit), 24f);
         }
 
         void BuildPause()
         {
-            pause = Modal("Pause", 0.6f, out var p, 520f, 420f);
+            pause = Modal("Pause", 0.6f, out var p, 520f, 492f);
             Txt(p, "Paused", 36f, TextAlignmentOptions.Center, true).At(0f, 28f, 520f, 50f);
             Btn(p, "Resume", TogglePause, 22f).At(70f, 104f, 380f, 60f);
-            Btn(p, "Save & quit to menu", () => Go(() => { ClosePause(); g.QuitToMenu(); }), 22f).At(70f, 176f, 380f, 60f);
-            Btn(p, "Abandon run", () => Go(() => { ClosePause(); g.DeleteSave(); g.EnterMenu(); }), 22f).At(70f, 248f, 380f, 60f);
-            Txt(p, "Quitting during a battle returns you to the preparation\nbefore that wave when you continue.", 14f, TextAlignmentOptions.Center, false, true, Grey).At(20f, 328f, 480f, 60f);
+            Btn(p, "Settings", OpenSettings, 22f).At(70f, 176f, 380f, 60f);
+            Btn(p, "Save & quit to menu", () => Go(() => { ClosePause(); g.QuitToMenu(); }), 22f).At(70f, 248f, 380f, 60f);
+            Btn(p, "Abandon run", () => Go(() => { ClosePause(); g.DeleteSave(); g.EnterMenu(); }), 22f).At(70f, 320f, 380f, 60f);
+            Txt(p, "Quitting during a battle returns you to the preparation\nbefore that wave when you continue.", 14f, TextAlignmentOptions.Center, false, true, Grey).At(20f, 400f, 480f, 60f);
             pause.gameObject.SetActive(false);
         }
 
         bool pausedBefore;
+        Phase lastPhaseUi;
+
+        // ------------------------------------------------------------------
+        // Settings (mở từ menu chính và menu tạm dừng)
+        // ------------------------------------------------------------------
+        RectTransform settings, menuPanel;
+        Button newGameBtn, menuSettingsBtn, quitBtn;
+        readonly Button[] setBtns = new Button[5];
+        public bool SettingsOpen => settings != null && settings.gameObject.activeSelf;
+
+        void BuildSettings()
+        {
+            settings = Modal("Settings", 0.6f, out var p, 560f, 470f);
+            Txt(p, "Settings", 36f, TextAlignmentOptions.Center, true).At(0f, 28f, 560f, 50f);
+            string[] labels = { "Fullscreen", "VSync", "Show FPS", "Shop open in battle", "Battle speed" };
+            System.Action[] acts =
+            {
+                Settings.ToggleFullscreen,
+                () => { Settings.VSync = !Settings.VSync; Settings.ApplyFrameRate(); },
+                () => Settings.ShowFps = !Settings.ShowFps,
+                () => Settings.BattleShopOpen = !Settings.BattleShopOpen,
+                () => Settings.BattleSpeed = Settings.BattleSpeed >= 4 ? 1 : Settings.BattleSpeed * 2,
+            };
+            for (int i = 0; i < labels.Length; i++)
+            {
+                int k = i;
+                float y = 100f + i * 60f;
+                Txt(p, labels[i], 20f, TextAlignmentOptions.MidlineLeft).At(50f, y, 300f, 48f);
+                setBtns[i] = Btn(p, "", () => { acts[k](); Settings.Save(); }, 20f).At(360f, y, 150f, 48f);
+            }
+            Btn(p, "Back", CloseSettings, 22f).At(140f, 400f, 280f, 52f);
+            settings.gameObject.SetActive(false);
+        }
+
+        public void OpenSettings() { settings.gameObject.SetActive(true); settings.SetAsLastSibling(); }
+        public void CloseSettings() => settings.gameObject.SetActive(false);
+
+        void RefreshSettings()
+        {
+            if (!SettingsOpen) return;
+            string On(bool b) => b ? "<color=#9fe07a>On</color>" : "<color=#aaaaaa>Off</color>";
+            setBtns[0].Label().Set(On(Settings.Fullscreen));
+            setBtns[1].Label().Set(On(Settings.VSync));
+            setBtns[2].Label().Set(On(Settings.ShowFps));
+            setBtns[3].Label().Set(On(Settings.BattleShopOpen));
+            setBtns[4].Label().Set($"x{Settings.BattleSpeed}");
+        }
 
         void TogglePause()
         {
@@ -760,7 +808,8 @@ namespace HordeLab
             }
 
             var phase = g.phase;
-            if (Input.GetKeyDown(KeyCode.Escape))
+            if (Input.GetKeyDown(KeyCode.Escape) && SettingsOpen) CloseSettings();
+            else if (Input.GetKeyDown(KeyCode.Escape))
             {
                 if (selectedCard >= 0) selectedCard = -1;
                 else TogglePause();
@@ -787,16 +836,35 @@ namespace HordeLab
             RefreshGhost();
             RefreshTooltip((modal && !(g.phase == Phase.Augment && !PauseOpen)) || !InWorld);   // màn chọn lõi vẫn hiện tooltip (mô tả đầy đủ)
             RefreshPerf();
+            RefreshSettings();
+            if (phase == Phase.Battle && lastPhaseUi != Phase.Battle) shopOpenBattle = Settings.BattleShopOpen;   // mỗi đợt: theo Settings
+            lastPhaseUi = phase;
 
             battle.View.BlockMouse = !InWorld || modal || panning || (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject() && !fakeMouse.HasValue);
         }
 
         void RefreshMenu()
         {
+            // không có lượt chơi đã lưu thì không có nút Continue; các nút dồn lên, bảng co lại, căn giữa màn hình
             var save = g.PeekSave();
-            continueBtn.SetOn(save != null);
-            continueInfo.Set(save != null ? $"Wave {save.wave}/{Tuning.Waves} · {GameData.Factions[save.faction].name} · {save.hearts} heart(s) left" : "No saved run");
-            newGameNote.Set(save != null ? "Starting a new run replaces the saved one." : "");
+            bool has = save != null;
+            continueBtn.GetComponent<RectTransform>().Show(has);
+            continueInfo.Show(has);
+            newGameNote.Show(has);
+            float y = 170f;
+            if (has)
+            {
+                continueBtn.At(60f, y, 400f, 64f);
+                continueInfo.At(0f, y + 68f, 520f, 24f);
+                continueInfo.Set($"Wave {save.wave}/{Tuning.Waves} · {GameData.Factions[save.faction].name} · {save.hearts} heart(s) left");
+                y += 112f;
+            }
+            newGameBtn.At(60f, y, 400f, 64f);
+            if (has) { newGameNote.At(0f, y + 68f, 520f, 22f); newGameNote.Set("Starting a new run replaces the saved one."); y += 112f; }
+            else y += 88f;
+            menuSettingsBtn.At(60f, y, 400f, 64f); y += 88f;
+            quitBtn.At(60f, y, 400f, 64f); y += 64f + 40f;
+            menuPanel.At(120f, Mathf.Round((VH - y) * 0.5f), 520f, y);
         }
 
         void RefreshTopBar()
@@ -1592,7 +1660,7 @@ namespace HordeLab
 
         void RefreshPerf()
         {
-            bool show = g.phase == Phase.Battle || g.phase == Phase.Sandbox;
+            bool show = (g.phase == Phase.Battle && Settings.ShowFps) || g.phase == Phase.Sandbox && Settings.ShowFps;
             perfText.transform.SetParent(g.phase == Phase.Sandbox ? root : hud, false);
             perfText.Show(show);
             if (show)

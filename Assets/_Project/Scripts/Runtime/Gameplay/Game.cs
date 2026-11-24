@@ -120,6 +120,7 @@ namespace HordeLab
 
         void Start()
         {
+            Settings.Load();
             ui = gameObject.AddComponent<GameUi>();
             ui.Init(this);
             if (phase == Phase.Menu) EnterMenu();
@@ -521,6 +522,7 @@ namespace HordeLab
             }
 
             battle.ApplyUnitAugments(t => Has(Aug.ForUnit(t)), IsFullMoon(wave));
+            battle.speed = Settings.BattleSpeed;           // tốc độ mặc định khi vào trận (Settings)
             battle.simulate = true;
             battle.paused = false;
             phase = Phase.Battle;
