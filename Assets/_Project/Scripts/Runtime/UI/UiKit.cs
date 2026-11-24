@@ -23,6 +23,7 @@ namespace HordeLab
         public static Sprite StarFor(int stars) => Stars[Mathf.Clamp(stars, 1, Stars.Length) - 1];
         public static Sprite[] ResIcons, Tiles, UnitIcons, Shapes, StatIcons;
         public static Sprite MeteorIcon, BoltIcon;
+        public static Sprite Logo;                      // logo chữ Fantasy World War (pixel, menu chính)
         public static Sprite[] UnitIconsTight;          // như UnitIcons nhưng lính bộ cắt sát hình (icon to trên thẻ lõi)     // lấy từ texture đạn, dùng cho thẻ lõi
         public static Sprite[] Emblems;                // biểu tượng phe (thay cho tên phe trên giao diện)
 
@@ -41,6 +42,7 @@ namespace HordeLab
             var proj = PixelArt.BuildArrowTexture();
             Sprite ProjCell(int kind) => Sprite.Create(proj, new Rect(0f, proj.height - (kind + 1) * PixelArt.ProjH, PixelArt.ProjW, PixelArt.ProjH), new Vector2(0.5f, 0.5f), 100f);
             MeteorIcon = ProjCell(Proj.Meteor);
+            Logo = Whole(PixelArt.LogoTexture());
             BoltIcon = ProjCell(Proj.BigBolt);
             var emb = PixelArt.FactionEmblems();
             Emblems = new Sprite[emb.Length];

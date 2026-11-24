@@ -749,8 +749,10 @@ namespace HordeLab
             menu.Fill();
             var p = Panel(menu).At(120f, 250f, 520f, 560f).rectTransform;   // không làm mờ trận đánh nền
             menuPanel = p;
-            Txt(p, "Fantasy World War", 46f, TextAlignmentOptions.Center, true, false, Gold).At(0f, 38f, 520f, 70f);
-            Txt(p, "Build the castle. Watch the horde.", 17f, TextAlignmentOptions.Center, false, false, Grey).At(0f, 112f, 520f, 26f);
+            // logo chữ vẽ pixel, phóng nguyên lần x6 (76x33 → 456x198)
+            var logo = Img(p, Logo, Color.white, false, false, "Logo");
+            logo.At(Mathf.Round((520f - Logo.rect.width * 6f) * 0.5f), 22f, Logo.rect.width * 6f, Logo.rect.height * 6f);
+            Txt(p, "Build the castle. Watch the horde.", 17f, TextAlignmentOptions.Center, false, false, Grey).At(0f, 226f, 520f, 26f);
 
             continueBtn = Btn(p, "Continue", () => Go(() => g.ContinueRun()), 24f).At(60f, 170f, 400f, 64f);
             continueInfo = Txt(p, "", 15f, TextAlignmentOptions.Center, false, false, Grey).At(0f, 238f, 520f, 24f);
@@ -933,7 +935,7 @@ namespace HordeLab
             continueBtn.GetComponent<RectTransform>().Show(has);
             continueInfo.Show(has);
             newGameNote.Show(has);
-            float y = 170f;
+            float y = 272f;                                     // dưới logo + dòng giới thiệu
             if (has)
             {
                 continueBtn.At(60f, y, 400f, 64f);
