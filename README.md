@@ -35,7 +35,8 @@ Phần mô phỏng vẫn là lõi "vạn quân" cũ: **Job System + Burst + GPU 
      Bấm chọn thẻ rồi bấm vào nhà khác loại thì không đổi gì cả, chỉ cầm nhà đó lên.
    - Thẻ **Mở rộng đất**: thả vào ô sát cạnh lưới để mở thêm ô, tối đa trong vùng **7×7**. Không ra khi roll cửa hàng;
      mua bằng nút **Buy Land** (luôn có, mua bao nhiêu cũng được) hoặc nhận ở phần thưởng.
-   - **Cửa hàng** (góc phải): mua thẻ bằng Tinh thể năng lượng, có nút làm mới. Nút **Lock** giữ thẻ ở ô đó qua các lần làm mới.
+   - **Cửa hàng** (kiểu TFT): bấm vào thẻ để mua bằng Tinh thể năng lượng; cột trái có nút **mua đất** và **đổi lại** (chỉ icon + giá);
+     ổ khoá ở góc thẻ giữ thẻ qua các lần đổi. Tab **SHOP** trên cửa hàng để thu gọn / mở.
    - **Bán:** kéo thẻ hoặc công trình vào ô *SELL* để lấy Tinh thể (nhà n sao = 2^(n-1) nhà gộp lại nên được ngần ấy lần).
      Công trình nào cũng kéo ngược về tay được (thành thẻ giữ số sao).
    - Rê chuột vào thẻ / công trình để xem chi tiết; nhà buff sẽ tô viền vàng các ô nó tác động.

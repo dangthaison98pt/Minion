@@ -5,7 +5,7 @@ namespace HordeLab
     /// <summary>Icon chỉ số 9x9 cho tooltip (vẽ phần màu, viền đen tự thêm), để người chơi nhìn lướt thay vì đọc chữ.</summary>
     public static partial class PixelArt
     {
-        public const int StatDamage = 0, StatRange = 1, StatSpeed = 2, StatTime = 3, StatSplash = 4, StatBonus = 5, StatCount = 6;
+        public const int StatDamage = 0, StatRange = 1, StatSpeed = 2, StatTime = 3, StatSplash = 4, StatBonus = 5, StatReroll = 6, StatLock = 7, StatCount = 8;
 
         /// <summary>Vẽ từ chuỗi: '.' trống, a/b/c/d = 4 màu. Chừa 1 pixel mép rồi tự thêm viền.</summary>
         static Texture2D OutlinedIcon(string name, string[] rows, Color32 a, Color32 b, Color32 c, Color32 d)
@@ -142,6 +142,20 @@ namespace HordeLab
                 "...aaa...",
                 ".........",
             }, Rgb(120, 210, 90), Rgb(190, 250, 160), default, default),
+            // đổi lại (roll): mũi tên vòng
+            OutlinedIcon("Reroll", new[]
+            {
+                "...............", ".........b.....", ".....aaaabb....", "....aaaaabbb...", "...aaa...bb....",
+                "..aaa..........", "..aa.......aa..", "..aa.......aa..", "..aa.......aa..", "..aaa.....aaa..",
+                "...aaa...aaa...", "....aaaaaaa....", ".....aaaaa.....", "...............", "...............",
+            }, Rgb(255, 214, 70), Rgb(255, 236, 140), default, default),
+            // khoá ô cửa hàng: ổ khoá
+            OutlinedIcon("Lock", new[]
+            {
+                "...............", "...............", ".....aaaaa.....", "....a.....a....", "....a.....a....",
+                "....a.....a....", "...bbbbbbbbb...", "...bbbbbbbbb...", "...bbbbcbbbb...", "...bbbbcbbbb...",
+                "...bbbbbbbbb...", "...bbbbbbbbb...", "...............", "...............", "...............",
+            }, Rgb(196, 204, 218), Gold, Rgb(60, 44, 30), default),
         };
     }
 }

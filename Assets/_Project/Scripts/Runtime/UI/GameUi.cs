@@ -115,11 +115,14 @@ namespace HordeLab
         class ShopView
         {
             public RectTransform rt;
-            public Image tile, lockFrame;
-            public TextMeshProUGUI name, cat, sold;
+            public Image bg, tile, lockFrame, lockIcon, catStrip, priceIcon;
+            public TextMeshProUGUI name, cat, price;
             public Button buy, lockBtn;
+            public CanvasGroup look;           // làm mờ khi không đủ Tinh thể
             public GameObject content;
         }
+        TextMeshProUGUI landCost, rollCost;
+        Image landIcon, rollIcon, landCrystal, rollCrystal;
 
         class RewardView { public Image tile; public TextMeshProUGUI text; }
 
@@ -332,6 +335,10 @@ namespace HordeLab
             br.sizeDelta = new Vector2(96f, 30f);
         }
 
+        /// <summary>
+        /// Cửa hàng kiểu TFT: cột trái 2 nút to (mua đất, đổi lại) chỉ có icon + giá; 4 thẻ hình lớn, bấm vào thẻ là mua,
+        /// tên dưới trái, giá dưới phải, ổ khoá ở góc; ô đã bán để trống. Tab SHOP nằm trên cửa hàng để thu gọn / mở.
+        /// </summary>
         void BuildDock()
         {
             var panel = Panel(hud, false, "Shop dock");
@@ -339,36 +346,65 @@ namespace HordeLab
             dock.anchorMin = new Vector2(0f, 0f); dock.anchorMax = new Vector2(1f, 0f); dock.pivot = new Vector2(0f, 0f);
             dock.offsetMin = new Vector2(PanelW + 52f, 10f); dock.offsetMax = new Vector2(-10f, 10f + DockH);
 
-            shopBtn = Btn(dock, "SHOP", ToggleShop, 18f).At(14f, 10f, 124f, 40f);   // bấm để thu gọn / mở cửa hàng
-            shopCrystalIcon = Img(dock, Crystal, Color.white).At(22f, 50f, 26f, 26f);
-            shopCrystals = Txt(dock, "", 22f, TextAlignmentOptions.MidlineLeft, true, false, new Color(0.56f, 0.91f, 1f)).At(54f, 46f, 80f, 34f);
-            rollBtn = Btn(dock, "", () => g.PayRoll(), 17f).At(18f, 98f, 122f, 60f);
+            // tab SHOP + Tinh thể (luôn hiện, kể cả khi thu gọn)
+            shopBtn = Btn(hud, "", ToggleShop, 18f, "Shop tab");
+            var tab = shopBtn.GetComponent<RectTransform>();
+            tab.anchorMin = tab.anchorMax = tab.pivot = new Vector2(0f, 0f);
+            shopBtn.Label().At(10f, 0f, 80f, 38f);
+            shopBtn.Label().alignment = TextAlignmentOptions.MidlineLeft;
+            shopCrystalIcon = Img(tab, Crystal, Color.white).At(108f, 8f, 22f, 22f);
+            shopCrystals = Txt(tab, "", 19f, TextAlignmentOptions.MidlineLeft, true, false, new Color(0.56f, 0.91f, 1f)).At(134f, 0f, 50f, 38f);
+
+            // mua đất (như "Mua XP" của TFT): icon ô đất + giá
+            landBtn = Btn(dock, "", () => g.BuyLand(), 15f, "Buy land").At(14f, 14f, 200f, 70f);
+            landIcon = Img(landBtn.transform, null, Color.white).At(10f, 7f, 56f, 56f);
+            landCrystal = Img(landBtn.transform, Crystal, Color.white).At(124f, 22f, 26f, 26f);
+            landCost = Txt(landBtn.transform, "", 24f, TextAlignmentOptions.MidlineLeft, true).At(154f, 0f, 40f, 70f);
+            // đổi lại: icon roll + giá
+            rollBtn = Btn(dock, "", () => g.PayRoll(), 17f, "Reroll").At(14f, 92f, 200f, 70f);
+            rollIcon = Img(rollBtn.transform, StatIcons[PixelArt.StatReroll], Color.white).At(16f, 11f, 48f, 48f);
+            rollCrystal = Img(rollBtn.transform, Crystal, Color.white).At(124f, 22f, 26f, 26f);
+            rollCost = Txt(rollBtn.transform, "", 24f, TextAlignmentOptions.MidlineLeft, true).At(154f, 0f, 40f, 70f);
 
             for (int i = 0; i < shopSlots.Length; i++)
             {
                 int slot = i;
                 var v = new ShopView();
-                var bg = Img(dock, White, Slot, false, true, "Shop slot");
-                v.rt = bg.rectTransform;
+                v.bg = Img(dock, White, new Color(0.09f, 0.08f, 0.1f), false, true, "Shop card");
+                v.rt = v.bg.rectTransform;
+                v.buy = v.bg.gameObject.AddComponent<Button>();          // bấm vào thẻ là mua
+                v.buy.targetGraphic = v.bg;
+                v.buy.transition = Selectable.Transition.None;
+                v.buy.navigation = new Navigation { mode = Navigation.Mode.None };
+                v.buy.onClick.AddListener(() => g.Buy(slot));
                 v.content = Node("Content", v.rt).gameObject;
                 ((RectTransform)v.content.transform).Fill();
-                v.tile = Img(v.content.transform, null, Color.white).At(8f, 8f, 96f, 96f);
-                v.name = Txt(v.content.transform, "", 17f, TextAlignmentOptions.TopLeft, true, true, Gold);
-                v.cat = Txt(v.content.transform, "", 13f, TextAlignmentOptions.TopLeft, false, false, Grey);
-                v.buy = Btn(v.content.transform, "", () => g.Buy(slot), 17f);
-                v.buy.Label().Fill(4f, 2f, 34f, 6f);                       // chừa chỗ cho biểu tượng Tinh thể bên phải
-                Img(v.buy.transform, Crystal, Color.white).AtRight(12f, 7f, 20f, 20f);
-                v.lockBtn = Btn(v.content.transform, "Lock", () => g.ToggleLock(slot), 15f).At(8f, 110f, 96f, 34f);
-                v.sold = Txt(v.rt, "sold", 16f, TextAlignmentOptions.Center, false, false, new Color(0.47f, 0.47f, 0.47f));
-                v.sold.Fill();
+                v.look = v.content.AddComponent<CanvasGroup>();
+                v.look.blocksRaycasts = false;
+                v.tile = Img(v.content.transform, null, Color.white);
+                v.tile.preserveAspect = true;
+                v.catStrip = Img(v.content.transform, White, new Color(0f, 0f, 0f, 0.55f));
+                v.cat = Txt(v.catStrip.transform, "", 13f, TextAlignmentOptions.MidlineLeft, false, false, new Color(0.85f, 0.85f, 0.85f));
+                v.cat.Fill(6f, 0f, 6f, 0f);
+                v.name = Txt(v.content.transform, "", 17f, TextAlignmentOptions.MidlineLeft, true, false, Gold);
+                v.price = Txt(v.content.transform, "", 18f, TextAlignmentOptions.MidlineRight, true);
+                v.priceIcon = Img(v.content.transform, Crystal, Color.white);
                 v.lockFrame = Frame(v.rt, new Color(1f, 0.82f, 0.3f, 0.95f));
                 v.lockFrame.Fill();
+                v.lockFrame.raycastTarget = false;
+                v.lockIcon = Img(v.rt, StatIcons[PixelArt.StatLock], Color.white, false, true, "Lock");
+                v.lockBtn = v.lockIcon.gameObject.AddComponent<Button>();
+                v.lockBtn.transition = Selectable.Transition.None;
+                v.lockBtn.navigation = new Navigation { mode = Navigation.Mode.None };
+                v.lockBtn.onClick.AddListener(() => g.ToggleLock(slot));
                 shopSlots[i] = v;
             }
 
-            startBtn = Btn(dock, "", g.StartWave, 26f);
-            landBtn = Btn(dock, "", () => g.BuyLand(), 15f);                       // mua Mở rộng đất: luôn có, không cần roll
+            startBtn = Btn(hud, "", g.StartWave, 26f, "Wave button");
+            var sb = startBtn.GetComponent<RectTransform>();
+            sb.anchorMin = sb.anchorMax = sb.pivot = new Vector2(1f, 0f);
             startHint = Txt(dock, "", 14f, TextAlignmentOptions.Center, false, true, Grey);
+            startHint.Show(false);
         }
 
         /// <summary>1 ô "icon + số" trong tooltip. br = xuống hàng trước ô này.</summary>
@@ -1024,65 +1060,78 @@ namespace HordeLab
         void RefreshDock(bool modal)
         {
             bool prep = g.phase == Phase.Prep;
-            dock.Show(g.ShopOpen);
-            if (!g.ShopOpen) return;
+            var tab = shopBtn.GetComponent<RectTransform>();
+            var sb = startBtn.GetComponent<RectTransform>();
+            tab.Show(g.ShopOpen);
+            sb.Show(prep);
+            if (!g.ShopOpen) { dock.Show(false); return; }
             bool open = prep ? shopOpenPrep : shopOpenBattle;
-            dock.offsetMax = new Vector2(dock.offsetMax.x, 10f + (open ? DockH : DockClosedH));
-            shopBtn.Label().Set(open ? "SHOP  -" : "SHOP  +");
-            rollBtn.GetComponent<RectTransform>().Show(open);
-            // thu gọn: tinh thể nằm cùng hàng với nút SHOP
-            shopCrystalIcon.At(open ? 22f : 152f, open ? 50f : 19f, 26f, 26f);
-            shopCrystals.At(open ? 54f : 184f, open ? 46f : 15f, 80f, 34f);
-            for (int i = 0; i < shopSlots.Length; i++) shopSlots[i].rt.Show(open);
-            startBtn.GetComponent<RectTransform>().Show(prep);
-            startHint.Show(prep && open);
+            dock.Show(open);
 
-            float w = dock.rect.width;
-            const float left = 152f, right = 276f, gap = 10f;
-            float slotW = Mathf.Floor((w - left - right - gap * (shopSlots.Length - 1)) / shopSlots.Length);
+            // tab SHOP ngay trên mép cửa hàng (thu gọn thì nằm sát đáy)
+            tab.anchoredPosition = new Vector2(PanelW + 52f, 10f + (open ? DockH - 4f : 0f));
+            tab.sizeDelta = new Vector2(190f, 38f);
+            shopBtn.Label().Set(open ? "SHOP  -" : "SHOP  +");
             shopCrystals.Set(g.crystals.ToString());
-            rollBtn.Label().Set(g.RollCost == 0 ? "Reroll\n<size=14><color=#9fe07a>FREE</color></size>" : $"Reroll\n<size=14>{g.RollCost} crystal</size>");
+
+            // nút Wave: góc dưới phải (trong cột phải của cửa hàng khi mở)
+            float rightCol = prep && open ? 276f : 0f;
+            sb.anchoredPosition = new Vector2(-24f, open ? 24f : 14f);
+            sb.sizeDelta = new Vector2(246f, open ? 148f : 56f);
+            startBtn.Label().Set($"Wave {g.wave}");
+            if (prep && !modal && Over(sb))
+            {
+                if (g.hand.Count >= Tuning.HandLimit) tipText = "<color=#ff8f8f>Hand is full</color>";
+                else if (city.EmptyCount() == city.cells.Count) tipText = "<color=#ffd84a>Place some buildings first</color>";
+            }
+            if (!open) return;
+
+            // mua đất + đổi lại: chỉ icon + giá
+            bool landMax = g.LandLeft <= 0;
+            landIcon.sprite = Tiles[B.Expand];
+            landCost.Set(landMax ? "<color=#888888>-</color>" : g.Price(B.Expand).ToString());
+            landCrystal.Show(!landMax);
+            landBtn.SetOn(g.CanBuyLand);
+            if (!modal && Over(landBtn.GetComponent<RectTransform>())) infoDef = B.Expand;
+            rollCost.Set(g.RollCost == 0 ? "<color=#9fe07a>0</color>" : g.RollCost.ToString());
             rollBtn.SetOn(g.CanRoll);
 
-            for (int i = 0; i < shopSlots.Length && open; i++)
+            // 4 thẻ
+            float w = dock.rect.width, h = DockH - 28f;
+            const float left = 228f, gap = 10f;
+            float slotW = Mathf.Floor((w - left - rightCol - 14f - gap * (shopSlots.Length - 1)) / shopSlots.Length);
+            for (int i = 0; i < shopSlots.Length; i++)
             {
                 var v = shopSlots[i];
-                v.rt.At(left + i * (slotW + gap), 14f, slotW, DockH - 28f);
+                v.rt.At(left + i * (slotW + gap), 14f, slotW, h);
                 int card = g.shop[i];
-                v.content.SetActive(card >= 0);
-                v.sold.Show(card < 0);
-                v.lockFrame.Show(card >= 0 && g.shopLocked[i]);
-                if (card < 0) continue;
+                bool has = card >= 0;
+                v.content.SetActive(has);
+                v.lockIcon.rectTransform.Show(has);
+                v.lockFrame.Show(has && g.shopLocked[i]);
+                v.bg.color = has ? new Color(0.16f, 0.13f, 0.14f) : new Color(0.07f, 0.06f, 0.08f);   // ô đã bán: để trống
+                v.buy.interactable = has && g.CanBuy(i);
+                if (!has) continue;
 
                 var d = GameData.Buildings[card];
                 v.tile.sprite = Tiles[card];
-                v.name.At(112f, 8f, slotW - 120f, 46f);
-                v.name.Set(d.name);
-                v.cat.At(112f, 56f, slotW - 120f, 20f);
+                v.tile.At(6f, 6f, slotW - 12f, h - 46f);
+                v.catStrip.At(6f, 6f, slotW - 12f, 20f);
                 v.cat.Set(d.cat == Cat.Barracks ? GameData.Units[d.unit].name : GameData.CatName[(int)d.cat]);
-                v.buy.At(112f, 110f, slotW - 120f, 34f);
-                v.buy.Label().Set($"Buy {g.Price(card)}");
-                v.buy.SetOn(g.CanBuy(i));
-                v.lockBtn.Label().Set(g.shopLocked[i] ? "<color=#ffd84a>Locked</color>" : "Lock");
+                v.name.At(10f, h - 38f, slotW - 74f, 32f);
+                v.name.Set(d.name);
+                v.price.At(slotW - 62f, h - 38f, 26f, 32f);
+                v.price.Set(g.Price(card).ToString());
+                v.priceIcon.At(slotW - 32f, h - 32f, 22f, 22f);
+                v.look.alpha = g.CanBuy(i) ? 1f : 0.45f;
+                v.lockIcon.rectTransform.At(slotW - 34f, 8f, 26f, 26f);
+                v.lockIcon.color = g.shopLocked[i] ? Color.white : new Color(1f, 1f, 1f, 0.35f);
 
                 if (modal) continue;
-                if (Over(v.lockBtn.GetComponent<RectTransform>()))
-                    tipText = g.shopLocked[i] ? "<b>Locked</b>\nThis card stays through rerolls and the free refresh after each wave. Click to unlock."
-                                              : "<b>Lock this slot</b>\nKeep this card through rerolls and the free refresh after each wave.";
+                if (Over(v.lockIcon.rectTransform))
+                    tipText = g.shopLocked[i] ? "<b>Locked</b>\nStays through rerolls. Click to unlock." : "<b>Lock</b>\nKeep this card through rerolls.";
                 else if (Over(v.rt)) infoDef = card;
             }
-
-            startBtn.At(w - right + 14f, open ? 14f : 8f, right - 30f, open ? 104f : DockClosedH - 16f);
-            startBtn.Label().Set($"Wave {g.wave}");
-            landBtn.GetComponent<RectTransform>().Show(open);
-            landBtn.At(w - right + 14f, prep ? 124f : 14f, right - 30f, prep ? 38f : 104f);
-            landBtn.Label().Set(g.LandLeft <= 0 ? "<color=#888888>Land: max</color>" : $"Buy Land  <color=#8fe8ff>{g.Price(B.Expand)}</color>");
-            landBtn.SetOn(g.CanBuyLand);
-            if (!modal && Over(landBtn.GetComponent<RectTransform>())) infoDef = B.Expand;
-            startHint.At(w - right + 14f, 122f, right - 30f, 40f);
-            startHint.Show(false);
-            startHint.Set(g.hand.Count >= Tuning.HandLimit ? "<color=#ff8f8f>Hand is full</color>"
-                        : city.EmptyCount() == city.cells.Count ? "<color=#ffd84a>Place some buildings first</color>" : "");
         }
 
         // ------------------------------------------------------------------
