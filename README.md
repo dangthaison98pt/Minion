@@ -27,8 +27,9 @@ Phần mô phỏng vẫn là lõi "vạn quân" cũ: **Job System + Burst + GPU 
    - Kéo thẻ từ tay thả vào ô trống của lưới thành để xây (lưới bắt đầu 3×3). Hoặc bấm chọn thẻ rồi bấm vào ô.
    - Lăn chuột trên lưới để đổi cỡ ô, giữ chuột phải / giữa để kéo lưới.
    - Kéo thẻ lên nhà cùng loại, cùng sao để **gộp** (tối đa 4 sao). Kéo công trình sang ô khác để gộp hoặc đổi chỗ.
-   - Kéo thẻ lên công trình **không gộp được** để **thay thế** (viền cam + dòng báo trước): nhà cũ 1 sao quay về tay,
-     nhà cũ nhiều sao không tách ra được nên tự bán lấy Tinh thể.
+   - **Kéo** thẻ lên công trình 1 sao **không gộp được** để **đổi**: thẻ lên ô, nhà cũ về tay (viền cam + dòng báo trước).
+     Nhà nhiều sao không bao giờ bị thay (viền đỏ): muốn bỏ thì kéo nó sang ô khác hoặc vào ô SELL.
+     Bấm chọn thẻ rồi bấm vào nhà khác loại thì không thay gì cả, chỉ cầm nhà đó lên.
    - Thẻ **Mở rộng đất**: thả vào ô sát cạnh lưới để mở thêm ô.
    - **Cửa hàng** (góc phải): mua thẻ bằng Tinh thể năng lượng, có nút làm mới. Nút **Lock** giữ thẻ ở ô đó qua các lần làm mới.
    - **Bán:** kéo thẻ hoặc công trình vào ô *SELL* để lấy Tinh thể (nhà n sao = 2^(n-1) nhà gộp lại nên được ngần ấy lần).
@@ -84,7 +85,7 @@ Tất cả nằm trong class `Tuning` và bảng dữ liệu ở [`GameData.cs`]
 | Quy mô đợt địch | `5 + 2.2·đợt + 0.16·đợt²` tiểu đội, mạnh thêm 4% mỗi đợt |
 | Mọi chỉ số quân, chi phí, chu kỳ nhà | Số khởi điểm, chưa cân bằng |
 
-Ngoài GDD, có thêm vài thứ cho dễ chơi: kéo công trình để **đổi chỗ**, thả thẻ đè lên nhà để **thay thế**, **tua nhanh** x2/x4, **bán** thẻ / công trình,
+Ngoài GDD, có thêm vài thứ cho dễ chơi: kéo công trình để **đổi chỗ**, thả thẻ đè lên nhà 1 sao để **đổi về tay**, **tua nhanh** x2/x4, **bán** thẻ / công trình,
 **khoá ô** cửa hàng, **tự lưu** lượt chơi.
 Tầm bắn và tốc độ đi của mọi quân nhân 0,6 (`RangeScale`, `SpeedScale`) cho vừa chiến trường 96 × 54. Còn một lưới an toàn:
 nếu địch đã đến hết mà 150 giây sau trận vẫn chưa ngã ngũ thì tính là địch rút (phòng hai bên kẹt nhau mãi).

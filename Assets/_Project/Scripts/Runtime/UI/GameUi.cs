@@ -673,11 +673,12 @@ namespace HordeLab
             // Cầm thẻ trên tay kê lên công trình không gộp được → thay thế: viền cam + báo trước nhà cũ đi đâu
             int handCard = dragCard >= 0 && dragCard < g.hand.Count ? g.hand[dragCard]
                          : !dragFromCell && selectedCard >= 0 && selectedCard < g.hand.Count ? g.hand[selectedCard] : -1;
-            replaceTip = prep && handCard >= 0 && hoverCellValid ? g.ReplaceHint(handCard, hoverCell) : null;
+            bool replaceOk = false;
+            replaceTip = prep && dragCard >= 0 && handCard >= 0 && hoverCellValid ? g.ReplaceHint(handCard, hoverCell, out replaceOk) : null;
             if (dragDef >= 0 && hoverCellValid && cells.TryGetValue(hoverCell, out var hv))
             {
                 hv.frame.Show(true);
-                hv.frame.color = replaceTip != null ? new Color(1f, 0.6f, 0.2f) : Color.white;
+                hv.frame.color = replaceTip == null ? Color.white : replaceOk ? new Color(1f, 0.6f, 0.2f) : new Color(1f, 0.3f, 0.25f);
             }
             if (!prep) { dragFromCell = false; }
         }
@@ -840,11 +841,16 @@ namespace HordeLab
 
                 if (pressCard < 0 && hoverCellValid && Over(gridView))
                 {
-                    if (selectedCard >= 0)
+                    var target = city.Get(hoverCell);
+                    // bấm chọn thẻ rồi bấm ô: chỉ xây vào ô trống / mở ô / gộp. Bấm vào nhà khác loại thì KHÔNG thay nhà đó
+                    // (dễ bấm nhầm khi định kéo nhà đi) mà bỏ chọn thẻ và cầm nhà lên như bình thường. Muốn thay thì kéo thẻ.
+                    bool playable = selectedCard >= 0 && selectedCard < g.hand.Count &&
+                                    (target == null || (Tuning.MergeFromHand && city.CanMerge(hoverCell, g.hand[selectedCard], 1)));
+                    if (playable)
                     {
-                        if (g.PlayCard(selectedCard, hoverCell)) selectedCard = -1;      // bấm chọn thẻ rồi bấm ô
+                        if (g.PlayCard(selectedCard, hoverCell)) selectedCard = -1;
                     }
-                    else if (city.Get(hoverCell) != null) { dragFromCell = true; dragCell = hoverCell; }
+                    else if (target != null) { selectedCard = -1; dragFromCell = true; dragCell = hoverCell; }
                 }
                 else if (pressCard < 0 && selectedCard >= 0 && Over(sellZone))
                 {

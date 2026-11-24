@@ -329,13 +329,13 @@ namespace HordeLab
         }
 
         /// <summary>
-        /// Thả thẻ lên một công trình mà không gộp được (khác loại, hoặc cùng loại nhưng khác sao) thì thay thế:
-        /// nhà cũ 1 sao quay về tay, nhà cũ nhiều sao (không tách ra được) thì bán lấy Tinh thể.
+        /// Thả thẻ lên một công trình 1 sao mà không gộp được thì đổi chỗ: thẻ lên ô, nhà cũ quay về tay.
+        /// Nhà nhiều sao không tách lại thành thẻ được nên KHÔNG bao giờ bị thay (không tự bán, không mất nhà).
         /// </summary>
         public bool CanReplace(int card, Vector2Int p)
         {
             var b = city.Get(p);
-            if (phase != Phase.Prep || card == B.Expand || b == null || b.def == card) return false;
+            if (phase != Phase.Prep || card == B.Expand || b == null || b.def == card || b.stars != 1) return false;
             return !(Tuning.MergeFromHand && city.CanMerge(p, card, 1));
         }
 
@@ -344,22 +344,23 @@ namespace HordeLab
             int card = hand[index];
             var old = city.Remove(p);
             city.Place(p, card);
-            hand.RemoveAt(index);
-            if (old.stars == 1) hand.Insert(Mathf.Min(index, hand.Count), old.def);   // nhà cũ về đúng chỗ thẻ vừa dùng
-            else crystals += SellValue(old.stars);
+            hand[index] = old.def;   // nhà cũ về đúng chỗ thẻ vừa dùng
             SaveRun();
             return true;
         }
 
-        /// <summary>Câu báo trước khi thả thẻ đè lên công trình ở ô <paramref name="p"/>; null nếu không phải thay thế.</summary>
-        public string ReplaceHint(int card, Vector2Int p)
+        /// <summary>
+        /// Câu báo khi cầm thẻ kê lên công trình ở ô <paramref name="p"/>: đổi được thì nói nhà cũ về tay,
+        /// nhà nhiều sao thì nói vì sao không đổi được. null nếu không liên quan (ô trống, gộp được...).
+        /// </summary>
+        public string ReplaceHint(int card, Vector2Int p, out bool allowed)
         {
-            if (!CanReplace(card, p)) return null;
+            allowed = CanReplace(card, p);
             var old = city.Get(p);
-            string name = $"{old.Def.name}{(old.stars > 1 ? $" ({old.stars}-star)" : "")}";
-            return $"<b>Replace {name}</b> with {GameData.Buildings[card].name}\n" +
-                   (old.stars == 1 ? $"{old.Def.name} goes back to your hand."
-                                   : $"<color=#ffd84a>{name} cannot go back to your hand: it is sold for <color=#8fe8ff>{SellValue(old.stars)}</color> crystal(s).</color>");
+            if (allowed) return $"<b>Swap</b>: {GameData.Buildings[card].name} goes here, {old.Def.name} goes back to your hand.";
+            if (phase != Phase.Prep || card == B.Expand || old == null || old.def == card || old.stars == 1) return null;
+            if (Tuning.MergeFromHand && city.CanMerge(p, card, 1)) return null;
+            return $"<color=#ff8f8f>Can't replace {old.Def.name} ({old.stars}-star)</color>\nMerged buildings can't go back to your hand. Move it to another tile or drag it to SELL first.";
         }
 
         /// <summary>Tinh thể nhận được khi bán: nhà n sao là 2^(n-1) nhà gộp lại nên được ngần ấy lần.</summary>
