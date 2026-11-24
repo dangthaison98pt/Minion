@@ -777,9 +777,9 @@ namespace HordeLab
                 int r = opts[k];
                 var btn = Btn(marketPick, "", () => { var pm = g.PendingMarket; if (pm.HasValue) g.SetMarketTrade(pm.Value, r); }, 13f);
                 btn.At(14f + k * 68f, 32f, 64f, 62f);
-                Img(btn.transform, ResIcons[r], Color.white).At(18f, 6f, 28f, 32f);
+                Img(btn.transform, ResIcons[r], Color.white).At(20f, 5f, 24f, 27f);
                 btn.Label().Set(ResId.Name[r]);
-                btn.Label().rectTransform.Fill(0f, 40f, 0f, 4f);
+                btn.Label().rectTransform.Fill(0f, 33f, 0f, 12f);              // nằm trên viền dưới dày của nút
                 btn.Label().alignment = TextAlignmentOptions.Center;
             }
             marketPick.gameObject.SetActive(false);
