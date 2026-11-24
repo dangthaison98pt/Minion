@@ -1,4 +1,4 @@
-# Horde Lab — thủ thành bằng thẻ bài, vạn quân tự đánh
+# Fantasy World War — thủ thành bằng thẻ bài, vạn quân tự đánh
 
 Game làm theo [Docs/GDD.md](Docs/GDD.md): chọn 1 trong 5 phe, đặt công trình vào lưới thành bằng thẻ bài, rồi ngồi xem
 hàng nghìn lính tự đánh qua 30 đợt. Kinh tế và chiến đấu chạy cùng lúc: nhà tài nguyên sinh Dân / Lương thực / Gỗ / Vàng,
@@ -12,6 +12,8 @@ Màn hẹp hơn 16:9 (màn dọc, 16:10, 4:3): cả game nằm trong một khung
 bố cục giống hệt màn ngang.
 1080p và 4K phóng đúng x2 / x4 (sắc nét nhất); các cỡ còn lại phóng lẻ (720p x1,33, 900p x1,67, 1440p x2,67).
 Phần mô phỏng vẫn là lõi "vạn quân" cũ: **Job System + Burst + GPU instancing**, không dùng ECS, mỗi lính là 1 struct.
+
+**Icon game:** vẽ bằng code (`PixelArt.DrawAppIcon`, khiên vương miện + kiếm và rìu bắt chéo), bản build tự gán đủ 8 cỡ; PNG xem ở `Docs/Icon/`. Tên hiển thị: *Fantasy World War* (file chạy vẫn là `Build/HordeLab.exe`).
 
 ## Chạy thử ngay
 `Build/HordeLab.exe` — bản build sẵn (toàn màn hình không viền, Alt+Enter để ra cửa sổ).
@@ -99,10 +101,10 @@ class `Aug` và `GameData.BuildAugments()` trong [`GameData.cs`](Assets/_Project
 | Tiện ích | Veteran Recruits | Nhận ngay 1 nhà lính 2 sao ngẫu nhiên của phe mình |
 | Tiện ích | Master Architect | Nhà buff mạnh hơn 40% |
 | Huyền thoại | Dragon's Pact | Mỗi đợt có 1 con rồng khổng lồ (loại quân `UnitType.Dragon`) đi bộ chặn đường, đẩy lính dạt ra, phun lửa lan; vảy giảm 80% sát thương từ tên / nỏ / lao; chết thì 30 giây sau quay lại |
-| Huyền thoại | Meteor Shower | Mỗi 6 giây 1 thiên thạch (đạn `Proj.Meteor`: đầu đá cháy + đuôi lửa, kéo vệt lửa / khói) rơi chéo từ trời vào 1 tên địch ngẫu nhiên; nổ lửa lan + vết cháy |
-| Huyền thoại | Ballista Towers | Tường thành bắn mũi nỏ to (đạn `Proj.BigBolt`, đuôi lông đỏ) vào tên địch gần tường nhất (tầm 40), khoảng 1 phát / giây |
-| Huyền thoại | Mercenary Camp | Mỗi 20 giây 1 đội 4×4 lính thuê ngẫu nhiên của phe khác tới giúp |
-| Huyền thoại | Last Stand | Mỗi đợt, lần đầu thành sắp vỡ thì hồi lại 50% máu |
+| Huyền thoại | Meteor Shower | Mỗi 3,5 giây 1 thiên thạch 120 sát thương, nổ bán kính 4 (đạn `Proj.Meteor`: đầu đá cháy + đuôi lửa, kéo vệt lửa / khói) rơi chéo từ trời vào 1 tên địch ngẫu nhiên; nổ lửa lan + vết cháy |
+| Huyền thoại | Ballista Towers | Tường thành bắn mũi nỏ to (đạn `Proj.BigBolt`, đuôi lông đỏ) vào tên địch gần tường nhất (tầm 40), khoảng 3 phát / giây, 45 sát thương, nổ lan nhỏ |
+| Huyền thoại | Mercenary Camp | Mỗi 12 giây 1 đội 5×5 lính thuê tinh nhuệ (mạnh hơn 50%) ngẫu nhiên của phe khác tới giúp |
+| Huyền thoại | Last Stand | Mỗi đợt, lần đầu thành sắp vỡ: **hồi đầy máu** + sóng thánh dọc tường hất văng mọi địch trong 12 ô, choáng 3s, 80 sát thương (nhân theo đợt) |
 | Bí mật (mỗi phe 1 lõi) | Boss của phe mình đánh cho mình | Không bao giờ ra theo kiểu thường; đạt điều kiện ẩn thì lần chọn lõi kế tiếp chắc chắn có (ô giữa, kèm câu báo riêng). Human: **The Golden Emperor** — giữ thành không mất máu 5 đợt liên tiếp. Elf: **The World Tree** — có 4 nhà Gỗ trên lưới. Dwarf: **Thor** — có 4 nhà Vàng. Beastfolk: **The Berserker** — thắng 3 đợt trăng tròn. Void: **The Broodmother** — diệt tổng cộng 1500 quân địch. Bản phe mình mạnh hơn bản boss gốc: máu x2,8, sát thương x1,6, vùng chém +0,8, giảm 75% sát thương tên, miễn khống chế, hồi sinh 1 lần/đợt với 50% máu (chết lần 2 thì chờ đợt sau). Chiêu giống bản boss (xem dòng Trùm). Bot: `-secret` (có sẵn lõi bí mật của phe, cần `-savetest`), `-secretpick` (coi như vừa mở khoá) |
 
 Sức mạnh rồng, thiên thạch, nỏ và lính thuê nhân theo `Tuning.EnemyPower(đợt)` để không bị tụt hậu về cuối game.

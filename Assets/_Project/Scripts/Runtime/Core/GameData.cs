@@ -254,10 +254,11 @@ namespace HordeLab
         public const int FreeRolls = 1, BargainCut = 1, LandGrantCards = 2;
         public const float ArchitectBuff = 0.4f;
         public const float DragonDelay = 3f, DragonRespawn = 30f;            // rồng vào trận sau 3 giây, chết thì 30 giây sau quay lại
-        public const float MeteorEvery = 6f, MeteorDamage = 70f, MeteorSplash = 3f;
-        public const float BallistaEvery = 1.2f, BallistaDamage = 30f, BallistaRange = 40f;   // tầm tính từ tường thành
-        public const float MercEvery = 20f; public const int MercSide = 4;  // mỗi 20 giây 1 đội 4x4
-        public const float LastStandHeal = 0.5f;
+        public const float MeteorEvery = 3.5f, MeteorDamage = 120f, MeteorSplash = 4f;          // thiên thạch dày + to hơn
+        public const float BallistaEvery = 0.35f, BallistaDamage = 45f, BallistaRange = 40f, BallistaSplash = 1.2f;   // ~3 phát / giây, nổ lan nhỏ; tầm tính từ tường
+        public const float MercEvery = 12f, MercPower = 1.5f; public const int MercSide = 5;  // mỗi 12 giây 1 đội 5x5 tinh nhuệ
+        // Last Stand: thành sắp vỡ → hồi đầy máu + sóng thánh dọc tường hất văng, choáng và đốt mọi địch gần tường
+        public const float LastStandRange = 12f, LastStandPush = 7f, LastStandStun = 3f, LastStandDamage = 80f;
     }
 
     public static class GameData
@@ -308,10 +309,12 @@ namespace HordeLab
             A(Aug.Dragon, AugCat.Legendary, "Dragon's Pact",
               $"A dragon fights for you every wave: {ds.maxHp:0} HP, breathes fire for {ds.damage:0} area damage every {ds.cooldown:0.#}s. " +
               $"Its scales take {pct(ds.arrowResist)}% less damage from arrows, bolts and javelins. Grows stronger each wave; returns {Aug.DragonRespawn:0}s after it falls.");
-            A(Aug.Meteor, AugCat.Legendary, "Meteor Shower", $"Every {Aug.MeteorEvery:0}s a meteor crashes into the enemy horde, burning everything around it.");
-            A(Aug.Ballista, AugCat.Legendary, "Ballista Towers", "Your walls fire heavy bolts at the closest enemy, about once a second.");
-            A(Aug.Mercenary, AugCat.Legendary, "Mercenary Camp", $"Every {Aug.MercEvery:0}s a squad of {Aug.MercSide * Aug.MercSide} mercenaries from a random other faction joins you.");
-            A(Aug.LastStand, AugCat.Legendary, "Last Stand", $"Once per wave, when the castle would fall it recovers {pct(Aug.LastStandHeal)}% of its HP instead.");
+            A(Aug.Meteor, AugCat.Legendary, "Meteor Shower", $"Every {Aug.MeteorEvery:0.#}s a meteor crashes into the enemy horde for {Aug.MeteorDamage:0} damage, burning everything around it.");
+            A(Aug.Ballista, AugCat.Legendary, "Ballista Towers", $"Your walls fire about {1f / Aug.BallistaEvery:0} heavy bolts per second at the closest enemies, {Aug.BallistaDamage:0} damage each with a small blast.");
+            A(Aug.Mercenary, AugCat.Legendary, "Mercenary Camp", $"Every {Aug.MercEvery:0}s a squad of {Aug.MercSide * Aug.MercSide} veteran mercenaries ({pct(Aug.MercPower - 1f)}% stronger) from a random other faction joins you.");
+            A(Aug.LastStand, AugCat.Legendary, "Last Stand",
+              $"Once per wave, when the castle would fall it is fully restored and a holy blast runs along the walls: every enemy within {Aug.LastStandRange:0} " +
+              $"is hurled back, stunned for {Aug.LastStandStun:0}s and takes {Aug.LastStandDamage:0} damage.");
             // ---- Lõi bí mật: mỗi phe gọi boss của phe mình đánh cho người chơi ----
             string allyCommon = $" Takes {pct(Aug.AllyArmor)}% less damage from arrows, bolts and javelins and cannot be stunned, rooted or feared. " +
                                 $"Grows stronger each wave. Rises again once per wave at {pct(Aug.AllyRevive)}% HP; if it falls again, it returns next wave.";
@@ -390,10 +393,10 @@ namespace HordeLab
             V(Aug.Recruit, "2-star", "Random troop building");
             V(Aug.Architect, P(Aug.ArchitectBuff), "Buff building power");
             V(Aug.Dragon, $"{Units[UnitType.Dragon].stats.maxHp:0} HP", "A fire dragon joins every wave");
-            V(Aug.Meteor, $"{Aug.MeteorEvery:0}s", "Meteors rain on the enemy");
-            V(Aug.Ballista, "1/s", "Walls fire heavy bolts");
+            V(Aug.Meteor, $"{Aug.MeteorEvery:0.#}s", "Meteors rain on the enemy");
+            V(Aug.Ballista, $"{1f / Aug.BallistaEvery:0}/s", "Walls fire heavy bolts");
             V(Aug.Mercenary, $"x{Aug.MercSide * Aug.MercSide}", $"Mercenaries every {Aug.MercEvery:0}s");
-            V(Aug.LastStand, $"{pct(Aug.LastStandHeal)}%", "Castle heals once when it would fall");
+            V(Aug.LastStand, "100%", "Castle rises again, blasts the horde");
             V(Aug.Emperor, $"{Units[UnitType.Emperor].stats.maxHp * Aug.AllyHp:0} HP", "The Emperor marches to war");
             V(Aug.WorldTreeAug, $"{Units[UnitType.WorldTree].stats.maxHp * Aug.AllyHp:0} HP", "The World Tree awakens");
             V(Aug.ThorAug, $"{Units[UnitType.Thor].stats.maxHp * Aug.AllyHp:0} HP", "Thunder fights for you");

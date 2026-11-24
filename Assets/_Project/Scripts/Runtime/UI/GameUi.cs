@@ -705,7 +705,7 @@ namespace HordeLab
             menu.Fill();
             var p = Panel(menu).At(120f, 250f, 520f, 560f).rectTransform;   // không làm mờ trận đánh nền
             menuPanel = p;
-            Txt(p, "Horde Lab", 60f, TextAlignmentOptions.Center, true, false, Gold).At(0f, 34f, 520f, 76f);
+            Txt(p, "Fantasy World War", 46f, TextAlignmentOptions.Center, true, false, Gold).At(0f, 38f, 520f, 70f);
             Txt(p, "Build the castle. Watch the horde.", 17f, TextAlignmentOptions.Center, false, false, Grey).At(0f, 112f, 520f, 26f);
 
             continueBtn = Btn(p, "Continue", () => Go(() => g.ContinueRun()), 24f).At(60f, 170f, 400f, 64f);

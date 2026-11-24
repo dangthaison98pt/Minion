@@ -332,6 +332,7 @@ namespace HordeLab
                         for (int a = Aug.Dragon; a <= Aug.LastStand; a++) game.Augments.Add(a);   // thử cả 5 lõi huyền thoại ngay đợt 1
                     // -secret (cũ: -emperor): có sẵn lõi bí mật của phe; -secretpick (cũ: -emperorpick): coi như vừa mở khoá
                     var cl = System.Environment.GetCommandLineArgs();
+                    if (System.Array.IndexOf(cl, "-laststand") >= 0 && !game.Has(Aug.LastStand)) game.Augments.Add(Aug.LastStand);   // thử riêng Last Stand
                     if (System.Array.IndexOf(cl, "-secret") >= 0 || System.Array.IndexOf(cl, "-emperor") >= 0) game.Augments.Add(game.SecretAug);
                     if (System.Array.IndexOf(cl, "-secretpick") >= 0 || System.Array.IndexOf(cl, "-emperorpick") >= 0) game.emperorUnlocked = game.emperorPending = true;
                     game.crystals = 50;                    // giữ 50 Tinh thể qua đợt 1 → hết đợt phải được lãi tối đa +5

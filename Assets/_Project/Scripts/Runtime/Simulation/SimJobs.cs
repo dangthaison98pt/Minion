@@ -704,6 +704,39 @@ namespace HordeLab
         void GiantHit(int i, int t, float dmg, int hits, int n, ref Random rng)
         {
             Unit a = units[i];
+            // hiệu ứng nhát đánh: vòng toả ra ở chỗ trúng + chùm hạt theo kiểu từng con
+            float2 at = units[t].pos;
+            float rr = stats[a.type].splash;
+            switch (a.type)
+            {
+                case UnitType.Emperor:
+                    Fx.Ring(particles, counters, at, rr, 14, PKind.Holy);
+                    Fx.Spray(particles, counters, ref rng, at, 0.4f, 6, PKind.Spark, 3f, 5f);
+                    break;
+                case UnitType.WorldTree:
+                    Fx.Ring(particles, counters, at, rr, 12, PKind.Leaf);
+                    Fx.Spray(particles, counters, ref rng, at, 0.6f, 8, PKind.Dust, 3f, 4f);
+                    Fx.Spray(particles, counters, ref rng, at, 0.4f, 4, PKind.Splinter, 3f, 5f);
+                    break;
+                case UnitType.Thor:
+                    Fx.Ring(particles, counters, at, rr, 16, PKind.Spark);
+                    Fx.Spray(particles, counters, ref rng, at, 0.3f, 8, PKind.Holy, 4f, 7f);
+                    Fx.Spray(particles, counters, ref rng, at, 0.6f, 6, PKind.Dust, 3f, 3f);
+                    break;
+                case UnitType.Berserker:
+                    Fx.Ring(particles, counters, at, rr, 12, PKind.Blood);
+                    Fx.Spray(particles, counters, ref rng, at, 0.4f, 8, PKind.Blood, 3.5f, 6f);
+                    Fx.Spray(particles, counters, ref rng, at, 0.4f, 3, PKind.Spark, 3f, 4f);
+                    break;
+                case UnitType.Fenrir:
+                    Fx.Spray(particles, counters, ref rng, at, 0.4f, 10, PKind.Blood, 4f, 5f);
+                    Fx.Spray(particles, counters, ref rng, at, 0.5f, 5, PKind.Dust, 3f, 3f);
+                    break;
+                case UnitType.Broodmother:
+                    Fx.Ring(particles, counters, at, rr, 10, PKind.VoidGoo);
+                    Fx.Spray(particles, counters, ref rng, at, 0.4f, 8, PKind.GreenSpark, 3f, 5f);
+                    break;
+            }
             if (a.type == UnitType.Berserker)
             {
                 a.hp = math.min(a.maxHp, a.hp + dmg * Aug.BerserkLifesteal * math.max(1, math.min(hits, 3)));
@@ -747,8 +780,8 @@ namespace HordeLab
                     // tia sét: chuỗi tia sáng dọc đường nhảy
                     for (int q = 1; q <= 4; q++)
                     {
-                        float2 at = math.lerp(p, v.pos, q / 4f) + rng.NextFloat2(-0.25f, 0.25f);
-                        Fx.Emit(particles, counters, new Particle { pos = at, vel = rng.NextFloat2(-1f, 1f), h = 0.9f + rng.NextFloat(0f, 0.6f), vh = 1f, maxLife = 0.35f, kind = (q & 1) == 0 ? PKind.Holy : PKind.Spark });
+                        float2 zp = math.lerp(p, v.pos, q / 4f) + rng.NextFloat2(-0.25f, 0.25f);
+                        Fx.Emit(particles, counters, new Particle { pos = zp, vel = rng.NextFloat2(-1f, 1f), h = 0.9f + rng.NextFloat(0f, 0.6f), vh = 1f, maxLife = 0.35f, kind = (q & 1) == 0 ? PKind.Holy : PKind.Spark });
                     }
                     if (jump == 0) h1 = best; else if (jump == 1) h2 = best; else if (jump == 2) h3 = best;
                     cur = best;

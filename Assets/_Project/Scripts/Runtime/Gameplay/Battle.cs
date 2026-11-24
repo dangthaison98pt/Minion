@@ -319,6 +319,43 @@ namespace HordeLab
             return seen > 0;
         }
 
+        /// <summary>
+        /// Last Stand: sóng thánh dọc tường thành. Mọi quân địch cách tường dưới <paramref name="range"/> bị hất văng ra xa,
+        /// choáng và mất máu (càng gần tường càng bị hất mạnh). Kèm cột sáng dọc tường.
+        /// </summary>
+        public void WallBlast(float range, float push, float stun, float damage)
+        {
+            simHandle.Complete();
+            int n = counters[C.Units];
+            for (int i = 0; i < n; i++)
+            {
+                var u = units[i];
+                if (u.team != 1 || u.hp <= 0f) continue;
+                float d = u.pos.x - Cfg.WallX;
+                if (d > range) continue;
+                u.pos.x += push * (1f - math.max(0f, d) / range) + 1f;
+                u.hp -= damage;
+                u.flash = 1f;
+                u.cc = stun; u.ccKind = CC.Stun; u.ccImmune = 0f;
+                units[i] = u;
+            }
+            // cột sáng + sóng dọc tường
+            for (float y = -Cfg.HalfH + 1f; y < Cfg.HalfH; y += 0.7f)
+                for (int k = 0; k < 3; k++)
+                {
+                    int m = counters[C.Particles];
+                    if (m >= particles.Length) break;
+                    particles[m] = new Particle
+                    {
+                        pos = new float2(Cfg.WallX + 0.6f, y + rng.NextFloat(-0.3f, 0.3f)),
+                        vel = new float2(rng.NextFloat(8f, 22f), rng.NextFloat(-1f, 1f)),
+                        h = rng.NextFloat(0.2f, 2.5f), vh = rng.NextFloat(2f, 8f), maxLife = 1.4f,
+                        kind = k == 0 ? PKind.Holy : k == 1 ? PKind.Spark : PKind.Dust
+                    };
+                    counters[C.Particles] = m + 1;
+                }
+        }
+
         /// <summary>Công cụ kiểm tra: vị trí con đầu tiên còn sống của loại <paramref name="type"/>.</summary>
         public bool FindUnit(int type, out float2 pos)
         {

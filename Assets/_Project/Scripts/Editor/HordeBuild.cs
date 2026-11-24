@@ -39,14 +39,57 @@ namespace HordeLab.EditorTools
             return i >= 0 && i + 1 < args.Length ? args[i + 1] : "Build/HordeLab.exe";
         }
 
+        const string IconDir = "Assets/_Project/Icon";
+
+        /// <summary>
+        /// Xuất icon game (vẽ bằng code, PixelArt.DrawAppIcon) ra PNG cho từng cỡ Windows cần + bản xem ở Docs/Icon,
+        /// rồi gán làm icon của bản build.
+        /// </summary>
+        [MenuItem("Horde Lab/Xuất icon game")]
+        public static void ApplyIcons()
+        {
+            Directory.CreateDirectory(IconDir);
+            Directory.CreateDirectory("Docs/Icon");
+            var target = NamedBuildTarget.Standalone;
+            int[] sizes = PlayerSettings.GetIconSizes(target, IconKind.Application);
+            foreach (int sz in new[] { 16, 32, 48, 64, 128, 256, 512 })
+            {
+                var t = PixelArt.AppIconTexture(sz);
+                File.WriteAllBytes($"Docs/Icon/icon_{sz}.png", t.EncodeToPNG());
+                Object.DestroyImmediate(t);
+            }
+            var icons = new Texture2D[sizes.Length];
+            for (int i = 0; i < sizes.Length; i++)
+            {
+                string path = $"{IconDir}/AppIcon_{sizes[i]}.png";
+                var t = PixelArt.AppIconTexture(sizes[i]);
+                File.WriteAllBytes(path, t.EncodeToPNG());
+                Object.DestroyImmediate(t);
+                AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceUpdate);
+                var imp = (TextureImporter)AssetImporter.GetAtPath(path);
+                imp.textureType = TextureImporterType.Default;
+                imp.mipmapEnabled = false;
+                imp.filterMode = FilterMode.Point;
+                imp.textureCompression = TextureImporterCompression.Uncompressed;
+                imp.alphaIsTransparency = true;
+                imp.SaveAndReimport();
+                icons[i] = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
+            }
+            PlayerSettings.SetIcons(target, icons, IconKind.Application);
+            var main = AssetDatabase.LoadAssetAtPath<Texture2D>($"{IconDir}/AppIcon_{sizes[0]}.png");
+            PlayerSettings.SetIcons(NamedBuildTarget.Unknown, new[] { main }, IconKind.Any);   // icon mặc định
+            Debug.Log($"[HordeLab] Đã gán icon game: {sizes.Length} cỡ ({string.Join(", ", sizes)})");
+        }
+
         [MenuItem("Horde Lab/Build Windows (.exe)")]
         public static void BuildWindows()
         {
             if (!File.Exists(ScenePath)) CreateScene();
             EditorBuildSettings.scenes = new[] { new EditorBuildSettingsScene(ScenePath, true) };
 
-            PlayerSettings.companyName = "HordeLab";
-            PlayerSettings.productName = "Horde Lab";
+            PlayerSettings.companyName = "FantasyWorldWar";
+            PlayerSettings.productName = "Fantasy World War";
+            ApplyIcons();
             PlayerSettings.fullScreenMode = FullScreenMode.FullScreenWindow; // Alt+Enter để ra cửa sổ
             PlayerSettings.defaultScreenWidth = 1920;
             PlayerSettings.defaultScreenHeight = 1080;

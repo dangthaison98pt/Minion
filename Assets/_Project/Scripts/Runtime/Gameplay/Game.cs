@@ -699,7 +699,7 @@ namespace HordeLab
                 ballistaT = Aug.BallistaEvery;
                 if (battle.PickEnemy(0, true, out var near) && near.x < Cfg.WallX + Aug.BallistaRange)
                 {
-                    battle.FireProjectile(0, new float2(Cfg.WallX - 0.5f, near.y), near, Aug.BallistaDamage * power, 0f, Proj.BigBolt, 30f, 0.6f);
+                    battle.FireProjectile(0, new float2(Cfg.WallX - 0.5f, near.y), near, Aug.BallistaDamage * power, Aug.BallistaSplash, Proj.BigBolt, 30f, 0.6f);
                     boltsFired++;
                 }
             }
@@ -714,7 +714,7 @@ namespace HordeLab
                 {
                     int type = pool[rng.NextInt(0, pool.Count)];
                     var pos = new float2(Cfg.PlayerSpawnX + rng.NextFloat(0f, 4f), rng.NextFloat(-Cfg.HalfH + 5f, Cfg.HalfH - 5f));
-                    battle.SpawnSquad(type, 0, pos, Aug.MercSide, power, power);
+                    battle.SpawnSquad(type, 0, pos, Aug.MercSide, power * Aug.MercPower, power * Aug.MercPower);
                     mercSquads++;
                 }
             }
@@ -861,9 +861,10 @@ namespace HordeLab
                 castleHp = Mathf.Max(0, MaxCastleHp + castleBonus - battle.Counter(C.Breach));
                 if (castleHp <= 0 && Has(Aug.LastStand) && !lastStandUsed)
                 {
-                    lastStandUsed = true;              // Last Stand: lần đầu thành sắp vỡ thì hồi lại một nửa
+                    lastStandUsed = true;              // Last Stand: lần đầu thành sắp vỡ thì hồi đầy + sóng thánh dọc tường
                     lastStands++;
-                    castleBonus += Mathf.RoundToInt(MaxCastleHp * Aug.LastStandHeal) - castleHp;
+                    castleBonus += MaxCastleHp - castleHp;
+                    battle.WallBlast(Aug.LastStandRange, Aug.LastStandPush, Aug.LastStandStun, Aug.LastStandDamage * Tuning.EnemyPower(wave));
                     castleHp = Mathf.Max(0, MaxCastleHp + castleBonus - battle.Counter(C.Breach));
                 }
                 if (castleHp <= 0) EndWave(false);
