@@ -291,10 +291,12 @@ namespace HordeLab
         // Thẻ bài
         // ------------------------------------------------------------------
         /// <summary>Bốc 1 thẻ: thẻ dùng chung + nhà lính của phe mình. Không bao giờ ra thẻ phe khác.</summary>
-        public int RandomCard()
+        /// <summary>Thẻ ngẫu nhiên. Cửa hàng không bao giờ ra Mở rộng đất (có nút mua đất riêng); phần thưởng thì vẫn có thể ra.</summary>
+        public int RandomCard(bool forShop = false)
         {
             const int shared = B.Barracks;            // 0..22: nhà tài nguyên + nhà buff
-            const float barracksW = 1.6f, expandW = 2.5f;
+            const float barracksW = 1.6f;
+            float expandW = forShop ? 0f : 2.5f;
             float total = shared + 5 * barracksW + expandW;
             float r = (float)rnd.NextDouble() * total;
             if (r < shared) return (int)r;
@@ -309,7 +311,7 @@ namespace HordeLab
             for (int i = 0; i < shop.Length; i++)
             {
                 if (shopLocked[i] && shop[i] >= 0) continue;
-                shop[i] = RandomCard();
+                shop[i] = RandomCard(true);
                 shopLocked[i] = false;
             }
         }
@@ -340,6 +342,29 @@ namespace HordeLab
 
         public bool CanBuy(int slot) =>
             ShopOpen && shop[slot] >= 0 && crystals >= Price(shop[slot]) && hand.Count < Tuning.HandLimit;
+
+        /// <summary>Mua thẻ Mở rộng đất: luôn có trong cửa hàng, mua bao nhiêu cũng được (không phải roll).</summary>
+        public bool CanBuyLand => ShopOpen && crystals >= Price(B.Expand) && hand.Count < Tuning.HandLimit && LandLeft > 0;
+
+        /// <summary>Số ô còn mở được trong vùng 7x7 (trừ thẻ Mở rộng đất đang cầm trên tay).</summary>
+        public int LandLeft
+        {
+            get
+            {
+                int inHand = 0;
+                foreach (int c in hand) if (c == B.Expand) inHand++;
+                return Tuning.MaxGridSide * Tuning.MaxGridSide - city.cells.Count - inHand;
+            }
+        }
+
+        public bool BuyLand()
+        {
+            if (!CanBuyLand) return false;
+            crystals -= Price(B.Expand);
+            AddCard(B.Expand);
+            SaveRun();
+            return true;
+        }
 
         public bool Buy(int slot)
         {
@@ -884,6 +909,7 @@ namespace HordeLab
         {
             if (phase != Phase.Prep) return;
             BotPlaceHand();
+            if (city.EmptyCount() == 0 && CanBuyLand) BuyLand();      // hết chỗ thì mua đất (đất không còn ra trong cửa hàng)
             for (int i = 0; i < shop.Length; i++) if (CanBuy(i)) Buy(i);
             BotPlaceHand();
         }

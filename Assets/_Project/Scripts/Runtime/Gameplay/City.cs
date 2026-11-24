@@ -82,6 +82,10 @@ namespace HordeLab
         public bool CanExpand(Vector2Int p)
         {
             if (IsOpen(p)) return false;
+            // không vượt vùng 7x7: tính khung bao của lưới nếu mở thêm ô p
+            Bounds(out var min, out var max);
+            min = Vector2Int.Min(min, p); max = Vector2Int.Max(max, p);
+            if (max.x - min.x + 1 > Tuning.MaxGridSide || max.y - min.y + 1 > Tuning.MaxGridSide) return false;
             var dirs = Tuning.DiagonalAdjacency ? Dir8 : Dir4;
             foreach (var d in dirs) if (IsOpen(p + d)) return true;
             return false;

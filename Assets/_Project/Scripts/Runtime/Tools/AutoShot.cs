@@ -258,6 +258,17 @@ namespace HordeLab
                 {
                     SwapTest();
                     AugTest();
+                    {
+                        // đất: cửa hàng không ra Mở rộng đất; lưới tối đa 7x7
+                        bool noLand = true;
+                        var keep = (int[])game.shop.Clone();
+                        for (int rr = 0; rr < 50; rr++) { game.RollShop(); foreach (int c in game.shop) if (c == B.Expand) noLand = false; }
+                        keep.CopyTo(game.shop, 0);
+                        var test = new City(); test.Init(game.faction);
+                        for (int x = 3; x <= 6; x++) test.Expand(new Vector2Int(x, 0));             // lưới rộng 7 (x 0..6)
+                        bool wall = !test.CanExpand(new Vector2Int(7, 0)) && !test.CanExpand(new Vector2Int(-1, 0)) && test.CanExpand(new Vector2Int(0, 3));
+                        log.AppendLine($"LAND TEST: {(noLand && wall ? "OK" : "FAIL")} (cửa hàng không ra đất={noLand}, chặn ngoài 7x7={wall})");
+                    }
                     if (!Headless)
                     {
                         // tooltip nhà lính (icon chỉ số) + hiệu ứng gộp lên sao

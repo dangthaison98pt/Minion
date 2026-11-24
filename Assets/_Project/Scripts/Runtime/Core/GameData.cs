@@ -14,6 +14,7 @@ namespace HordeLab
         public const int BossEvery = 6;                 // đợt trùm: 6, 12, 18, 24, 30
         public const int StartHostile = 3, MinHostile = 2, MaxHostile = 4;
         public const int StartGridSide = 3;             // lưới 3x3
+        public const int MaxGridSide = 7;               // mở đất tối đa trong vùng 7x7
         public const int MaxStars = 4;
         public const int RewardChoices = 3;
         public const int FullMoonEvery = 3;             // Người hoá thú: cứ 3 đợt có 1 đợt trăng tròn

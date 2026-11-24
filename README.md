@@ -33,7 +33,8 @@ Phần mô phỏng vẫn là lõi "vạn quân" cũ: **Job System + Burst + GPU 
    - **Kéo** thẻ lên công trình **không gộp được** để **đổi**: thẻ lên ô, nhà cũ về tay đúng chỗ thẻ, giữ nguyên số sao
      (viền cam + dòng báo trước). Không bao giờ mất nhà.
      Bấm chọn thẻ rồi bấm vào nhà khác loại thì không đổi gì cả, chỉ cầm nhà đó lên.
-   - Thẻ **Mở rộng đất**: thả vào ô sát cạnh lưới để mở thêm ô.
+   - Thẻ **Mở rộng đất**: thả vào ô sát cạnh lưới để mở thêm ô, tối đa trong vùng **7×7**. Không ra khi roll cửa hàng;
+     mua bằng nút **Buy Land** (luôn có, mua bao nhiêu cũng được) hoặc nhận ở phần thưởng.
    - **Cửa hàng** (góc phải): mua thẻ bằng Tinh thể năng lượng, có nút làm mới. Nút **Lock** giữ thẻ ở ô đó qua các lần làm mới.
    - **Bán:** kéo thẻ hoặc công trình vào ô *SELL* để lấy Tinh thể (nhà n sao = 2^(n-1) nhà gộp lại nên được ngần ấy lần).
      Công trình nào cũng kéo ngược về tay được (thành thẻ giữ số sao).
@@ -151,7 +152,7 @@ Tất cả nằm trong class `Tuning` và bảng dữ liệu ở [`GameData.cs`]
 | Giới hạn quân ta | 4.000 lính trên sân; quá mức thì nhà lính tạm ngừng gọi |
 | Tinh thể thưởng mỗi đợt | Cố định 5 như TFT, giữ được thành thêm +1, thua không có (`CrystalReward`, `WinBonus`); vào game có sẵn 5 |
 | Lãi Tinh thể | Hết mỗi đợt: +1 cho mỗi 10 Tinh thể đang giữ (tính trước khi cộng thưởng), tối đa +5 như TFT (`InterestStep`, `InterestMax`) |
-| Cửa hàng | 4 thẻ, giá 3–5, roll giá 1, roll thay mọi ô không bị khoá, tự làm mới miễn phí sau mỗi đợt |
+| Cửa hàng | 4 thẻ, giá 3–4, roll giá 1, roll thay mọi ô không bị khoá, tự làm mới miễn phí sau mỗi đợt; Mở rộng đất bán riêng (nút Buy Land, giá 5) |
 | Trùm | Chưa thiết kế → tạm là đợt đông hơn 60% và mạnh hơn 25% |
 | Phép hỗ trợ trong trận | Chưa có |
 | Công thức ghép khác loại | Chưa có |

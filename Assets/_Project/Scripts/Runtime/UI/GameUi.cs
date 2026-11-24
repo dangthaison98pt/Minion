@@ -46,7 +46,8 @@ namespace HordeLab
         Image titleEmblem, attackerEmblem, enemyEmblem;
         readonly Image[] hostileEmblems = new Image[Tuning.MaxHostile];
         RectTransform statsPanel; TextMeshProUGUI statsText; Button statsBtn, shopBtn; Image shopCrystalIcon;
-        bool statsOpen = true, shopOpenPrep = true, shopOpenBattle = true;
+        bool statsOpen = true, shopOpenPrep = true, shopOpenBattle = false;   // trong trận cửa hàng mặc định thu gọn
+        Button landBtn;
         const float DockClosedH = 64f;
         Image sellGlow;
         readonly Dictionary<Vector2Int, CellView> cells = new Dictionary<Vector2Int, CellView>();
@@ -366,6 +367,7 @@ namespace HordeLab
             }
 
             startBtn = Btn(dock, "", g.StartWave, 26f);
+            landBtn = Btn(dock, "", () => g.BuyLand(), 15f);                       // mua Mở rộng đất: luôn có, không cần roll
             startHint = Txt(dock, "", 14f, TextAlignmentOptions.Center, false, true, Grey);
         }
 
@@ -780,8 +782,9 @@ namespace HordeLab
                 {
                     var c = cards[i];
                     bool on = i < g.hand.Count;
-                    c.rt.Show(on);
-                    if (!on) continue;
+                    c.rt.Show(true);                                   // luôn hiện đủ ô: ô trống mờ để biết còn bao nhiêu chỗ
+                    c.tile.Show(on);
+                    if (!on) { c.starBg.Show(false); c.frame.Show(false); c.group.alpha = 0.3f; continue; }
                     c.tile.sprite = Tiles[g.hand[i]];
                     int cs = g.hand[i] == B.Expand ? 0 : g.HandStars(i);
                     const float st = 14f;
@@ -1070,8 +1073,14 @@ namespace HordeLab
             }
 
             startBtn.At(w - right + 14f, open ? 14f : 8f, right - 30f, open ? 104f : DockClosedH - 16f);
-            startBtn.Label().Set($"START WAVE {g.wave}");
+            startBtn.Label().Set($"Wave {g.wave}");
+            landBtn.GetComponent<RectTransform>().Show(open);
+            landBtn.At(w - right + 14f, prep ? 124f : 14f, right - 30f, prep ? 38f : 104f);
+            landBtn.Label().Set(g.LandLeft <= 0 ? "<color=#888888>Land: max</color>" : $"Buy Land  <color=#8fe8ff>{g.Price(B.Expand)}</color>");
+            landBtn.SetOn(g.CanBuyLand);
+            if (!modal && Over(landBtn.GetComponent<RectTransform>())) infoDef = B.Expand;
             startHint.At(w - right + 14f, 122f, right - 30f, 40f);
+            startHint.Show(false);
             startHint.Set(g.hand.Count >= Tuning.HandLimit ? "<color=#ff8f8f>Hand is full</color>"
                         : city.EmptyCount() == city.cells.Count ? "<color=#ffd84a>Place some buildings first</color>" : "");
         }
