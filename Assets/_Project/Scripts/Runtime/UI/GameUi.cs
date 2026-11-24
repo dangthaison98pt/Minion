@@ -16,7 +16,7 @@ namespace HordeLab
     [DefaultExecutionOrder(100)]   // chạy SAU Battle.LateUpdate: lúc đó job mô phỏng đã xong, đọc số liệu an toàn
     public class GameUi : MonoBehaviour
     {
-        public const float VH = 1080f, TopH = 72f, PanelW = 520f, DockH = 176f;
+        public const float VH = 1080f, TopH = 72f, PanelW = 520f, DockH = 206f;   // đủ cao cho hình thẻ cửa hàng x3
 
         Game g;
         Battle battle;
@@ -1097,9 +1097,9 @@ namespace HordeLab
             shopCrystals.Set(g.crystals.ToString());
 
             // nút Wave: góc dưới phải (trong cột phải của cửa hàng khi mở)
-            float rightCol = prep && open ? 252f : 0f;
+            float rightCol = prep && open ? 172f : 0f;   // nút Wave nhỏ lại, nhường chỗ cho 5 thẻ
             sb.anchoredPosition = new Vector2(-10f - DockInset, open ? 10f + DockInset : 14f);       // trong viền phải của cửa hàng
-            sb.sizeDelta = new Vector2(240f, open ? DockH - DockInset * 2f : 56f);
+            sb.sizeDelta = new Vector2(160f, open ? DockH - DockInset * 2f : 56f);
             startBtn.Label().Set($"Wave {g.wave}");
             if (prep && !modal && Over(sb))
             {
@@ -1147,7 +1147,7 @@ namespace HordeLab
                 v.lockIcon.sprite = StatIcons[g.shopLocked[i] ? PixelArt.StatLockOn : PixelArt.StatLock];   // bạc = chưa khoá, vàng = đã khoá
                 v.lockIcon.color = Color.white;
                 float area = h - headH - footH;
-                float img = Mathf.Min(PixelArt.TilePx * 2f, Mathf.Floor(Mathf.Min(slotW - 12f, area - 4f) / PixelArt.TilePx) * PixelArt.TilePx);   // phóng nguyên lần
+                float img = Mathf.Min(PixelArt.TilePx * 3f, Mathf.Floor(Mathf.Min(slotW - 12f, area - 4f) / PixelArt.TilePx) * PixelArt.TilePx);   // phóng nguyên lần
                 v.tile.At(Mathf.Round((slotW - img) * 0.5f), headH + Mathf.Round((area - img) * 0.5f), img, img);
                 v.name.At(8f, h - footH, slotW - 60f, footH - 4f);
                 v.name.Set(d.name);

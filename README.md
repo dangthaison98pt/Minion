@@ -153,7 +153,7 @@ Tất cả nằm trong class `Tuning` và bảng dữ liệu ở [`GameData.cs`]
 | Giới hạn quân ta | 4.000 lính trên sân; quá mức thì nhà lính tạm ngừng gọi |
 | Tinh thể thưởng mỗi đợt | Cố định 5 như TFT, giữ được thành thêm +1, thua không có (`CrystalReward`, `WinBonus`); vào game có sẵn 5 |
 | Lãi Tinh thể | Hết mỗi đợt: +1 cho mỗi 10 Tinh thể đang giữ (tính trước khi cộng thưởng), tối đa +5 như TFT (`InterestStep`, `InterestMax`) |
-| Cửa hàng | 4 thẻ, giá 3–4, roll giá 1, roll thay mọi ô không bị khoá, tự làm mới miễn phí sau mỗi đợt; Mở rộng đất bán riêng (nút Buy Land, giá 5) |
+| Cửa hàng | 5 thẻ, giá 3–4, roll giá 1, roll thay mọi ô không bị khoá, tự làm mới miễn phí sau mỗi đợt; Mở rộng đất bán riêng (nút Buy Land, giá 5) |
 | Trùm | Chưa thiết kế → tạm là đợt đông hơn 60% và mạnh hơn 25% |
 | Phép hỗ trợ trong trận | Chưa có |
 | Công thức ghép khác loại | Chưa có |

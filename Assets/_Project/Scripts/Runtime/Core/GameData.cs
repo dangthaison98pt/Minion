@@ -24,7 +24,7 @@ namespace HordeLab
         public const int HandLimit = 10;
         public const bool MergeFromHand = true;         // kéo thẻ từ tay lên công trình cùng loại, cùng sao để gộp
         public const bool MergeNeedsAdjacent = false;
-        public const int ShopSlots = 4;
+        public const int ShopSlots = 5;
         public const int RollCost = 1;
         public const float EventChance = 0.25f;         // xác suất có sự kiện đổi phe thù địch sau mỗi đợt
         public const int StartCrystals = 5;             // đủ mua 1 thẻ ngay đợt đầu

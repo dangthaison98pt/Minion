@@ -194,7 +194,8 @@ namespace HordeLab
             {
                 var d = JsonUtility.FromJson<SaveData>(System.IO.File.ReadAllText(SavePath));
                 bool ok = d != null && d.version == 1 && d.cellX != null && d.hand != null && d.hostile != null && d.hostile.Length > 0
-                          && d.shop != null && d.shop.Length == shop.Length && d.reward != null && d.reward.Length == reward.Length
+                          && d.shop != null && d.shop.Length <= shop.Length &&   // bản lưu cũ ít ô cửa hàng hơn: bù thêm khi nạp
+                           d.reward != null && d.reward.Length == reward.Length
                           && d.faction >= 0 && d.faction < Faction.Count;
                 return ok ? d : null;
             }
@@ -210,9 +211,10 @@ namespace HordeLab
             ClearHand();
             for (int i = 0; i < d.hand.Length; i++)
                 AddCard(d.hand[i], d.handStars != null && i < d.handStars.Length ? Mathf.Clamp(d.handStars[i], 1, Tuning.MaxStars) : 1);
-            d.shop.CopyTo(shop, 0); d.reward.CopyTo(reward, 0);
+            for (int i = 0; i < shop.Length; i++) shop[i] = i < d.shop.Length ? d.shop[i] : RandomCard(true);   // bù ô mới (cửa hàng 4 → 5 ô)
+            d.reward.CopyTo(reward, 0);
             System.Array.Clear(shopLocked, 0, shopLocked.Length);
-            if (d.shopLocked != null && d.shopLocked.Length == shopLocked.Length) d.shopLocked.CopyTo(shopLocked, 0);
+            if (d.shopLocked != null) for (int i = 0; i < Mathf.Min(d.shopLocked.Length, shopLocked.Length); i++) shopLocked[i] = d.shopLocked[i];
             eventNote = d.eventNote; lastWon = d.lastWon; lastWave = d.lastWave; lastCrystals = d.lastCrystals; lastInterest = d.lastInterest; lastWinBonus = d.lastWinBonus;
 
             city.Init(faction);
