@@ -496,7 +496,8 @@ namespace HordeLab
             UnitStats s;
 
             // ---------------- Người ----------------
-            u[UnitType.Swordsman] = U("Barracks", "Shield Swordsman", "Frontline", S(44, 7, 0.9f, 1.0f, 3.0f), new Res(5, 5, 0, 0), 8f, 1, 5f);
+            s = S(44, 7, 0.9f, 1.0f, 3.0f); s.splash = 1.3f;                                  // chém quét nhẹ: có đòn lan từ đợt 1
+            u[UnitType.Swordsman] = U("Barracks", "Shield Swordsman", "Frontline (sweeping cuts)", s, new Res(5, 5, 0, 0), 8f, 1, 5f);
             u[UnitType.Archer] = U("Archery Range", "Archer", "Ranged", S(18, 6, 1.7f, 24f, 2.8f, Mode.Shoot, 0, Proj.Arrow), new Res(5, 0, 5, 0), 9f, 1, 3f);
             s = S(75, 9, 1.0f, 1.2f, 5.5f, Mode.Melee, UFlag.Big, 0, PKind.Blood, 12f); s.chargeBonus = 2f; s.knock = 0.9f;
             u[UnitType.Cavalry] = U("Stable", "Cavalry", "Mobile (charge)", s, new Res(6, 6, 0, 4), 12f, 3, 1.5f);
@@ -505,26 +506,28 @@ namespace HordeLab
             u[UnitType.Catapult] = U("Siege Workshop", "Catapult", "Area damage", s, new Res(8, 0, 14, 12), 36f, 7, 0.5f);
 
             // ---------------- Tiên ----------------
-            u[UnitType.Treant] = U("Sacred Grove", "Treant", "Frontline (very tanky, slow)", S(110, 9, 1.4f, 1.2f, 1.7f, Mode.Melee, UFlag.Big, 0, PKind.Leaf, 5f), new Res(6, 0, 12, 0), 14f, 1, 4f);
+            s = S(110, 9, 1.4f, 1.2f, 1.7f, Mode.Melee, UFlag.Big, 0, PKind.Leaf, 5f); s.splash = 1.4f;   // đập lan
+            u[UnitType.Treant] = U("Sacred Grove", "Treant", "Frontline (very tanky, area slam)", s, new Res(6, 0, 12, 0), 14f, 1, 4f);
             u[UnitType.ForestArcher] = U("Bow Academy", "Forest Archer", "Ranged (longest range)", S(16, 6, 1.6f, 28f, 2.9f, Mode.Shoot, 0, Proj.ElfArrow), new Res(5, 0, 6, 0), 10f, 1, 3f);
             s = S(30, 8, 0.6f, 1.0f, 3.6f, Mode.Melee, 0, 0, PKind.Blood, 11f); s.dodge = 0.4f;
             u[UnitType.BladeDancer] = U("Blade Court", "Blade Dancer", "Striker (dodges)", s, new Res(5, 6, 0, 0), 9f, 3, 2f);
-            s = S(18, 3, 2.2f, 18f, 2.7f, Mode.Shoot, 0, Proj.NatureOrb); s.splash = 2f; s.slow = 2.5f;
-            u[UnitType.Druid] = U("Moon Temple", "Druid", "Support (slows enemies)", s, new Res(5, 0, 0, 6), 14f, 5, 1f);
+            s = S(18, 7, 2.2f, 18f, 2.7f, Mode.Shoot, 0, Proj.NatureOrb); s.splash = 2f; s.slow = 2.5f;   // phép lan đủ đau để dọn quân con
+            u[UnitType.Druid] = U("Moon Temple", "Druid", "Area spells (slow enemies)", s, new Res(5, 0, 0, 6), 14f, 5, 1f);
             u[UnitType.DeerRider] = U("Deer Glade", "Deer Rider", "Mobile (shoots on the move)", S(45, 6, 2.2f, 14f, 5.0f, Mode.Shoot, UFlag.Big | UFlag.Kite, Proj.ElfArrow, PKind.Blood, 12f), new Res(6, 5, 5, 0), 13f, 4, 1.5f);
 
             // ---------------- Người lùn ----------------
             u[UnitType.ShieldWarrior] = U("Stone Hall", "Shield Warrior", "Frontline (very tanky)", S(80, 6, 1.0f, 1.0f, 2.7f), new Res(6, 5, 0, 3), 9f, 1, 5f);
             u[UnitType.Crossbow] = U("Crossbow Works", "Heavy Crossbow", "Ranged (high damage, slow reload)", S(24, 18, 3.6f, 22f, 2.6f, Mode.Shoot, 0, Proj.Bolt), new Res(5, 0, 5, 4), 11f, 1, 3f);
-            u[UnitType.Axeman] = U("War Forge", "Axeman", "Striker", S(40, 13, 1.0f, 1.0f, 3.1f), new Res(5, 0, 0, 5), 9f, 3, 2f);
+            s = S(40, 13, 1.0f, 1.0f, 3.1f); s.splash = 1.3f;                                 // bổ quét
+            u[UnitType.Axeman] = U("War Forge", "Axeman", "Striker (cleaves)", s, new Res(5, 0, 0, 5), 9f, 3, 2f);
             s = S(70, 15, 8.0f, 36f, 1.6f, Mode.Shoot, UFlag.Big, Proj.Cannonball, PKind.Spark, 6f); s.splash = 2f; s.minRange = 6f;
             u[UnitType.Cannon] = U("Cannon Foundry", "Cannon", "Area damage", s, new Res(8, 0, 0, 24), 36f, 7, 0.5f);
             s = S(110, 9, 1.1f, 1.2f, 4.8f, Mode.Melee, UFlag.Big, 0, PKind.Blood, 11f); s.chargeBonus = 1.2f; s.knock = 0.7f;
             u[UnitType.GoatRider] = U("Goat Pen", "Goat Rider", "Mobile (slower than cavalry, tankier)", s, new Res(6, 6, 0, 5), 13f, 4, 1.5f);
 
             // ---------------- Người hoá thú ----------------
-            s = S(90, 10, 1.3f, 1.2f, 2.6f, Mode.Melee, UFlag.Big, 0, PKind.Blood, 7f); s.knock = 0.8f;
-            u[UnitType.Bear] = U("Bear Den", "Bearfolk", "Frontline (knockback)", s, new Res(6, 12, 0, 0), 13f, 1, 4f);
+            s = S(90, 10, 1.3f, 1.2f, 2.6f, Mode.Melee, UFlag.Big, 0, PKind.Blood, 7f); s.knock = 0.8f; s.splash = 1.5f;   // vả quét + hất văng
+            u[UnitType.Bear] = U("Bear Den", "Bearfolk", "Frontline (sweeping knockback)", s, new Res(6, 12, 0, 0), 13f, 1, 4f);
             u[UnitType.Wolf] = U("Wolf Den", "Wolffolk", "Striker (rapid attacks)", S(30, 5, 0.45f, 1.0f, 3.8f, Mode.Melee, 0, 0, PKind.Blood, 12f), new Res(5, 6, 0, 0), 8f, 1, 4f);
             u[UnitType.Leopard] = U("Leopard Run", "Leopardfolk", "Mobile (flanks from behind)", S(28, 9, 0.8f, 1.0f, 5.2f, Mode.Melee, UFlag.Flank, 0, PKind.Blood, 13f), new Res(5, 7, 0, 0), 10f, 4, 1.5f);
             u[UnitType.Shaman] = U("Ancestor Stone", "Tribal Shaman", "Support (empowers the pack)", S(20, 3, 2.2f, 8f, 2.8f, Mode.Shoot, UFlag.PowerAura, Proj.NatureOrb), new Res(5, 0, 0, 6), 14f, 5, 1f);

@@ -75,6 +75,7 @@ Phần mô phỏng vẫn là lõi "vạn quân" cũ: **Job System + Burst + GPU 
 - **5 phe × 5 nhà lính = 25 loại quân**, mỗi loại có cơ chế đúng vai trò: xung phong, hồi máu, đạn nổ lan, né đòn, làm chậm,
   vừa chạy vừa bắn, hất văng, đánh vòng ra sau lưng, tăng sức mạnh bầy, nổ khi chết, đi xuyên hàng, sinh quân con, sóng âm.
 - **Đặc trưng phe** (bảng "Các phe"), kể cả đợt trăng tròn của Người hoá thú và tiểu đội 4×4 của Tiên.
+- **Đòn lan:** mỗi phe có quân đánh lan rẻ từ sớm để dọn quân con (The Void đẻ Voidling liên tục): Shield Swordsman chém quét (1,3), Treant đập lan (1,4), Axeman bổ quét (1,3), Bearfolk vả quét + hất văng (1,5), Druid phép lan 7 sát thương. Đòn lan vẫn giữ hất văng / khiên phản đòn lên mục tiêu chính.
 - **Độ khó:** chọn ở màn chọn phe (nhớ lần chọn cuối, mặc định Normal), cố định suốt lượt chơi và lưu cùng bản lưu. Easy: 60% quân địch, 75% sức mạnh, boss 60% máu, +5 tinh thể khởi đầu. Normal: 80% / 90% / 80% / +2. Hard: cân bằng gốc. Số liệu ở `Tuning.Diff*`. Bot: `-difficulty 0|1|2` (mặc định 2 = Hard).
 - **Thắng / thua:** máu thành theo đợt, 3 tim, 30 đợt, đợt 6/12/18/24/30 đánh dấu là đợt trùm.
 - **Kẻ địch:** 3 phe thù địch, mỗi đợt bốc 1 phe, sự kiện thêm / bớt phe (luôn 2–4), báo sau khi đánh xong đợt, thấy trước phe sắp tấn công.

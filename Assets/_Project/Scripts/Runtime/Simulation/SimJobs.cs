@@ -930,7 +930,26 @@ namespace HordeLab
                     {
                         // đòn quét: mọi địch quanh mục tiêu đều dính (kỵ binh xuyên hàng cũng vậy)
                         float sr = breakthrough ? Aug.ChargePierceRadius : sa.splash + (a.team == 0 && a.type >= UnitType.Emperor ? Aug.AllySplash : 0f);   // boss phe ta chém rộng hơn
-                        int hits = Fx.Splash(units, cellStart, sortedIndex, n, v.pos, sr, 1 - a.team, dmg, sa.slow);
+                        bool rootedA = augA && a.type == UnitType.Treant && a.still >= Aug.RootAfter;
+                        int hits = Fx.Splash(units, cellStart, sortedIndex, n, v.pos, sr, 1 - a.team, dmg, rootedA ? math.max(sa.slow, Aug.RootSlow) : sa.slow);
+                        // đòn lan vẫn giữ hiệu ứng lên mục tiêu chính: hất văng, khiên phản đòn
+                        if (sa.mode == Mode.Melee)
+                        {
+                            Unit vt = units[t];
+                            float knockS = sa.knock * (sa.chargeBonus > 0f ? a.charge : 1f);
+                            if (augV && vt.type == UnitType.Treant && vt.still >= Aug.RootAfter) knockS = 0f;
+                            if (knockS > 0.2f && vt.hp > 0f)
+                            {
+                                float2 kd = vt.pos - a.pos;
+                                vt.pos += kd / math.max(math.length(kd), 1e-4f) * knockS;
+                                units[t] = vt;
+                            }
+                            if (augV && vt.type == UnitType.ShieldWarrior)
+                            {
+                                Unit ar = units[i]; ar.hp -= dmg * Aug.Thorns; ar.flash = 1f; units[i] = ar;
+                                counters[C.Counters]++;
+                            }
+                        }
                         Fx.Spray(particles, counters, ref rng, hit, 0.5f, 3, sv.blood, 2.5f, 5f);
                         if (a.type >= UnitType.Emperor) { GiantHit(i, t, dmg, hits, n, ref rng); a = units[i]; }
                         if (augA && a.type == UnitType.Shade)
