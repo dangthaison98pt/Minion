@@ -75,6 +75,7 @@ Phần mô phỏng vẫn là lõi "vạn quân" cũ: **Job System + Burst + GPU 
 - **5 phe × 5 nhà lính = 25 loại quân**, mỗi loại có cơ chế đúng vai trò: xung phong, hồi máu, đạn nổ lan, né đòn, làm chậm,
   vừa chạy vừa bắn, hất văng, đánh vòng ra sau lưng, tăng sức mạnh bầy, nổ khi chết, đi xuyên hàng, sinh quân con, sóng âm.
 - **Đặc trưng phe** (bảng "Các phe"), kể cả đợt trăng tròn của Người hoá thú và tiểu đội 4×4 của Tiên.
+- **Độ khó:** chọn ở màn chọn phe (nhớ lần chọn cuối, mặc định Normal), cố định suốt lượt chơi và lưu cùng bản lưu. Easy: 60% quân địch, 75% sức mạnh, boss 60% máu, +5 tinh thể khởi đầu. Normal: 80% / 90% / 80% / +2. Hard: cân bằng gốc. Số liệu ở `Tuning.Diff*`. Bot: `-difficulty 0|1|2` (mặc định 2 = Hard).
 - **Thắng / thua:** máu thành theo đợt, 3 tim, 30 đợt, đợt 6/12/18/24/30 đánh dấu là đợt trùm.
 - **Kẻ địch:** 3 phe thù địch, mỗi đợt bốc 1 phe, sự kiện thêm / bớt phe (luôn 2–4), báo sau khi đánh xong đợt, thấy trước phe sắp tấn công.
 - **Phần thưởng:** chọn 1 trong 3 thẻ + Tinh thể năng lượng; cửa hàng có roll. Chỉ ra thẻ phe mình và thẻ dùng chung.

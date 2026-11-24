@@ -12,6 +12,7 @@ namespace HordeLab
     {
         public int version = 1;
         public int faction, hearts, wave, crystals, attacker, phase;
+        public int difficulty = 2;                       // bản lưu cũ (chưa có độ khó) = Hard như cân bằng lúc đó
         public int[] hostile, hand, shop, reward;
         public int[] handStars;                          // bản lưu cũ không có → coi như 1 sao
         public int[] augments, augChoices;               // lõi đã có + 3 lõi đang chờ chọn (pha Augment)
@@ -50,6 +51,7 @@ namespace HordeLab
         public int crystals;             // Tinh thể năng lượng: chỉ dùng ngoài trận
         public readonly List<int> hostile = new List<int>();
         public int attacker;             // phe tấn công đợt này (thấy trước lúc chuẩn bị)
+        public int difficulty = 1;       // 0 Easy / 1 Normal / 2 Hard (cố định suốt lượt chơi)
         public readonly List<int> hand = new List<int>();        // mã công trình của từng thẻ trên tay
         public readonly List<int> handStars = new List<int>();   // số sao của từng thẻ, cùng chỉ số với hand
         public int HandStars(int i) => i >= 0 && i < handStars.Count ? handStars[i] : 1;
@@ -184,7 +186,7 @@ namespace HordeLab
             if (!savingEnabled || (phase != Phase.Prep && phase != Phase.Reward && phase != Phase.Augment)) return;
             var d = new SaveData
             {
-                faction = faction, hearts = hearts, wave = wave, crystals = crystals, attacker = attacker, phase = (int)phase,
+                faction = faction, hearts = hearts, wave = wave, crystals = crystals, attacker = attacker, phase = (int)phase, difficulty = difficulty,
                 hostile = hostile.ToArray(), hand = hand.ToArray(), handStars = handStars.ToArray(), shop = (int[])shop.Clone(), reward = (int[])reward.Clone(),
                 shopLocked = (bool[])shopLocked.Clone(), eventNote = eventNote, lastWon = lastWon, lastWave = lastWave, lastCrystals = lastCrystals, lastInterest = lastInterest, lastWinBonus = lastWinBonus,
                 pop = city.res.pop, food = city.res.food, wood = city.res.wood, gold = city.res.gold,
@@ -225,6 +227,7 @@ namespace HordeLab
             var d = PeekSave();
             if (d == null) return false;
             faction = d.faction; hearts = d.hearts; wave = d.wave; crystals = d.crystals; attacker = d.attacker;
+            difficulty = Mathf.Clamp(d.difficulty, 0, 2);
             hostile.Clear(); hostile.AddRange(d.hostile);
             ClearHand();
             for (int i = 0; i < d.hand.Length; i++)
@@ -269,7 +272,8 @@ namespace HordeLab
             faction = playerFaction;
             hearts = Tuning.Hearts;
             wave = 1;
-            crystals = Tuning.StartCrystals;
+            difficulty = Settings.Difficulty;
+            crystals = Tuning.StartCrystals + Tuning.DiffCrystals[difficulty];
             rollsThisPrep = 0;
             eventNote = null;
             flawless = 0; secretCount = 0; emperorUnlocked = emperorPending = false;
@@ -531,7 +535,7 @@ namespace HordeLab
             spawnAcc = 2f;                    // 2 tiểu đội đầu tới ngay
             waveTime = 0f;
             allSpawnedAt = -1f;
-            enemyPower = Tuning.EnemyPower(wave) * (IsBoss(wave) ? Tuning.BossPower : 1f);
+            enemyPower = Tuning.EnemyPower(wave) * (IsBoss(wave) ? Tuning.BossPower : 1f) * Tuning.DiffPower[difficulty];
 
             enemyTypes.Clear();
             enemyWeights.Clear();
@@ -570,7 +574,7 @@ namespace HordeLab
             if (bossT > 0f && (bossT -= dt) <= 0f)
             {
                 int bt = bossType;
-                battle.SpawnSquad(bt, 1, new float2(Cfg.EnemySpawnX, 0f), 1, enemyPower * bossHpMul, enemyPower,
+                battle.SpawnSquad(bt, 1, new float2(Cfg.EnemySpawnX, 0f), 1, enemyPower * bossHpMul * Tuning.DiffBoss[difficulty], enemyPower,
                                   bt == UnitType.WorldTree ? Aug.TreantRegen * enemyPower * Tuning.BossHp : 0f);
                 bossT = -1f;
                 bossesCalled++;
@@ -741,7 +745,7 @@ namespace HordeLab
         }
 
         int EnemySquadCount() =>
-            Mathf.Max(1, Mathf.RoundToInt(Tuning.EnemySquads(wave) * (IsBoss(wave) ? Tuning.BossSize : 1f) * (Has(Aug.Scouts) ? 1f - Aug.ScoutsCut : 1f)));
+            Mathf.Max(1, Mathf.RoundToInt(Tuning.EnemySquads(wave) * (IsBoss(wave) ? Tuning.BossSize : 1f) * (Has(Aug.Scouts) ? 1f - Aug.ScoutsCut : 1f) * Tuning.DiffSquads[difficulty]));
 
         /// <summary>
         /// Bốc 3 lõi khác nhau mà người chơi chưa có. Lõi chuyên quân chỉ có khi đang có nhà lính của quân đó trên lưới;

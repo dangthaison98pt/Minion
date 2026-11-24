@@ -690,13 +690,26 @@ namespace HordeLab
             sub.rectTransform.anchorMin = new Vector2(0f, 1f); sub.rectTransform.anchorMax = new Vector2(1f, 1f); sub.rectTransform.pivot = new Vector2(0.5f, 1f);
             sub.rectTransform.anchoredPosition = new Vector2(0f, -116f); sub.rectTransform.sizeDelta = new Vector2(0f, 30f);
 
-            const float w = 340f, gap = 16f, h = 690f;
+            // chọn độ khó: 3 nút + 1 dòng mô tả, ngay dưới dòng giới thiệu
+            for (int k = 0; k < 3; k++)
+            {
+                int d = k;
+                diffBtns[k] = Btn(factionScreen, "", () => { Settings.Difficulty = d; Settings.Save(); }, 18f);
+                var r = diffBtns[k].GetComponent<RectTransform>();
+                r.anchorMin = r.anchorMax = new Vector2(0.5f, 1f); r.pivot = new Vector2(0.5f, 1f);
+                r.anchoredPosition = new Vector2((k - 1) * 160f, -154f); r.sizeDelta = new Vector2(150f, 40f);
+            }
+            diffNote = Txt(factionScreen, "", 15f, TextAlignmentOptions.Center, false, false, Grey);
+            diffNote.rectTransform.anchorMin = new Vector2(0f, 1f); diffNote.rectTransform.anchorMax = new Vector2(1f, 1f); diffNote.rectTransform.pivot = new Vector2(0.5f, 1f);
+            diffNote.rectTransform.anchoredPosition = new Vector2(0f, -200f); diffNote.rectTransform.sizeDelta = new Vector2(0f, 24f);
+
+            const float w = 340f, gap = 16f, h = 670f;
             float total = w * Faction.Count + gap * (Faction.Count - 1);
             for (int f = 0; f < Faction.Count; f++)
             {
                 int pick = f;
                 var fd = GameData.Factions[f];
-                var p = Panel(factionScreen).AtCenter(-total * 0.5f + w * 0.5f + f * (w + gap), 20f, w, h).rectTransform;
+                var p = Panel(factionScreen).AtCenter(-total * 0.5f + w * 0.5f + f * (w + gap), 44f, w, h).rectTransform;
                 Img(p, White, fd.color).At(14f, 14f, w - 28f, 5f);
                 Img(p, Emblems[f], Color.white).At(18f, 22f, 44f, 44f);
                 Txt(p, fd.name, 26f, TextAlignmentOptions.Center, true, false, fd.color).At(0f, 26f, w, 36f);
@@ -714,6 +727,20 @@ namespace HordeLab
             }
             var back = Btn(factionScreen, "Back", () => Go(g.EnterMenu), 18f);
             back.At(30f, 30f, 120f, 46f);
+        }
+
+        readonly Button[] diffBtns = new Button[3];
+        TextMeshProUGUI diffNote;
+
+        void RefreshDifficulty()
+        {
+            int sel = Settings.Difficulty;
+            for (int k = 0; k < 3; k++)
+                diffBtns[k].Label().Set(k == sel ? $"<color=#ffd84a><b>{Tuning.DiffName[k]}</b></color>" : $"<color=#9a9a9a>{Tuning.DiffName[k]}</color>");
+            string Pct(float v) => Mathf.RoundToInt(v * 100f) + "%";
+            diffNote.Set(sel == 2
+                ? "<color=#ff8f6a>Hard</color>: the full horde. For veterans."
+                : $"<color=#9fe07a>{Tuning.DiffName[sel]}</color>: {Pct(Tuning.DiffSquads[sel])} enemies at {Pct(Tuning.DiffPower[sel])} strength, bosses {Pct(Tuning.DiffBoss[sel])} HP, +{Tuning.DiffCrystals[sel]} starting crystals.");
         }
 
         void BuildMenu()
@@ -872,6 +899,7 @@ namespace HordeLab
 
             menu.Show(phase == Phase.Menu);
             factionScreen.Show(phase == Phase.PickFaction);
+            if (phase == Phase.PickFaction) RefreshDifficulty();
             hud.Show(InWorld);
             if (phase == Phase.Menu) RefreshMenu();
 
@@ -910,7 +938,7 @@ namespace HordeLab
             {
                 continueBtn.At(60f, y, 400f, 64f);
                 continueInfo.At(0f, y + 68f, 520f, 24f);
-                continueInfo.Set($"Wave {save.wave}/{Tuning.Waves} · {GameData.Factions[save.faction].name} · {save.hearts} heart(s) left");
+                continueInfo.Set($"Wave {save.wave}/{Tuning.Waves} · {GameData.Factions[save.faction].name} · {Tuning.DiffName[Mathf.Clamp(save.difficulty, 0, 2)]} · {save.hearts} heart(s) left");
                 y += 112f;
             }
             newGameBtn.At(60f, y, 400f, 64f);

@@ -11,6 +11,7 @@ namespace HordeLab
         public static bool VSync = true;            // khoá khung hình theo màn hình
         public static bool ShowFps;                 // dòng FPS / số lính / số đạn ở góc dưới phải
         public static bool BattleShopOpen;          // vào trận cửa hàng mở sẵn hay thu gọn
+        public static int Difficulty = 1;           // độ khó lần chơi mới: 0 Easy / 1 Normal / 2 Hard (nhớ lần chọn cuối)
         public static int BattleSpeed = 1;          // tốc độ khi bắt đầu mỗi đợt: 1 / 2 / 4 (nhớ theo lần bấm cuối trong trận, không hiện trong Settings)
 
         public static bool Fullscreen => Screen.fullScreenMode != FullScreenMode.Windowed;
@@ -82,6 +83,14 @@ namespace HordeLab
             ShowFps = PlayerPrefs.GetInt("set.fps", 0) != 0;
             BattleShopOpen = PlayerPrefs.GetInt("set.battleShop", 0) != 0;
             BattleSpeed = Mathf.Clamp(PlayerPrefs.GetInt("set.speed", 1), 1, 4);
+            Difficulty = Mathf.Clamp(PlayerPrefs.GetInt("set.diff", 1), 0, 2);
+            // bot kiểm tra: -difficulty N (mặc định Hard = cân bằng gốc), không ghi đè lựa chọn đã lưu của người chơi
+            var args = System.Environment.GetCommandLineArgs();
+            if (System.Array.IndexOf(args, "-autoshot") >= 0)
+            {
+                int i = System.Array.IndexOf(args, "-difficulty");
+                Difficulty = i >= 0 && i + 1 < args.Length && int.TryParse(args[i + 1], out int d) ? Mathf.Clamp(d, 0, 2) : 2;
+            }
             ResIndex = Mathf.Clamp(PlayerPrefs.GetInt("set.res", MaxResIndex), 0, MaxResIndex);   // lần đầu: cỡ lớn nhất vừa màn
             ApplyFrameRate();
             if (!CommandLineOwnsScreen() && (Screen.width != Size.x || Screen.height != Size.y)) ApplyResolution();
@@ -93,6 +102,7 @@ namespace HordeLab
             PlayerPrefs.SetInt("set.fps", ShowFps ? 1 : 0);
             PlayerPrefs.SetInt("set.battleShop", BattleShopOpen ? 1 : 0);
             PlayerPrefs.SetInt("set.speed", BattleSpeed);
+            PlayerPrefs.SetInt("set.diff", Difficulty);
             PlayerPrefs.SetInt("set.res", ResIndex);
             PlayerPrefs.Save();
         }
