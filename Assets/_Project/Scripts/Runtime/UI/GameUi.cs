@@ -928,7 +928,6 @@ namespace HordeLab
             root.anchorMin = Vector2.zero; root.anchorMax = new Vector2(1f, 0f); root.pivot = Vector2.zero;
             root.anchoredPosition = new Vector2(0f, ScreenFrame.Y0 / scale);
             root.sizeDelta = new Vector2(0f, VHa);
-            GameCursor.Update(!fakeMouse.HasValue && (Input.GetMouseButton(0) || Input.GetMouseButton(2)));   // con trỏ bàn tay: bấm giữ thì nắm lại
             mouse = fakeMouse.HasValue ? new Vector2(fakeMouse.Value.x * scale, ScreenFrame.Top - fakeMouse.Value.y * scale) : (Vector2)Input.mousePosition;
             if (EventSystem.current != null && EventSystem.current.currentSelectedGameObject != null) EventSystem.current.SetSelectedGameObject(null);   // Space / Enter không bấm nhầm nút vừa click
 

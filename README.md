@@ -75,7 +75,6 @@ Phần mô phỏng vẫn là lõi "vạn quân" cũ: **Job System + Burst + GPU 
 - **6 phe × 5 nhà lính = 30 loại quân**, mỗi loại có cơ chế đúng vai trò: xung phong, hồi máu, đạn nổ lan, né đòn, làm chậm,
   vừa chạy vừa bắn, hất văng, đánh vòng ra sau lưng, tăng sức mạnh bầy, nổ khi chết, đi xuyên hàng, sinh quân con, sóng âm.
 - **Đặc trưng phe** (bảng "Các phe"), kể cả đợt trăng tròn của Người hoá thú và tiểu đội 4×4 của Tiên.
-- **Con trỏ chuột:** đặt ảnh PNG nền trong suốt vào `Assets/_Project/Resources/Art/Cursor/`: `Point.png` (bàn tay chỉ, bắt buộc; đầu ngón trỏ ở đỉnh hình = điểm bấm) và `Grab.png` (nắm tay khi bấm giữ, không bắt buộc). Game tự co về ~48px ở 1080p (to dần theo độ phân giải); ảnh nên vẽ to (128–256px). Chưa có ảnh thì dùng hình vẽ bằng code.
 - **Số liệu thô bằng ScriptableObject (cho GD):** chỉnh trong Inspector, không cần sửa code. Asset ở `Assets/_Project/Resources/Balance/`:
   - `Units/<phe>/NN_Tên.asset` (40 loại: quân 6 phe, quân con, rồng, boss): **máu, sát thương, chi phí gọi (Dân / Lương / Gỗ / Vàng), thời gian gọi nhập thẳng con số ở từng mốc sao nhà lính 1★..4★**; hồi đòn, tầm, tốc độ; đợt xuất hiện + tỉ lệ khi làm địch (quân địch / quân con / boss dùng số 1★). Vào game còn nhân đặc trưng phe, `Tuning.SpeedScale` / `RangeScale`, hệ số đợt.
   - `Buildings/NN_Tên.asset` (nhà tài nguyên + nhà buff): chu kỳ, **sản lượng ở từng mốc sao 1★..4★** (Market: số Vàng đổi = số nhận), hệ số độ mạnh buff theo sao.
