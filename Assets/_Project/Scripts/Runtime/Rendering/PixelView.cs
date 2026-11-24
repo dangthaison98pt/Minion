@@ -100,8 +100,11 @@ namespace HordeLab
             if (Target != null && lastW == ScreenFrame.W && lastH == ScreenFrame.H && lastScale == Scale && lastInset == inset && lastCover == Cover) return;
             if (lastW != ScreenFrame.W || lastH != ScreenFrame.H || lastInset != inset || lastCover != Cover)
             {
-                ComputeFit();                                // đổi cỡ cửa sổ / thanh giao diện: tính lại mức vừa khít
-                Scale = math.clamp(Scale, MinScale, MinScale + 5);
+                // đổi cỡ cửa sổ / màn hình / thanh giao diện: tính lại mức vừa khít, giữ nguyên số nấc đang zoom thêm
+                // (không thì từ màn 1080p (x2) sang màn nhỏ hơn (x1) vẫn giữ x2 → bị phóng to bất thường)
+                int zoom = Cover ? 0 : Scale - MinScale;
+                ComputeFit();
+                Scale = math.clamp(MinScale + zoom, MinScale, MinScale + 5);
             }
             lastW = ScreenFrame.W;
             lastH = ScreenFrame.H;
@@ -132,6 +135,7 @@ namespace HordeLab
 
         public void SetScale(int scale, Vector2 anchorScreen)
         {
+            if (Cover) return;                                   // nền menu không zoom
             scale = math.clamp(scale, MinScale, MinScale + 5);   // không thu nhỏ quá mức vừa khít chiến trường
             if (scale == Scale) return;
             float2 anchorWorld = ScreenToWorld(anchorScreen);
