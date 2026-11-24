@@ -296,6 +296,14 @@ namespace HordeLab
         public float TroopDmg(Building b) => GameData.Units[b.Def.unit].starDamage[b.stars - 1];
 
         /// <summary>Tài nguyên cho 1 lần gọi quân của nhà lính (đã nhân số tiểu đội, Kho quân nhu, đặc trưng phe).</summary>
+        /// <summary>Chu kỳ của nhà (giây, chưa tính buff tốc độ). Nhà lính: thời gian gọi ở đúng mốc sao.</summary>
+        public float Period(Building b)
+        {
+            var d = b.Def;
+            if (d.cat == Cat.Barracks) { var u = GameData.Units[d.unit]; if (u.callTimeAt != null) return u.callTimeAt[b.stars - 1]; }
+            return d.period;
+        }
+
         public Res CallCost(Building b)
         {
             var u = GameData.Units[b.Def.unit];
@@ -333,8 +341,9 @@ namespace HordeLab
 
                 if (d.cat == Cat.Barracks)
                 {
-                    b.timer = Mathf.Min(d.period, b.timer + dt * b.speed);
-                    if (b.timer < d.period) continue;
+                    float callPer = Period(b);                 // thời gian gọi theo sao của nhà lính
+                    b.timer = Mathf.Min(callPer, b.timer + dt * b.speed);
+                    if (b.timer < callPer) continue;
                     Res cost = CallCost(b);
                     if (canCall && res.Covers(cost))      // thiếu tài nguyên thì đứng chờ
                     {

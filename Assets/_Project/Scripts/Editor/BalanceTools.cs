@@ -27,7 +27,7 @@ namespace HordeLab.EditorTools
             for (int t = 0; t < unitDefs.Length; t++)
             {
                 if (unitDefs[t] == null) continue;
-                if (units.ContainsKey(t)) continue;
+                if (units.TryGetValue(t, out var have)) { if (have.FillMissing(unitDefs[t])) { EditorUtility.SetDirty(have); created++; } continue; }   // giữ số GD đã điền, chỉ bổ sung ô mới
                 int fi = Faction.Of(t);
                 string group = t >= UnitType.FirstGiant ? "Bosses & Legendary" : fi >= 0 ? $"{fi}_{Safe(factionDefs[fi].name)}" : "Special";
                 string dir = $"{Root}/Units/{group}";

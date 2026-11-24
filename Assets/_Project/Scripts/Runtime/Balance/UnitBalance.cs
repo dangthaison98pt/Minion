@@ -25,6 +25,8 @@ namespace HordeLab
         public StarValues costWood;
         [Tooltip("Chi phí Vàng mỗi lần gọi.")]
         public StarValues costGold;
+        [Tooltip("Giây hồi giữa 2 lần gọi của nhà lính.")]
+        public StarValues callTime;
 
         [Header("Chỉ số chung")]
         [Tooltip("Giây giữa 2 đòn đánh.")]
@@ -33,8 +35,6 @@ namespace HordeLab
         [Min(0f)] public float range = 1f;
         [Tooltip("Tốc độ đi (còn nhân Tuning.SpeedScale).")]
         [Min(0f)] public float speed = 3f;
-        [Tooltip("Giây hồi giữa 2 lần gọi của nhà lính.")]
-        [Min(0f)] public float callTime = 10f;
 
         [Header("Khi làm quân địch")]
         [Tooltip("Xuất hiện trong đội hình địch từ đợt này.")]
@@ -55,7 +55,16 @@ namespace HordeLab
             u.costAt = new Res[4];
             for (int i = 0; i < 4; i++) u.costAt[i] = new Res(costPop[i], costFood[i], costWood[i], costGold[i]);
             u.cost = u.costAt[0];
-            u.callTime = callTime; u.minWave = minWave; u.waveWeight = waveWeight;
+            if (!callTime.IsEmpty) { u.callTime = callTime.star1; u.callTimeAt = new[] { callTime.star1, callTime.star2, callTime.star3, callTime.star4 }; }
+            u.minWave = minWave; u.waveWeight = waveWeight;
+        }
+
+        /// <summary>Asset tạo trước khi có thời gian gọi theo sao: điền số cũ cho cả 4 mốc (không động vào số khác).</summary>
+        public bool FillMissing(UnitDef u)
+        {
+            if (!callTime.IsEmpty) return false;
+            callTime = new StarValues(u.callTime, u.callTime, u.callTime, u.callTime);
+            return true;
         }
 
         /// <summary>Điền số tạm từ code: 1★ = chỉ số gốc, các mốc sao khác theo tỉ lệ đang dùng.</summary>
@@ -69,7 +78,8 @@ namespace HordeLab
             costPop = StarValues.Scaled(u.cost.pop, u.starCost); costFood = StarValues.Scaled(u.cost.food, u.starCost);
             costWood = StarValues.Scaled(u.cost.wood, u.starCost); costGold = StarValues.Scaled(u.cost.gold, u.starCost);
             cooldown = s.cooldown; range = s.range; speed = s.speed;
-            callTime = u.callTime; minWave = u.minWave; waveWeight = u.waveWeight;
+            callTime = new StarValues(u.callTime, u.callTime, u.callTime, u.callTime);   // tạm: lên sao chưa gọi nhanh hơn
+            minWave = u.minWave; waveWeight = u.waveWeight;
         }
     }
 }

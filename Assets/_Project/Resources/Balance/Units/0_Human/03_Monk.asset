@@ -43,9 +43,13 @@ MonoBehaviour:
     star2: 7.5
     star3: 10
     star4: 12.5
+  callTime:
+    star1: 14
+    star2: 14
+    star3: 14
+    star4: 14
   cooldown: 2
   range: 7
   speed: 2.8
-  callTime: 14
   minWave: 5
   waveWeight: 1

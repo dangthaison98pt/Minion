@@ -76,7 +76,7 @@ Phần mô phỏng vẫn là lõi "vạn quân" cũ: **Job System + Burst + GPU 
   vừa chạy vừa bắn, hất văng, đánh vòng ra sau lưng, tăng sức mạnh bầy, nổ khi chết, đi xuyên hàng, sinh quân con, sóng âm.
 - **Đặc trưng phe** (bảng "Các phe"), kể cả đợt trăng tròn của Người hoá thú và tiểu đội 4×4 của Tiên.
 - **Số liệu thô bằng ScriptableObject (cho GD):** chỉnh trong Inspector, không cần sửa code. Asset ở `Assets/_Project/Resources/Balance/`:
-  - `Units/<phe>/NN_Tên.asset` (40 loại: quân 6 phe, quân con, rồng, boss): **máu, sát thương, chi phí gọi (Dân / Lương / Gỗ / Vàng) nhập thẳng con số ở từng mốc sao nhà lính 1★..4★**; hồi đòn, tầm, tốc độ, thời gian gọi; đợt xuất hiện + tỉ lệ khi làm địch (quân địch / quân con / boss dùng số 1★). Vào game còn nhân đặc trưng phe, `Tuning.SpeedScale` / `RangeScale`, hệ số đợt.
+  - `Units/<phe>/NN_Tên.asset` (40 loại: quân 6 phe, quân con, rồng, boss): **máu, sát thương, chi phí gọi (Dân / Lương / Gỗ / Vàng), thời gian gọi nhập thẳng con số ở từng mốc sao nhà lính 1★..4★**; hồi đòn, tầm, tốc độ; đợt xuất hiện + tỉ lệ khi làm địch (quân địch / quân con / boss dùng số 1★). Vào game còn nhân đặc trưng phe, `Tuning.SpeedScale` / `RangeScale`, hệ số đợt.
   - `Buildings/NN_Tên.asset` (nhà tài nguyên + nhà buff): chu kỳ, **sản lượng ở từng mốc sao 1★..4★** (Market: số Vàng đổi = số nhận), hệ số độ mạnh buff theo sao.
   - Số hiện tại là số TẠM điền theo tỉ lệ cũ (máu / sát thương x1 / 1,4 / 1,8 / 2,2; chi phí x1 / 1,5 / 2 / 2,5; sản lượng x1 / 2 / 4 / 8) — GD sửa lại.
   - Đặc trưng từng quân (kiểu đánh, đạn, đánh lan, hất văng, giáp, né, kỹ năng...), tên / mô tả, đặc trưng phe, số chung (`Tuning`) và số của lõi vẫn ở code.

@@ -1374,7 +1374,7 @@ namespace HordeLab
             if (fight)
             {
                 v.barRt.At(0f, cell - nameH - 5f, cell, 5f);
-                v.barFill.anchorMax = new Vector2(Mathf.Clamp01(b.timer / d.period), 1f);
+                v.barFill.anchorMax = new Vector2(Mathf.Clamp01(b.timer / city.Period(b)), 1f);
                 v.barFill.GetComponent<Image>().color = b.waiting ? new Color(1f, 0.3f, 0.25f) : d.cat == Cat.Barracks ? new Color(0.55f, 0.8f, 1f) : new Color(1f, 0.86f, 0.35f);
                 if (b.waiting) { v.frame.Show(true); v.frame.color = new Color(1f, 0.3f, 0.25f, 0.95f); }
                 if (b.pulse > 0f) v.tint.color = new Color(1f, 1f, 1f, 0.35f * b.pulse);
@@ -1736,7 +1736,7 @@ namespace HordeLab
                 var u = GameData.Units[d.unit];
                 var f = GameData.Factions[d.faction];
                 Res cost = b != null ? city.CallCost(b) : new Res(u.cost.pop * f.popCostMul, u.cost.food, u.cost.wood, u.cost.gold);
-                float period = d.period / (b != null ? b.speed : 1f);
+                float period = (b != null ? city.Period(b) : d.period) / (b != null ? b.speed : 1f);
                 float powerHp = b != null ? city.TroopHp(b) : 1f, powerDmg = b != null ? city.TroopDmg(b) : 1f;
                 chipsOut.Add(new TipChip(UnitIcons[d.unit], W($"x{f.squadSide * f.squadSide}")));
                 chipsOut.Add(new TipChip(Heart, W($"{u.stats.maxHp * powerHp * (b != null ? b.hp : 1f):0}")));
@@ -1795,7 +1795,7 @@ namespace HordeLab
                 var u = GameData.Units[d.unit];
                 var f = GameData.Factions[d.faction];
                 Res cost = b != null ? city.CallCost(b) : new Res(u.cost.pop * f.popCostMul, u.cost.food, u.cost.wood, u.cost.gold);
-                float period = d.period / (b != null ? b.speed : 1f);
+                float period = (b != null ? city.Period(b) : d.period) / (b != null ? b.speed : 1f);
                 sb.Append($"\nHP {u.stats.maxHp:0} · Damage {u.stats.damage:0.#} · Range {u.stats.range:0.#} · Speed {u.stats.speed:0.#}\n");
                 if (u.stats.splash > 0f) sb.Append($"Area damage radius {u.stats.splash:0.#}{(u.stats.minRange > 0f ? $" · cannot hit targets closer than {u.stats.minRange:0.#}" : "")}\n");
                 sb.Append($"Every <color=#ffffff>{period:0.#}s</color>: calls <color=#ffffff>{f.squadSide * f.squadSide}</color> troops\n");
