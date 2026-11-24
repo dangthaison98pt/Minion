@@ -50,7 +50,8 @@ namespace HordeLab.EditorTools
             PlayerSettings.fullScreenMode = FullScreenMode.FullScreenWindow; // Alt+Enter để ra cửa sổ
             PlayerSettings.defaultScreenWidth = 1920;
             PlayerSettings.defaultScreenHeight = 1080;
-            PlayerSettings.resizableWindow = true;
+            PlayerSettings.resizableWindow = false;          // cỡ cửa sổ do người chơi chọn trong Settings, không kéo giãn
+            PlayerSettings.defaultIsNativeResolution = false; // lần đầu chạy dùng 1920x1080, sau đó theo Settings
             PlayerSettings.runInBackground = true;
             PlayerSettings.enableFrameTimingStats = true;   // để đo thời gian GPU/CPU mỗi frame
             PlayerSettings.SetScriptingBackend(NamedBuildTarget.Standalone, ScriptingImplementation.Mono2x);

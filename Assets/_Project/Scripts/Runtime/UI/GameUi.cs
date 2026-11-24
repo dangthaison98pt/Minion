@@ -724,16 +724,17 @@ namespace HordeLab
         // ------------------------------------------------------------------
         RectTransform settings, menuPanel;
         Button newGameBtn, menuSettingsBtn, quitBtn;
-        readonly Button[] setBtns = new Button[5];
+        readonly Button[] setBtns = new Button[6];
         public bool SettingsOpen => settings != null && settings.gameObject.activeSelf;
 
         void BuildSettings()
         {
-            settings = Modal("Settings", 0.6f, out var p, 560f, 470f);
+            settings = Modal("Settings", 0.6f, out var p, 560f, 530f);
             Txt(p, "Settings", 36f, TextAlignmentOptions.Center, true).At(0f, 28f, 560f, 50f);
-            string[] labels = { "Fullscreen", "VSync", "Show FPS", "Shop open in battle", "Battle speed" };
+            string[] labels = { "Resolution", "Fullscreen", "VSync", "Show FPS", "Shop open in battle", "Battle speed" };
             System.Action[] acts =
             {
+                Settings.CycleResolution,
                 Settings.ToggleFullscreen,
                 () => { Settings.VSync = !Settings.VSync; Settings.ApplyFrameRate(); },
                 () => Settings.ShowFps = !Settings.ShowFps,
@@ -745,9 +746,9 @@ namespace HordeLab
                 int k = i;
                 float y = 100f + i * 60f;
                 Txt(p, labels[i], 20f, TextAlignmentOptions.MidlineLeft).At(50f, y, 300f, 48f);
-                setBtns[i] = Btn(p, "", () => { acts[k](); Settings.Save(); }, 20f).At(360f, y, 150f, 48f);
+                setBtns[i] = Btn(p, "", () => { acts[k](); Settings.Save(); }, 20f).At(340f, y, 170f, 48f);
             }
-            Btn(p, "Back", CloseSettings, 22f).At(140f, 400f, 280f, 52f);
+            Btn(p, "Back", CloseSettings, 22f).At(140f, 460f, 280f, 52f);
             settings.gameObject.SetActive(false);
         }
 
@@ -767,11 +768,12 @@ namespace HordeLab
         {
             if (!SettingsOpen) return;
             string On(bool b) => b ? "<color=#9fe07a>On</color>" : "<color=#aaaaaa>Off</color>";
-            setBtns[0].Label().Set(On(Settings.Fullscreen));
-            setBtns[1].Label().Set(On(Settings.VSync));
-            setBtns[2].Label().Set(On(Settings.ShowFps));
-            setBtns[3].Label().Set(On(Settings.BattleShopOpen));
-            setBtns[4].Label().Set($"x{Settings.BattleSpeed}");
+            setBtns[0].Label().Set($"{Settings.Size.x} x {Settings.Size.y}");
+            setBtns[1].Label().Set(On(Settings.Fullscreen));
+            setBtns[2].Label().Set(On(Settings.VSync));
+            setBtns[3].Label().Set(On(Settings.ShowFps));
+            setBtns[4].Label().Set(On(Settings.BattleShopOpen));
+            setBtns[5].Label().Set($"x{Settings.BattleSpeed}");
         }
 
         public void TogglePauseForTest() => TogglePause();
