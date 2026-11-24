@@ -238,6 +238,9 @@ namespace HordeLab
                         int after = game.augChoices[0];
                         bool can2 = game.CanRerollAugment(0);
                         bool distinct = after != game.augChoices[1] && after != game.augChoices[2];
+                        // đổi tiếp ô 1 và ô 2: không được ra lại lõi vừa bị đổi khỏi ô 0
+                        game.RerollAugment(1); game.RerollAugment(2);
+                        distinct &= System.Array.IndexOf(game.augChoices, before) < 0;
                         log.AppendLine($"AUG REROLL TEST: {(can1 && !can2 && after != before && distinct ? "OK" : "FAIL")} ({GameData.Augments[before].name} -> {GameData.Augments[after].name}, đổi lần 2 bị chặn={!can2})");
                         if (!Headless)
                         {
