@@ -279,6 +279,38 @@ namespace HordeLab
             counters[C.Type0 + type]++;
         }
 
+        /// <summary>Thêm 1 viên đạn của phe <paramref name="team"/> bay từ <paramref name="from"/> tới <paramref name="to"/> (lõi: thiên thạch, nỏ trên tường).</summary>
+        public void FireProjectile(int team, float2 from, float2 to, float damage, float splash, int kind, float speed, float arc)
+        {
+            simHandle.Complete();
+            int n = counters[C.Arrows];
+            if (n >= arrows.Length) return;
+            float dist = math.max(math.distance(from, to), 1f);
+            arrows[n] = new Arrow { from = from, to = to, t = 0f, invDuration = speed / dist, arc = arc, damage = damage, splash = splash, team = team, kind = kind };
+            counters[C.Arrows] = n + 1;
+        }
+
+        /// <summary>
+        /// Chọn 1 lính địch của <paramref name="team"/>: <paramref name="closestToWall"/> = con gần tường thành nhất,
+        /// không thì 1 con ngẫu nhiên. false nếu sân không có địch.
+        /// </summary>
+        public bool PickEnemy(int team, bool closestToWall, out float2 pos)
+        {
+            simHandle.Complete();
+            pos = default;
+            int n = counters[C.Units], seen = 0;
+            float best = float.MaxValue;
+            for (int i = 0; i < n; i++)
+            {
+                var u = units[i];
+                if (u.team == team || u.hp <= 0f) continue;
+                seen++;
+                if (closestToWall) { if (u.pos.x < best) { best = u.pos.x; pos = u.pos; } }
+                else if (rng.NextInt(0, seen) == 0) pos = u.pos;          // chọn ngẫu nhiên đều (reservoir)
+            }
+            return seen > 0;
+        }
+
         /// <summary>Gọi 1 tiểu đội side x side lính xếp hàng quanh <paramref name="center"/>. Trả về số lính.</summary>
         public int SpawnSquad(int type, int team, float2 center, int side, float hpMul = 1f, float dmgMul = 1f, float regen = 0f)
         {

@@ -49,7 +49,8 @@ namespace HordeLab
     {
         public const int Human = 0, Elf = 1, Dwarf = 2, Beast = 3, Void = 4;
         public const int Count = 5;
-        public static int Of(int unitType) => unitType == UnitType.Voidling ? Void : unitType / 5;
+        /// <summary>Phe của một loại quân; -1 = quân trung lập (Rồng của lõi Dragon's Pact).</summary>
+        public static int Of(int unitType) => unitType == UnitType.Voidling ? Void : unitType == UnitType.Dragon ? -1 : unitType / 5;
     }
 
     public static class UnitType
@@ -65,8 +66,9 @@ namespace HordeLab
         // The Void
         public const int Aberration = 20, Shade = 21, Eye = 22, Summoner = 23, Screamer = 24;
         public const int Voidling = 25;      // quân con do Kẻ triệu hồi sinh ra, không có nhà lính
+        public const int Dragon = 26;        // rồng của lõi Dragon's Pact, không có nhà lính, không thuộc phe nào
         public const int Buildable = 25;
-        public const int Count = 26;
+        public const int Count = 27;
     }
 
     /// <summary>Cách tấn công của một loại quân.</summary>

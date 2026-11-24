@@ -86,6 +86,13 @@ class `Aug` và `GameData.BuildAugments()` trong [`GameData.cs`](Assets/_Project
 | Tiện ích | Land Grant | Nhận ngay 2 thẻ Mở rộng đất |
 | Tiện ích | Veteran Recruits | Nhận ngay 1 nhà lính 2 sao ngẫu nhiên của phe mình |
 | Tiện ích | Master Architect | Nhà buff mạnh hơn 40% |
+| Huyền thoại | Dragon's Pact | Mỗi đợt có 1 con rồng (loại quân `UnitType.Dragon`) bay qua hàng địch phun lửa lan; chết thì 30 giây sau quay lại |
+| Huyền thoại | Meteor Shower | Mỗi 6 giây 1 thiên thạch rơi vào 1 tên địch ngẫu nhiên, sát thương lan + biển lửa |
+| Huyền thoại | Ballista Towers | Tường thành bắn nỏ vào tên địch gần tường nhất (tầm 40), khoảng 1 phát / giây |
+| Huyền thoại | Mercenary Camp | Mỗi 20 giây 1 đội 4×4 lính thuê ngẫu nhiên của phe khác tới giúp |
+| Huyền thoại | Last Stand | Mỗi đợt, lần đầu thành sắp vỡ thì hồi lại 50% máu |
+
+Sức mạnh rồng, thiên thạch, nỏ và lính thuê nhân theo `Tuning.EnemyPower(đợt)` để không bị tụt hậu về cuối game.
 
 ## Những chỗ GDD chưa chốt → đang dùng số tạm
 Tất cả nằm trong class `Tuning` và bảng dữ liệu ở [`GameData.cs`](Assets/_Project/Scripts/Runtime/Core/GameData.cs), đổi một chỗ là xong.
@@ -143,7 +150,7 @@ Build/                           ← bản build (.gitignore)
 | File | Nội dung |
 |---|---|
 | `Runtime/Core/Config.cs` | Hằng số, mã phe / loại quân, struct `Unit` / `Arrow` / `Particle` — mỗi lính chỉ là 1 struct |
-| `Runtime/Core/GameData.cs` | `Tuning` (mọi số tạm), bảng 5 phe, 26 loại quân, 49 lá thẻ / công trình |
+| `Runtime/Core/GameData.cs` | `Tuning` (mọi số tạm), bảng 5 phe, 27 loại quân (kể cả Rồng), 49 lá thẻ / công trình, 24 lõi |
 | `Runtime/Gameplay/Game.cs` | Lượt chơi: menu, lưu / nạp (`SaveData`), pha, tim, đợt, phe thù địch, thẻ trên tay, cửa hàng (khoá ô), bán, phần thưởng, quân địch kéo đến, sandbox nền menu |
 | `Runtime/Gameplay/City.cs` | Lưới thành: đặt / gộp / mở ô, tính buff, sinh tài nguyên, nhà lính gọi quân |
 | `Runtime/UI/GameUi.cs` | Giao diện uGUI: menu chính, chọn phe, HUD, lưới thành, tay bài, cửa hàng, ô bán, phần thưởng, tooltip, kéo thả |
@@ -151,7 +158,7 @@ Build/                           ← bản build (.gitignore)
 | `Runtime/Gameplay/Battle.cs` | Chiến trường: cấp phát mảng, xếp lịch Job, upload lên GPU. Không biết gì về thẻ bài |
 | `Runtime/Simulation/SimJobs.cs` | Toàn bộ mô phỏng dạng Burst Job: lưới không gian, AI từng loại quân, đòn đánh, đạn, hạt, cái chết |
 | `Runtime/Rendering/PixelView.cs` | Camera pixel-perfect: vẽ vào RenderTexture độ phân giải thấp rồi phóng nguyên lần |
-| `Runtime/Rendering/PixelArt.cs` | "Vẽ" toàn bộ sprite bằng code (26 loại quân, xác, máu, đạn, mặt đất, thành, biểu tượng). `DrawUnit` tự thêm viền đen |
+| `Runtime/Rendering/PixelArt.cs` | "Vẽ" toàn bộ sprite bằng code (27 loại quân kể cả Rồng, xác, máu, đạn, mặt đất, thành, biểu tượng). `DrawUnit` tự thêm viền đen |
 | `Runtime/Rendering/PixelArtTiles.cs` | Tranh ô công trình nhìn từ trên xuống (32×32 / ô, ghép từ nhà, cây, hàng rào...) và khung giao diện gỗ kiểu pixel |
 | `Resources/Shaders/*.shader` | Shader instancing đọc `StructuredBuffer`, tạo quad từ `SV_VertexID` |
 | `Runtime/Tools/AutoShot.cs` | Bot chơi thử + chụp màn hình: `-autoshot <thư mục> [-faction 0..4] [-waves N] [-stress 20000] [-savetest]` |
@@ -162,7 +169,7 @@ Build/                           ← bản build (.gitignore)
 - **Chỉnh số:** `Tuning` và các hàm `BuildUnits` / `BuildBuildings` trong `GameData.cs`.
 - **Thêm cơ chế cho quân:** thêm trường vào `UnitStats` (Config.cs) rồi dùng trong `ThinkMoveJob` / `ResolveJob` (SimJobs.cs).
 - **Thêm nhà buff:** thêm mã vào `B`, 1 dòng trong `BuildBuildings`, 1 `case` trong `City.Recompute`.
-- **Thay hình:** thay các hàm `Draw*` trong `PixelArt.cs`. Atlas lính: ô 16×16, 4 cột (khung hình) × 52 hàng
+- **Thay hình:** thay các hàm `Draw*` trong `PixelArt.cs`. Atlas lính: ô 16×16, 4 cột (khung hình) × 54 hàng
   (`loại * 2 + trạng thái`, 0 = đi, 1 = đánh), quay mặt sang phải; lính bộ vẽ 10×10 ở giữa ô.
   Không tự gọi `AddOutline`: `DrawUnit` tự thêm viền (lính bộ được chừa sẵn 1 pixel mỗi bên). Quân to 16×16 phải
   **chừa trống hàng / cột sát mép** cho viền, không thì chỗ đó bị hở viền.
@@ -176,6 +183,7 @@ Build\HordeLab.exe -autoshot ketqua -faction 0 -waves 5
 Bot chọn phe, đặt thẻ, mua đồ, đánh 5 đợt, chụp màn hình từng pha và ghi kết quả từng đợt vào `ketqua\stats.txt`.
 Thêm `-batchmode` để chạy ngầm, nhanh hết mức (không chụp hình). Bot mặc định không ghi file lưu, để khỏi đè lượt chơi thật;
 thêm `-savetest` để thử cả phần lưu / nạp (ghi vào `run_autotest.json`), đổi nhà / thẻ có sao (`SWAP TEST`) và lõi (`AUG TEST`) trong `stats.txt`.
+Thêm cả `-legendary` thì bot có đủ 5 lõi huyền thoại từ đợt 1; `stats.txt` ghi rồng / thiên thạch / nỏ / lính thuê mỗi đợt.
 
 ```
 Build\HordeLab.exe -batchmode -bench ketqua.txt -stress 20000

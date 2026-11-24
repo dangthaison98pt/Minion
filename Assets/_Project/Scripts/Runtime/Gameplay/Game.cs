@@ -58,6 +58,13 @@ namespace HordeLab
         public List<int> Augments => city.augments;
         public bool Has(int aug) => city.Has(aug);
         int rollsThisPrep;               // số lần roll trong lần chuẩn bị này (Lucky Dice: lần đầu miễn phí)
+
+        // ---- Lõi huyền thoại trong trận ----
+        float dragonT, meteorT, ballistaT, mercT;
+        int castleBonus;                 // Last Stand: máu thành được hồi thêm trong đợt này
+        public bool lastStandUsed;
+        /// <summary>Đếm số lần lõi huyền thoại ra tay trong đợt (công cụ kiểm tra đọc).</summary>
+        public int dragonsCalled, meteorsFired, boltsFired, mercSquads, lastStands;
         public string eventNote;         // sự kiện đổi phe thù địch, báo sau khi đánh xong một đợt
         public bool lastWon;
         public int lastWave, lastCrystals;
@@ -449,6 +456,9 @@ namespace HordeLab
             battle.ResetField();
             city.BeginBattle();
             castleHp = MaxCastleHp;
+            castleBonus = 0; lastStandUsed = false;
+            dragonT = Aug.DragonDelay; meteorT = 3f; ballistaT = 1f; mercT = 6f;
+            dragonsCalled = meteorsFired = boltsFired = mercSquads = lastStands = 0;
             if (Has(Aug.Stockpile)) city.res = new Res(city.res.pop + Aug.StockpileRes, city.res.food + Aug.StockpileRes, city.res.wood + Aug.StockpileRes, city.res.gold + Aug.StockpileRes);
             endedAt = -1f;
             squadsTotal = EnemySquadCount();
@@ -484,6 +494,7 @@ namespace HordeLab
             waveTime += dt;
 
             city.Tick(dt, AlliesAlive < Tuning.PlayerUnitCap, CallSquads);
+            LegendaryStep(dt);
 
             if (squadsLeft > 0)
             {
@@ -562,6 +573,53 @@ namespace HordeLab
         // ------------------------------------------------------------------
         public int MaxCastleHp => Tuning.CastleHp + (Has(Aug.Walls) ? Aug.WallsHp : 0);
 
+        /// <summary>Lõi huyền thoại trong trận: rồng, thiên thạch, nỏ trên tường, lính đánh thuê. Mạnh dần theo đợt như quân địch.</summary>
+        void LegendaryStep(float dt)
+        {
+            float power = Tuning.EnemyPower(wave);
+            ref var rng = ref battle.Rng;
+
+            if (Has(Aug.Dragon) && battle.TypeCount(UnitType.Dragon) == 0 && (dragonT -= dt) <= 0f)
+            {
+                battle.SpawnSquad(UnitType.Dragon, 0, new float2(Cfg.PlayerSpawnX + 1f, rng.NextFloat(-6f, 6f)), 1, power, power);   // SpawnSquad tự chờ job xong
+                dragonsCalled++;
+                dragonT = Aug.DragonRespawn;
+            }
+
+            if (Has(Aug.Meteor) && (meteorT -= dt) <= 0f && battle.PickEnemy(0, false, out var target))
+            {
+                // rơi chéo từ trên trời xuống: điểm xuất phát lệch sang trái, vòng cung cao
+                battle.FireProjectile(0, target + new float2(-9f, 4f), target, Aug.MeteorDamage * power, Aug.MeteorSplash, Proj.Cannonball, 16f, 9f);
+                meteorsFired++;
+                meteorT = Aug.MeteorEvery;
+            }
+
+            if (Has(Aug.Ballista) && (ballistaT -= dt) <= 0f)
+            {
+                ballistaT = Aug.BallistaEvery;
+                if (battle.PickEnemy(0, true, out var near) && near.x < Cfg.WallX + Aug.BallistaRange)
+                {
+                    battle.FireProjectile(0, new float2(Cfg.WallX - 0.5f, near.y), near, Aug.BallistaDamage * power, 0f, Proj.Bolt, 30f, 0.6f);
+                    boltsFired++;
+                }
+            }
+
+            if (Has(Aug.Mercenary) && (mercT -= dt) <= 0f)
+            {
+                mercT = Aug.MercEvery;
+                var pool = new List<int>();
+                for (int t = 0; t < UnitType.Buildable; t++)
+                    if (Faction.Of(t) != faction && GameData.Units[t].minWave <= wave) pool.Add(t);
+                if (pool.Count > 0)
+                {
+                    int type = pool[rng.NextInt(0, pool.Count)];
+                    var pos = new float2(Cfg.PlayerSpawnX + rng.NextFloat(0f, 4f), rng.NextFloat(-Cfg.HalfH + 5f, Cfg.HalfH - 5f));
+                    battle.SpawnSquad(type, 0, pos, Aug.MercSide, power, power);
+                    mercSquads++;
+                }
+            }
+        }
+
         int EnemySquadCount() =>
             Mathf.Max(1, Mathf.RoundToInt(Tuning.EnemySquads(wave) * (IsBoss(wave) ? Tuning.BossSize : 1f) * (Has(Aug.Scouts) ? 1f - Aug.ScoutsCut : 1f)));
 
@@ -636,7 +694,14 @@ namespace HordeLab
             }
             if (phase == Phase.Battle)
             {
-                castleHp = Mathf.Max(0, MaxCastleHp - battle.Counter(C.Breach));
+                castleHp = Mathf.Max(0, MaxCastleHp + castleBonus - battle.Counter(C.Breach));
+                if (castleHp <= 0 && Has(Aug.LastStand) && !lastStandUsed)
+                {
+                    lastStandUsed = true;              // Last Stand: lần đầu thành sắp vỡ thì hồi lại một nửa
+                    lastStands++;
+                    castleBonus += Mathf.RoundToInt(MaxCastleHp * Aug.LastStandHeal) - castleHp;
+                    castleHp = Mathf.Max(0, MaxCastleHp + castleBonus - battle.Counter(C.Breach));
+                }
                 if (castleHp <= 0) EndWave(false);
                 else if (squadsLeft == 0 && EnemiesAlive == 0) EndWave(true);
                 else if (squadsLeft == 0 && waveTime - allSpawnedAt > Tuning.WaveTimeout) EndWave(true);   // phòng khi hai bên kẹt nhau mãi
@@ -713,10 +778,14 @@ namespace HordeLab
                 case Phase.PickFaction: StartRun(botFaction); break;
                 case Phase.Augment:
                 {
-                    // ưu tiên lõi quân sự
-                    int pick = 0;
+                    // ưu tiên lõi huyền thoại, rồi quân sự
+                    int pick = 0, best = -1;
                     for (int i = 0; i < augChoices.Length; i++)
-                        if (GameData.Augments[augChoices[i]].cat == AugCat.Military) { pick = i; break; }
+                    {
+                        var c = GameData.Augments[augChoices[i]].cat;
+                        int score = c == AugCat.Legendary ? 2 : c == AugCat.Military ? 1 : 0;
+                        if (score > best) { best = score; pick = i; }
+                    }
                     PickAugment(pick);
                     break;
                 }

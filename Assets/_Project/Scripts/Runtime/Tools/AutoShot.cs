@@ -248,6 +248,8 @@ namespace HordeLab
                         foreach (var t in tiers) t.stars = 1;
                         game.city.Recompute();
                     }
+                    if (System.Array.IndexOf(System.Environment.GetCommandLineArgs(), "-legendary") >= 0)
+                        for (int a = Aug.Dragon; a <= Aug.LastStand; a++) game.Augments.Add(a);   // thử cả 5 lõi huyền thoại ngay đợt 1
                     game.crystals = 50;                    // giữ 50 Tinh thể qua đợt 1 → hết đợt phải được lãi tối đa +5
                     // Cầm 1 thẻ 2 sao trên tay để thử lưu cả số sao của thẻ
                     Vector2Int held = default; bool holding = false;
@@ -304,6 +306,8 @@ namespace HordeLab
                 }
                 played++;
                 var r = game.city.res;
+                if (game.Augments.Exists(a => GameData.Augments[a].cat == AugCat.Legendary))
+                    log.AppendLine($"    huyền thoại: rồng gọi {game.dragonsCalled}, thiên thạch {game.meteorsFired}, nỏ {game.boltsFired}, lính thuê {game.mercSquads} đội, last stand {game.lastStands}");
                 log.AppendLine($"    → {(game.lastWon ? "THẮNG" : "THUA")} sau {game.waveTime:0}s | thành {game.castleHp}/{game.MaxCastleHp} | diệt {battle.Counter(C.Dead1)} / mất {battle.Counter(C.Dead0)} | " +
                                $"kho: {r.pop:0} dân, {r.food:0} lương, {r.wood:0} gỗ, {r.gold:0} vàng | tim {game.hearts}" +
                                (string.IsNullOrEmpty(game.eventNote) ? "" : $" | sự kiện: {game.eventNote}"));

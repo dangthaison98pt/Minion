@@ -234,6 +234,7 @@ namespace HordeLab
                 case UnitType.Eye: return DrawEye(state, f);
                 case UnitType.Screamer: return DrawScreamer(state, f);
                 case UnitType.Voidling: return DrawVoidling(state, f);
+                case UnitType.Dragon: return DrawDragon(state, f);
                 default: return DrawHumanoid(LookOf(type), state, f);
             }
         }
@@ -533,6 +534,61 @@ namespace HordeLab
             else if (f == 0) { Box(s, 11, 5, 12, 6, Bark); s.Set(13, 4, Bark); s.Set(14, 3, Bark); s.Set(14, 2, Leaf); }       // giơ cành
             else if (f == 1) { Box(s, 11, 6, 12, 7, Bark); s.Set(13, 6, Bark); s.Set(14, 5, Bark); s.Set(14, 4, Leaf); }
             else { Box(s, 11, 8, 12, 9, Bark); s.Set(13, 9, Bark); s.Set(14, 10, Bark); s.Set(14, 11, Leaf); }                 // quật xuống
+            return s;
+        }
+
+        /// <summary>Rồng đỏ 16x16 bay lơ lửng, đập cánh 4 khung. Đánh: khung 2-3 há miệng phun lửa. Chừa mép cho viền.</summary>
+        static Canvas DrawDragon(int state, int f)
+        {
+            var s = new Canvas(UnitCell, UnitCell);
+            Color32 red = Rgb(200, 56, 44), dark = Rgb(124, 30, 34), light = Rgb(238, 108, 72), belly = Rgb(246, 196, 104);
+            Color32 wing = Rgb(150, 40, 48), wingLight = Rgb(196, 78, 70), fire = Rgb(255, 206, 70), fire2 = Rgb(255, 128, 34);
+            bool attack = state == 1;
+            int bob = f == 1 || f == 2 ? 1 : 0;            // lơ lửng: nhún theo nhịp cánh
+
+            // cánh xa (sau thân), chỉ thấy chóp
+            if (f == 0) { s.Set(9, 4 + bob, dark); s.Set(10, 3 + bob, dark); }
+            else if (f != 2) { s.Set(9, 6 + bob, dark); s.Set(10, 5 + bob, dark); }
+
+            // đuôi
+            s.Set(1, 6 + bob, dark); s.Set(1, 7 + bob, red); s.Set(2, 8 + bob, red); s.Set(3, 9 + bob, red); s.Set(4, 9 + bob, red);
+            // thân
+            for (int x = 6; x <= 9; x++) s.Set(x, 7 + bob, light);
+            for (int x = 4; x <= 10; x++) s.Set(x, 8 + bob, red);
+            for (int x = 4; x <= 11; x++) s.Set(x, 9 + bob, x <= 5 ? dark : red);
+            for (int x = 5; x <= 10; x++) s.Set(x, 10 + bob, belly);
+            // chân
+            s.Set(6, 11 + bob, dark); s.Set(9, 11 + bob, dark); s.Set(5, 12 + bob, dark); s.Set(10, 12 + bob, dark);
+            // cổ + đầu
+            s.Set(10, 7 + bob, red); s.Set(11, 6 + bob, red); s.Set(11, 7 + bob, light); s.Set(12, 5 + bob, red);
+            Box(s, 11, 3 + bob, 13, 5 + bob, red);
+            s.Set(11, 3 + bob, light); s.Set(12, 4 + bob, Gold);          // mắt
+            s.Set(11, 2 + bob, Bone); s.Set(10, 1 + bob, Bone);           // sừng
+            bool open = attack && f >= 2;
+            if (open)
+            {
+                s.Set(13, 5 + bob, default(Color32)); s.Set(12, 6 + bob, dark); s.Set(13, 6 + bob, dark);   // há miệng
+                s.Set(14, 4 + bob, fire); s.Set(14, 5 + bob, fire2); s.Set(14, 6 + bob, fire);
+                if (f == 3) { s.Set(14, 3 + bob, fire2); s.Set(14, 7 + bob, fire2); }
+            }
+            else s.Set(13, 5 + bob, dark);                                 // hàm
+
+            // cánh gần (trước thân): lên / ngang / xuống / ngang
+            if (f == 0)
+            {
+                s.Set(7, 6 + bob, wing); s.Set(8, 6 + bob, wing); s.Set(6, 5 + bob, wing); s.Set(7, 5 + bob, wingLight);
+                s.Set(5, 4 + bob, wing); s.Set(6, 4 + bob, wingLight); s.Set(4, 3 + bob, wing); s.Set(5, 3 + bob, wing); s.Set(3, 2 + bob, dark);
+            }
+            else if (f == 2)
+            {
+                s.Set(7, 8 + bob, wing); s.Set(6, 9 + bob, wing); s.Set(7, 9 + bob, wingLight); s.Set(5, 10 + bob, wing);
+                s.Set(6, 10 + bob, wing); s.Set(4, 11 + bob, dark);
+            }
+            else
+            {
+                for (int x = 3; x <= 8; x++) s.Set(x, 6 + bob, x == 3 ? dark : wing);
+                for (int x = 4; x <= 7; x++) s.Set(x, 7 + bob, wingLight);
+            }
             return s;
         }
 

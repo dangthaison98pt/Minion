@@ -154,7 +154,7 @@ namespace HordeLab
         public const int Count = Expand + 1;
     }
 
-    public enum AugCat { Economy, Military, Utility }
+    public enum AugCat { Economy, Military, Utility, Legendary }
 
     /// <summary>Một lõi: hiệu ứng vĩnh viễn cho cả lượt chơi. Hiệu ứng nằm ở City / Game (tìm Aug.Tên).</summary>
     public class AugmentDef
@@ -173,7 +173,9 @@ namespace HordeLab
         public const int Sharpened = 7, IronSkin = 8, Drill = 9, Supply = 10, Medics = 11, Walls = 12, Scouts = 13;
         // Tiện ích
         public const int FreeRoll = 14, Bargain = 15, LandGrant = 16, Recruit = 17, Architect = 18;
-        public const int Count = 19;
+        // Huyền thoại: cơ chế riêng, không chỉ cộng chỉ số
+        public const int Dragon = 19, Meteor = 20, Ballista = 21, Mercenary = 22, LastStand = 23;
+        public const int Count = 24;
 
         // Các con số (số tạm, chưa cân bằng)
         public const float ResBonus = 0.35f;          // Harvest / Timber / GoldRush / BabyBoom: +35% tài nguyên tương ứng
@@ -186,6 +188,11 @@ namespace HordeLab
         public const float ScoutsCut = 0.15f;
         public const int FreeRolls = 1, BargainCut = 1, LandGrantCards = 2;
         public const float ArchitectBuff = 0.4f;
+        public const float DragonDelay = 3f, DragonRespawn = 30f;            // rồng vào trận sau 3 giây, chết thì 30 giây sau quay lại
+        public const float MeteorEvery = 6f, MeteorDamage = 70f, MeteorSplash = 3f;
+        public const float BallistaEvery = 1.2f, BallistaDamage = 30f, BallistaRange = 40f;   // tầm tính từ tường thành
+        public const float MercEvery = 20f; public const int MercSide = 4;  // mỗi 20 giây 1 đội 4x4
+        public const float LastStandHeal = 0.5f;
     }
 
     public static class GameData
@@ -232,6 +239,11 @@ namespace HordeLab
             A(Aug.LandGrant, AugCat.Utility, "Land Grant", $"Gain {Aug.LandGrantCards} Expand Land cards now.");
             A(Aug.Recruit, AugCat.Utility, "Veteran Recruits", "Gain a random 2-star troop building of your faction now.");
             A(Aug.Architect, AugCat.Utility, "Master Architect", $"Buff buildings are {pct(Aug.ArchitectBuff)}% stronger.");
+            A(Aug.Dragon, AugCat.Legendary, "Dragon's Pact", $"A dragon fights for you every wave: it flies over the enemy line and breathes fire. If it falls, it returns {Aug.DragonRespawn:0}s later.");
+            A(Aug.Meteor, AugCat.Legendary, "Meteor Shower", $"Every {Aug.MeteorEvery:0}s a meteor crashes into the enemy horde, burning everything around it.");
+            A(Aug.Ballista, AugCat.Legendary, "Ballista Towers", "Your walls fire heavy bolts at the closest enemy, about once a second.");
+            A(Aug.Mercenary, AugCat.Legendary, "Mercenary Camp", $"Every {Aug.MercEvery:0}s a squad of {Aug.MercSide * Aug.MercSide} mercenaries from a random other faction joins you.");
+            A(Aug.LastStand, AugCat.Legendary, "Last Stand", $"Once per wave, when the castle would fall it recovers {pct(Aug.LastStandHeal)}% of its HP instead.");
             return a;
         }
 
@@ -298,10 +310,16 @@ namespace HordeLab
             u[UnitType.Screamer] = U("Howling Pit", "Screamer", "Area damage (sonic wave)", s, new Res(9, 0, 0, 0), 16f, 7, 1f);
             u[UnitType.Voidling] = U("", "Voidling", "Spawned by the Summoner", S(10, 3, 0.8f, 1.0f, 3.6f, Mode.Melee, 0, 0, PKind.VoidGoo, 12f), default, 0f, 99, 0f);
 
+            // ---------------- Trung lập ----------------
+            // Rồng (lõi Dragon's Pact): bay qua hàng địch, phun lửa lan. Máu / sát thương còn nhân theo đợt (Game.SpawnDragon)
+            s = S(900, 24, 2.0f, 8f, 3.4f, Mode.Blast, UFlag.Big | UFlag.Ghost, 0, PKind.Fire, 8f); s.splash = 3.2f;
+            u[UnitType.Dragon] = U("", "Dragon", "Legendary ally (fire breath)", s, default, 0f, 99, 0f);
+
             // Đặc trưng phe được nhân sẵn vào bảng chỉ số
             for (int t = 0; t < UnitType.Count; t++)
             {
-                var f = Factions[Faction.Of(t)];
+                int fi = Faction.Of(t);
+                var f = fi >= 0 ? Factions[fi] : new FactionDef();     // quân trung lập: không có đặc trưng phe
                 u[t].stats.maxHp *= f.hpMul;
                 u[t].stats.damage *= f.dmgMul;
                 u[t].stats.speed *= f.speedMul * Tuning.SpeedScale;

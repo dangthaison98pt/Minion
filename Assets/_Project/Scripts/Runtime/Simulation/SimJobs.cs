@@ -557,12 +557,20 @@ namespace HordeLab
                     if (sa.mode == Mode.Blast && atWall)
                     {
                         counters[C.Breach] = counters[C.Breach] + 1;
-                        Fx.Ring(particles, counters, sh.xy, 1.5f, 8, PKind.VoidGoo);
+                        Fx.Ring(particles, counters, sh.xy, 1.5f, 8, sa.blood);
                     }
                     else if (sa.mode == Mode.Blast)
                     {
                         Fx.Splash(units, cellStart, sortedIndex, n, sh.xy, sa.splash, 1 - a.team, sa.damage * power, sa.slow);
-                        Fx.Ring(particles, counters, sh.xy, sa.splash, 14, PKind.VoidGoo);
+                        if (sa.blood == PKind.Fire)
+                        {
+                            // lửa rồng: cột lửa từ miệng tới đích + biển lửa ở đích
+                            float2 mouth = a.pos + new float2(a.faceLeft != 0 ? -0.6f : 0.6f, 0.3f);
+                            for (int k = 1; k <= 4; k++) Fx.Flames(particles, counters, ref rng, math.lerp(mouth, sh.xy, k / 4f), 0.3f + 0.15f * k, 3, PKind.Fire, 0.5f);
+                            Fx.Flames(particles, counters, ref rng, sh.xy, sa.splash * 0.6f, 16, PKind.Fire, 0.9f);
+                            Fx.Flames(particles, counters, ref rng, sh.xy, sa.splash * 0.6f, 5, PKind.Smoke, 1.8f);
+                        }
+                        else Fx.Ring(particles, counters, sh.xy, sa.splash, 14, sa.blood);
                     }
                     else if (sa.mode == Mode.Summon)
                     {

@@ -70,9 +70,9 @@ namespace HordeLab
         TextMeshProUGUI augTitle, augSub, augOwned;
         readonly TextMeshProUGUI[] augCards = new TextMeshProUGUI[Tuning.AugmentChoices];
         readonly Image[] augBands = new Image[Tuning.AugmentChoices];
-        static readonly Color[] AugColor = { new Color(1f, 0.85f, 0.29f), new Color(1f, 0.52f, 0.4f), new Color(0.56f, 0.91f, 1f) };
-        static readonly string[] AugHex = { "#ffd84a", "#ff8466", "#8fe8ff" };
-        static readonly string[] AugCatName = { "Economy", "Military", "Utility" };
+        static readonly Color[] AugColor = { new Color(1f, 0.85f, 0.29f), new Color(1f, 0.52f, 0.4f), new Color(0.56f, 0.91f, 1f), new Color(0.84f, 0.6f, 1f) };
+        static readonly string[] AugHex = { "#ffd84a", "#ff8466", "#8fe8ff", "#d79bff" };
+        static readonly string[] AugCatName = { "Economy", "Military", "Utility", "Legendary" };
         TextMeshProUGUI rewardTitle, rewardSub, rewardEvent, endTitle, endText, continueInfo, newGameNote;
         readonly RewardView[] rewardCards = new RewardView[Tuning.RewardChoices];
         Button continueBtn;
@@ -550,7 +550,7 @@ namespace HordeLab
             if (fight)
             {
                 castleFill.anchorMax = new Vector2(Mathf.Clamp01(g.castleHp / (float)g.MaxCastleHp), 1f);
-                castleText.Set($"Castle {g.castleHp}/{g.MaxCastleHp}");
+                castleText.Set($"Castle {g.castleHp}/{g.MaxCastleHp}" + (g.lastStandUsed ? "  <color=#d79bff>Last Stand!</color>" : ""));
                 enemiesText.Set($"<size=13><color=#aaaaaa>Enemies left</color></size>\n<color=#ff8f8f>{g.EnemiesRemaining:N0}</color>/{g.EnemiesTotal:N0}");
                 speedBtn.Label().Set($"x{battle.speed}");
                 pauseBtn.Label().Set(battle.paused ? ">" : "II");
