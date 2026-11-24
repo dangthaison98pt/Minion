@@ -13,6 +13,7 @@ namespace HordeLab
         public int version = 1;
         public int faction, hearts, wave, crystals, attacker, phase;
         public int[] hostile, hand, shop, reward;
+        public int[] handStars;                          // bản lưu cũ không có → coi như 1 sao
         public bool[] shopLocked;
         public string eventNote;
         public bool lastWon;
@@ -43,7 +44,12 @@ namespace HordeLab
         public int crystals;             // Tinh thể năng lượng: chỉ dùng ngoài trận
         public readonly List<int> hostile = new List<int>();
         public int attacker;             // phe tấn công đợt này (thấy trước lúc chuẩn bị)
-        public readonly List<int> hand = new List<int>();
+        public readonly List<int> hand = new List<int>();        // mã công trình của từng thẻ trên tay
+        public readonly List<int> handStars = new List<int>();   // số sao của từng thẻ, cùng chỉ số với hand
+        public int HandStars(int i) => i >= 0 && i < handStars.Count ? handStars[i] : 1;
+        void AddCard(int def, int stars = 1) { hand.Add(def); handStars.Add(stars); }
+        void RemoveCard(int i) { hand.RemoveAt(i); handStars.RemoveAt(i); }
+        void ClearHand() { hand.Clear(); handStars.Clear(); }
         public readonly int[] shop = new int[Tuning.ShopSlots];          // -1 = đã bán
         public readonly bool[] shopLocked = new bool[Tuning.ShopSlots];   // ô bị khoá thì roll / tự làm mới không đổi thẻ ở ô đó
         public readonly int[] reward = new int[Tuning.RewardChoices];
@@ -146,7 +152,7 @@ namespace HordeLab
             var d = new SaveData
             {
                 faction = faction, hearts = hearts, wave = wave, crystals = crystals, attacker = attacker, phase = (int)phase,
-                hostile = hostile.ToArray(), hand = hand.ToArray(), shop = (int[])shop.Clone(), reward = (int[])reward.Clone(),
+                hostile = hostile.ToArray(), hand = hand.ToArray(), handStars = handStars.ToArray(), shop = (int[])shop.Clone(), reward = (int[])reward.Clone(),
                 shopLocked = (bool[])shopLocked.Clone(), eventNote = eventNote, lastWon = lastWon, lastWave = lastWave, lastCrystals = lastCrystals,
                 pop = city.res.pop, food = city.res.food, wood = city.res.wood, gold = city.res.gold
             };
@@ -184,7 +190,9 @@ namespace HordeLab
             if (d == null) return false;
             faction = d.faction; hearts = d.hearts; wave = d.wave; crystals = d.crystals; attacker = d.attacker;
             hostile.Clear(); hostile.AddRange(d.hostile);
-            hand.Clear(); hand.AddRange(d.hand);
+            ClearHand();
+            for (int i = 0; i < d.hand.Length; i++)
+                AddCard(d.hand[i], d.handStars != null && i < d.handStars.Length ? Mathf.Clamp(d.handStars[i], 1, Tuning.MaxStars) : 1);
             d.shop.CopyTo(shop, 0); d.reward.CopyTo(reward, 0);
             System.Array.Clear(shopLocked, 0, shopLocked.Length);
             if (d.shopLocked != null && d.shopLocked.Length == shopLocked.Length) d.shopLocked.CopyTo(shopLocked, 0);
@@ -234,14 +242,14 @@ namespace HordeLab
             hostile.Sort();
 
             // Bộ thẻ khởi đầu (số tạm): đủ để chạy 2 nhà lính đầu tiên của phe
-            hand.Clear();
-            hand.Add(B.Barracks + faction * 5);
-            hand.Add(B.Barracks + faction * 5 + 1);
-            hand.Add(B.Cabin);
-            hand.Add(B.Cabin);
-            hand.Add(B.Field);
-            hand.Add(B.LumberCamp);
-            hand.Add(B.GoldMine);
+            ClearHand();
+            AddCard(B.Barracks + faction * 5);
+            AddCard(B.Barracks + faction * 5 + 1);
+            AddCard(B.Cabin);
+            AddCard(B.Cabin);
+            AddCard(B.Field);
+            AddCard(B.LumberCamp);
+            AddCard(B.GoldMine);
 
             System.Array.Clear(shopLocked, 0, shopLocked.Length);
             RollShop();
@@ -308,7 +316,7 @@ namespace HordeLab
         {
             if (!CanBuy(slot)) return false;
             crystals -= Price(shop[slot]);
-            hand.Add(shop[slot]);
+            AddCard(shop[slot]);
             shop[slot] = -1;
             shopLocked[slot] = false;
             SaveRun();
@@ -319,49 +327,48 @@ namespace HordeLab
         public bool PlayCard(int index, Vector2Int p)
         {
             if (phase != Phase.Prep || index < 0 || index >= hand.Count) return false;
-            int card = hand[index];
-            if (CanReplace(card, p)) return Replace(index, p);
+            int card = hand[index], stars = HandStars(index);
+            if (CanReplace(card, stars, p)) return Replace(index, p);
             bool ok = card == B.Expand ? city.Expand(p)
-                    : city.CanPlace(p) ? city.Place(p, card)
-                    : city.MergeCard(p, card);
-            if (ok) { hand.RemoveAt(index); SaveRun(); }
+                    : city.CanPlace(p) ? city.Place(p, card, stars)
+                    : city.MergeCard(p, card, stars);
+            if (ok) { RemoveCard(index); SaveRun(); }
             return ok;
         }
 
         /// <summary>
-        /// Thả thẻ lên một công trình 1 sao mà không gộp được thì đổi chỗ: thẻ lên ô, nhà cũ quay về tay.
-        /// Nhà nhiều sao không tách lại thành thẻ được nên KHÔNG bao giờ bị thay (không tự bán, không mất nhà).
+        /// Thả thẻ lên một công trình mà không gộp được thì đổi: thẻ lên ô (giữ số sao của thẻ),
+        /// nhà cũ về tay thành thẻ giữ nguyên số sao. Không bao giờ mất nhà.
         /// </summary>
-        public bool CanReplace(int card, Vector2Int p)
+        public bool CanReplace(int card, int stars, Vector2Int p)
         {
             var b = city.Get(p);
-            if (phase != Phase.Prep || card == B.Expand || b == null || b.def == card || b.stars != 1) return false;
-            return !(Tuning.MergeFromHand && city.CanMerge(p, card, 1));
+            if (phase != Phase.Prep || card == B.Expand || b == null) return false;
+            if (b.def == card && b.stars == stars) return false;                  // y hệt nhau: gộp (hoặc đã max sao) chứ không đổi
+            return !(Tuning.MergeFromHand && city.CanMerge(p, card, stars));
         }
 
         bool Replace(int index, Vector2Int p)
         {
-            int card = hand[index];
+            int card = hand[index], stars = HandStars(index);
             var old = city.Remove(p);
-            city.Place(p, card);
-            hand[index] = old.def;   // nhà cũ về đúng chỗ thẻ vừa dùng
+            city.Place(p, card, stars);
+            hand[index] = old.def;           // nhà cũ về đúng chỗ thẻ vừa dùng, giữ nguyên số sao
+            handStars[index] = old.stars;
             SaveRun();
             return true;
         }
 
-        /// <summary>
-        /// Câu báo khi cầm thẻ kê lên công trình ở ô <paramref name="p"/>: đổi được thì nói nhà cũ về tay,
-        /// nhà nhiều sao thì nói vì sao không đổi được. null nếu không liên quan (ô trống, gộp được...).
-        /// </summary>
-        public string ReplaceHint(int card, Vector2Int p, out bool allowed)
+        static string StarName(int def, int stars) => GameData.Buildings[def].name + (stars > 1 ? $" ({stars}-star)" : "");
+
+        /// <summary>Câu báo khi cầm thẻ kê lên công trình ở ô <paramref name="p"/>; null nếu không phải đổi (ô trống, gộp được...).</summary>
+        public string ReplaceHint(int card, int stars, Vector2Int p)
         {
-            allowed = CanReplace(card, p);
+            if (!CanReplace(card, stars, p)) return null;
             var old = city.Get(p);
-            if (allowed) return $"<b>Swap</b>: {GameData.Buildings[card].name} goes here, {old.Def.name} goes back to your hand.";
-            if (phase != Phase.Prep || card == B.Expand || old == null || old.def == card || old.stars == 1) return null;
-            if (Tuning.MergeFromHand && city.CanMerge(p, card, 1)) return null;
-            return $"<color=#ff8f8f>Can't replace {old.Def.name} ({old.stars}-star)</color>\nMerged buildings can't go back to your hand. Move it to another tile or drag it to SELL first.";
+            return $"<b>Swap</b>: {StarName(card, stars)} goes here,\n{StarName(old.def, old.stars)} goes back to your hand.";
         }
+
 
         /// <summary>Tinh thể nhận được khi bán: nhà n sao là 2^(n-1) nhà gộp lại nên được ngần ấy lần.</summary>
         public int SellValue(int stars) => Tuning.SellValue * (int)Tuning.StarYield[Mathf.Clamp(stars, 1, Tuning.MaxStars) - 1];
@@ -369,8 +376,8 @@ namespace HordeLab
         public bool SellCard(int index)
         {
             if (phase != Phase.Prep || index < 0 || index >= hand.Count) return false;
-            hand.RemoveAt(index);
-            crystals += SellValue(1);
+            crystals += SellValue(HandStars(index));
+            RemoveCard(index);
             SaveRun();
             return true;
         }
@@ -385,17 +392,18 @@ namespace HordeLab
             return true;
         }
 
-        /// <summary>Nhà 1 sao lấy lại lên tay được (nhà đã gộp thì không tách ra được, chỉ bán).</summary>
+        /// <summary>Kéo công trình về tay: thành thẻ giữ nguyên số sao.</summary>
         public bool CanTakeBack(Vector2Int p)
         {
             var b = city.Get(p);
-            return phase == Phase.Prep && b != null && b.stars == 1 && hand.Count < Tuning.HandLimit;
+            return phase == Phase.Prep && b != null && hand.Count < Tuning.HandLimit;
         }
 
         public bool TakeBack(Vector2Int p)
         {
             if (!CanTakeBack(p)) return false;
-            hand.Add(city.Remove(p).def);
+            var b = city.Remove(p);
+            AddCard(b.def, b.stars);
             SaveRun();
             return true;
         }
@@ -411,7 +419,7 @@ namespace HordeLab
         public void PickReward(int i)
         {
             if (phase != Phase.Reward) return;
-            hand.Add(reward[i]);
+            AddCard(reward[i]);
             phase = Phase.Prep;
             SaveRun();
         }
@@ -689,8 +697,8 @@ namespace HordeLab
                         foreach (var d in new[] { Vector2Int.right, Vector2Int.up, Vector2Int.left, Vector2Int.down })
                             if (city.CanExpand(p + d)) { target = p + d; break; }
                     }
-                    else if (city.CanMerge(p, card, 1) || (kv.Value == null && target == null)) target = p;
-                    if (target != null && (card == B.Expand || city.CanMerge(target.Value, card, 1))) break;
+                    else if (city.CanMerge(p, card, HandStars(i)) || (kv.Value == null && target == null)) target = p;
+                    if (target != null && (card == B.Expand || city.CanMerge(target.Value, card, HandStars(i)))) break;
                 }
                 if (target != null) PlayCard(i, target.Value);
             }

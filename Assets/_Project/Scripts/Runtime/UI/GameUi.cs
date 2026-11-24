@@ -77,6 +77,7 @@ namespace HordeLab
         Vector2Int dragCell, hoverCell;
         Vector2 pressAt;
         int infoDef = -1;
+        int infoStars = 1;   // số sao của thẻ đang rê chuột (thẻ trên tay có thể nhiều sao)
         Building infoBuilding;
         string tipText;
         string replaceTip;   // báo trước khi thả thẻ đè lên công trình (hiện cả lúc đang kéo)
@@ -89,7 +90,7 @@ namespace HordeLab
             public Image[] stars = new Image[Tuning.MaxStars];
         }
 
-        class CardView { public RectTransform rt; public Image bg, tile, frame; public CanvasGroup group; }
+        class CardView { public RectTransform rt; public Image bg, tile, frame, starBg; public readonly Image[] stars = new Image[Tuning.MaxStars]; public CanvasGroup group; }
 
         class ShopView
         {
@@ -242,6 +243,8 @@ namespace HordeLab
                 c.tile = Img(c.rt, null, Color.white).AtCenter(0f, 0f, 64f, 64f);
                 c.frame = Frame(c.rt, Color.white);
                 c.frame.Fill();
+                c.starBg = Img(c.rt, White, Dark);                                   // số sao của thẻ, góc trên trái giống ô trên lưới
+                for (int s = 0; s < c.stars.Length; s++) c.stars[s] = Img(c.starBg.transform, Star, Color.white);
                 c.group = c.rt.gameObject.AddComponent<CanvasGroup>();
                 cards[i] = c;
             }
@@ -476,7 +479,7 @@ namespace HordeLab
             hud.Show(InWorld);
             if (phase == Phase.Menu) RefreshMenu();
 
-            infoDef = -1; infoBuilding = null; tipText = null; replaceTip = null; hoverCellValid = false;
+            infoDef = -1; infoStars = 1; infoBuilding = null; tipText = null; replaceTip = null; hoverCellValid = false;
             bool modal = PauseOpen || phase == Phase.Reward || phase == Phase.Lost || phase == Phase.Won;
 
             if (InWorld)
@@ -560,11 +563,20 @@ namespace HordeLab
                     c.rt.Show(on);
                     if (!on) continue;
                     c.tile.sprite = Tiles[g.hand[i]];
+                    int cs = g.hand[i] == B.Expand ? 0 : g.HandStars(i);
+                    const float st = 14f;
+                    c.starBg.Show(cs > 0);
+                    c.starBg.At(4f, 4f, 4f + cs * (st - 1f), st + 3f);
+                    for (int s = 0; s < c.stars.Length; s++)
+                    {
+                        c.stars[s].Show(s < cs);
+                        if (s < cs) c.stars[s].At(2f + s * (st - 1f), 1f, st, st);
+                    }
                     c.group.alpha = dragCard == i ? 0.3f : 1f;
                     bool over = !modal && Over(c.rt);
                     c.frame.Show(selectedCard == i || (over && dragCard < 0 && !dragFromCell));
                     c.frame.color = selectedCard == i ? new Color(1f, 0.85f, 0.29f) : Color.white;
-                    if (over) infoDef = g.hand[i];
+                    if (over) { infoDef = g.hand[i]; infoStars = g.HandStars(i); }
                 }
 
                 hostileText.Set(hostile);
@@ -671,14 +683,13 @@ namespace HordeLab
             foreach (var p in highlight)
                 if (cells.TryGetValue(p, out var v)) { v.frame.Show(true); v.frame.color = new Color(1f, 0.86f, 0.3f, 0.95f); }
             // Cầm thẻ trên tay kê lên công trình không gộp được → thay thế: viền cam + báo trước nhà cũ đi đâu
-            int handCard = dragCard >= 0 && dragCard < g.hand.Count ? g.hand[dragCard]
-                         : !dragFromCell && selectedCard >= 0 && selectedCard < g.hand.Count ? g.hand[selectedCard] : -1;
-            bool replaceOk = false;
-            replaceTip = prep && dragCard >= 0 && handCard >= 0 && hoverCellValid ? g.ReplaceHint(handCard, hoverCell, out replaceOk) : null;
+            // chỉ khi KÉO thẻ (bấm chọn rồi bấm vào nhà thì không đổi, xem HandleDragAndClick)
+            replaceTip = prep && dragCard >= 0 && dragCard < g.hand.Count && hoverCellValid
+                       ? g.ReplaceHint(g.hand[dragCard], g.HandStars(dragCard), hoverCell) : null;
             if (dragDef >= 0 && hoverCellValid && cells.TryGetValue(hoverCell, out var hv))
             {
                 hv.frame.Show(true);
-                hv.frame.color = replaceTip == null ? Color.white : replaceOk ? new Color(1f, 0.6f, 0.2f) : new Color(1f, 0.3f, 0.25f);
+                hv.frame.color = replaceTip != null ? new Color(1f, 0.6f, 0.2f) : Color.white;
             }
             if (!prep) { dragFromCell = false; }
         }
@@ -845,7 +856,7 @@ namespace HordeLab
                     // bấm chọn thẻ rồi bấm ô: chỉ xây vào ô trống / mở ô / gộp. Bấm vào nhà khác loại thì KHÔNG thay nhà đó
                     // (dễ bấm nhầm khi định kéo nhà đi) mà bỏ chọn thẻ và cầm nhà lên như bình thường. Muốn thay thì kéo thẻ.
                     bool playable = selectedCard >= 0 && selectedCard < g.hand.Count &&
-                                    (target == null || (Tuning.MergeFromHand && city.CanMerge(hoverCell, g.hand[selectedCard], 1)));
+                                    (target == null || (Tuning.MergeFromHand && city.CanMerge(hoverCell, g.hand[selectedCard], g.HandStars(selectedCard))));
                     if (playable)
                     {
                         if (g.PlayCard(selectedCard, hoverCell)) selectedCard = -1;
@@ -950,7 +961,7 @@ namespace HordeLab
             string title = null, sub = null, body = tipText;
             int stars = 0;
             if (replaceTip != null) body = replaceTip;
-            else if (infoDef >= 0) InfoParts(infoDef, infoBuilding, out title, out sub, out body, out stars);
+            else if (infoDef >= 0) InfoParts(infoDef, infoBuilding, out title, out sub, out body, out stars, infoStars);
             bool show = !blocked && (replaceTip != null || (dragCard < 0 && !dragFromCell)) && (title != null || !string.IsNullOrEmpty(body));
             tip.Show(show);
             if (!show) return;
@@ -986,11 +997,11 @@ namespace HordeLab
         static string ShapeName(Shape s) =>
             s == Shape.Cross ? "cross (4 tiles)" : s == Shape.Ring ? "ring (8 tiles)" : s == Shape.Below ? "the tile below" : "the whole row";
 
-        void InfoParts(int def, Building b, out string title, out string sub, out string body, out int stars)
+        void InfoParts(int def, Building b, out string title, out string sub, out string body, out int stars, int cardStars = 1)
         {
             var d = GameData.Buildings[def];
             var sb = new StringBuilder();
-            stars = d.cat == Cat.Expand ? 0 : b != null ? b.stars : 1;
+            stars = d.cat == Cat.Expand ? 0 : b != null ? b.stars : cardStars;
             title = d.name;
             sub = $"{GameData.CatName[(int)d.cat]}{(d.faction >= 0 ? " · " + GameData.Factions[d.faction].name : "")}";
             sb.Append(d.desc).Append('\n');
@@ -1027,9 +1038,10 @@ namespace HordeLab
                     sb.Append($"\nEvery {d.period:0.#}s: <color=#9fe07a>+{d.amount:0.#} {ResId.Name[d.res]}</color>\n");
             }
             if (d.shape != Shape.None) sb.Append("\nBuff area: ").Append(ShapeName(d.shape)).Append('\n');
-            if (b != null && b.stars < Tuning.MaxStars) sb.Append($"\n<color=#aaaaaa>Merge with another {b.stars}-star {d.name} to reach {b.stars + 1} stars.</color>");
+            if (b == null && cardStars > 1) sb.Append($"\n<color=#ffd84a>{cardStars}-star card: built with {cardStars} stars.</color>");
+            if ((b != null || cardStars > 1) && d.cat != Cat.Expand && stars < Tuning.MaxStars) sb.Append($"\n<color=#aaaaaa>Merge with another {stars}-star {d.name} to reach {stars + 1} stars.</color>");
             if (b != null && g.phase == Phase.Prep)
-                sb.Append($"\n<color=#aaaaaa>Drag it to SELL for {g.SellValue(b.stars)} crystal(s){(b.stars == 1 ? ", or back onto your hand" : "")}.</color>");
+                sb.Append($"\n<color=#aaaaaa>Drag it to SELL for {g.SellValue(b.stars)} crystal(s), or back onto your hand (keeps its stars).</color>");
             body = sb.ToString().TrimEnd('\n');
         }
 

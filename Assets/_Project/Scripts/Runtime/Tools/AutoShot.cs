@@ -104,6 +104,41 @@ namespace HordeLab
             if (maxSim <= 0.0) log.AppendLine("CẢNH BÁO: mô phỏng không chạy (sim = 0) — số liệu không dùng được, xem file log của player.");
         }
 
+        /// <summary>
+        /// Kiểm tra thẻ có sao (chạy cùng -savetest): kéo thẻ đè lên nhà 3 sao thì đổi, nhà cũ về tay vẫn 3 sao;
+        /// đổi ngược lại; lấy nhà về tay giữ sao rồi đặt lại. Không được mất nhà nào.
+        /// </summary>
+        void SwapTest()
+        {
+            Vector2Int p = default; bool found = false;
+            foreach (var kv in game.city.cells) if (kv.Value != null && kv.Value.def != B.Cabin) { p = kv.Key; found = true; break; }
+            if (!found) { log.AppendLine("SWAP TEST: bỏ qua (lưới chưa có nhà)"); return; }
+
+            var b = game.city.Get(p);
+            int def = b.def, crystals0 = game.crystals, buildings0 = game.city.cells.Count - game.city.EmptyCount();
+            b.stars = 3;                                                      // giả lập nhà đã gộp lên 3 sao
+            game.hand.Add(B.Cabin); game.handStars.Add(1);
+            int i = game.hand.Count - 1;
+
+            bool ok1 = game.PlayCard(i, p);                                   // Cabin 1 sao đè lên nhà 3 sao
+            var now = game.city.Get(p);
+            bool swapped = ok1 && now.def == B.Cabin && now.stars == 1 && game.hand[i] == def && game.HandStars(i) == 3;
+
+            bool ok2 = game.PlayCard(i, p);                                   // nhà 3 sao (giờ là thẻ) đè lại lên Cabin
+            now = game.city.Get(p);
+            bool back = ok2 && now.def == def && now.stars == 3 && game.hand[i] == B.Cabin && game.HandStars(i) == 1;
+
+            bool took = game.TakeBack(p);                                     // lấy nhà 3 sao về tay rồi đặt lại
+            int j = game.hand.Count - 1;
+            bool kept = took && game.hand[j] == def && game.HandStars(j) == 3 && game.PlayCard(j, p) && game.city.Get(p).stars == 3;
+
+            game.hand.RemoveAt(i); game.handStars.RemoveAt(i);                // bỏ thẻ Cabin thêm vào để thử
+            game.city.Get(p).stars = 1;
+            game.city.Recompute();
+            bool intact = game.city.cells.Count - game.city.EmptyCount() == buildings0 && game.crystals == crystals0;
+            log.AppendLine($"SWAP TEST: {(swapped && back && kept && intact ? "OK" : "FAIL")} (đổi={swapped}, đổi ngược={back}, về tay giữ sao={kept}, không mất nhà={intact})");
+        }
+
         IEnumerator BotRun()
         {
             log.AppendLine($"BOT CHƠI THỬ: phe {GameData.Factions[botFaction].name}, tối đa {maxWaves} đợt");
@@ -150,9 +185,15 @@ namespace HordeLab
                 }
                 if (played == 0 && saveTest)
                 {
+                    SwapTest();
+                    // Cầm 1 thẻ 2 sao trên tay để thử lưu cả số sao của thẻ
+                    Vector2Int held = default; bool holding = false;
+                    foreach (var kv in game.city.cells)
+                        if (kv.Value != null) { held = kv.Key; kv.Value.stars = 2; holding = game.TakeBack(held); break; }
                     // Kiểm tra lưu / nạp: lưu → ra menu → Continue → so lại trạng thái
                     game.SaveRun();
                     int w0 = game.wave, h0 = game.hand.Count, c0 = game.city.cells.Count, e0 = game.city.EmptyCount(), k0 = game.crystals, f0 = game.faction;
+                    string s0 = string.Join(",", game.handStars);
                     float gold0 = game.city.res.gold;
                     game.QuitToMenu();
                     yield return Frames(40);
@@ -161,8 +202,14 @@ namespace HordeLab
                     bool loaded = game.ContinueRun();
                     yield return Frames(5);
                     bool same = loaded && game.phase == Phase.Prep && game.wave == w0 && game.hand.Count == h0 && game.city.cells.Count == c0
-                                && game.city.EmptyCount() == e0 && game.crystals == k0 && game.faction == f0 && Mathf.Approximately(game.city.res.gold, gold0);
-                    log.AppendLine($"SAVE TEST: {(same ? "OK" : "FAIL")} (loaded={loaded}, phase={game.phase}, wave {w0}->{game.wave}, hand {h0}->{game.hand.Count}, cells {c0}->{game.city.cells.Count}, empty {e0}->{game.city.EmptyCount()})");
+                                && game.city.EmptyCount() == e0 && game.crystals == k0 && game.faction == f0 && Mathf.Approximately(game.city.res.gold, gold0)
+                                && string.Join(",", game.handStars) == s0;
+                    log.AppendLine($"SAVE TEST: {(same ? "OK" : "FAIL")} (loaded={loaded}, phase={game.phase}, wave {w0}->{game.wave}, hand {h0}->{game.hand.Count}, cells {c0}->{game.city.cells.Count}, empty {e0}->{game.city.EmptyCount()}, sao trên tay [{s0}]->[{string.Join(",", game.handStars)}])");
+                    if (holding && game.hand.Count > 0)                                   // đặt lại nhà vừa cầm, trả về 1 sao như cũ
+                    {
+                        int last = game.hand.Count - 1;
+                        if (game.PlayCard(last, held)) { game.city.Get(held).stars = 1; game.city.Recompute(); }
+                    }
                 }
                 log.AppendLine($"--- Đợt {wave}: địch {GameData.Factions[game.attacker].name}, {game.EnemyPreviewCount()} quân | lưới {game.city.cells.Count} ô ({game.city.EmptyCount()} trống), tay {game.hand.Count} thẻ, tinh thể {game.crystals}");
                 game.StartWave();

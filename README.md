@@ -27,13 +27,15 @@ Phần mô phỏng vẫn là lõi "vạn quân" cũ: **Job System + Burst + GPU 
    - Kéo thẻ từ tay thả vào ô trống của lưới thành để xây (lưới bắt đầu 3×3). Hoặc bấm chọn thẻ rồi bấm vào ô.
    - Lăn chuột trên lưới để đổi cỡ ô, giữ chuột phải / giữa để kéo lưới.
    - Kéo thẻ lên nhà cùng loại, cùng sao để **gộp** (tối đa 4 sao). Kéo công trình sang ô khác để gộp hoặc đổi chỗ.
-   - **Kéo** thẻ lên công trình 1 sao **không gộp được** để **đổi**: thẻ lên ô, nhà cũ về tay (viền cam + dòng báo trước).
-     Nhà nhiều sao không bao giờ bị thay (viền đỏ): muốn bỏ thì kéo nó sang ô khác hoặc vào ô SELL.
-     Bấm chọn thẻ rồi bấm vào nhà khác loại thì không thay gì cả, chỉ cầm nhà đó lên.
+   - **Thẻ trên tay có số sao** (góc trên trái thẻ). Thẻ mua / thưởng là 1 sao; nhà kéo về tay giữ nguyên số sao,
+     đặt xuống lại vẫn đủ sao. Thẻ n sao gộp được với nhà cùng loại n sao.
+   - **Kéo** thẻ lên công trình **không gộp được** để **đổi**: thẻ lên ô, nhà cũ về tay đúng chỗ thẻ, giữ nguyên số sao
+     (viền cam + dòng báo trước). Không bao giờ mất nhà.
+     Bấm chọn thẻ rồi bấm vào nhà khác loại thì không đổi gì cả, chỉ cầm nhà đó lên.
    - Thẻ **Mở rộng đất**: thả vào ô sát cạnh lưới để mở thêm ô.
    - **Cửa hàng** (góc phải): mua thẻ bằng Tinh thể năng lượng, có nút làm mới. Nút **Lock** giữ thẻ ở ô đó qua các lần làm mới.
    - **Bán:** kéo thẻ hoặc công trình vào ô *SELL* để lấy Tinh thể (nhà n sao = 2^(n-1) nhà gộp lại nên được ngần ấy lần).
-     Công trình 1 sao còn kéo ngược về tay được; nhà đã gộp thì không tách ra được, chỉ bán.
+     Công trình nào cũng kéo ngược về tay được (thành thẻ giữ số sao).
    - Rê chuột vào thẻ / công trình để xem chi tiết; nhà buff sẽ tô viền vàng các ô nó tác động.
 3. **Bắt đầu đợt** → chỉ ngồi xem. Góc trên ghi *Enemies left*: số địch còn lại / tổng quân cả đợt (tính cả các tiểu đội chưa kéo đến). Nhà lính viền đỏ = đã hồi xong nhưng đang chờ đủ tài nguyên.
 4. Hết đợt: chọn 1 trong 3 thẻ + nhận Tinh thể. Thành thất thủ thì mất 1 trong 3 tim nhưng vẫn sang đợt sau và vẫn nhận thưởng.
@@ -85,7 +87,7 @@ Tất cả nằm trong class `Tuning` và bảng dữ liệu ở [`GameData.cs`]
 | Quy mô đợt địch | `5 + 2.2·đợt + 0.16·đợt²` tiểu đội, mạnh thêm 4% mỗi đợt |
 | Mọi chỉ số quân, chi phí, chu kỳ nhà | Số khởi điểm, chưa cân bằng |
 
-Ngoài GDD, có thêm vài thứ cho dễ chơi: kéo công trình để **đổi chỗ**, thả thẻ đè lên nhà 1 sao để **đổi về tay**, **tua nhanh** x2/x4, **bán** thẻ / công trình,
+Ngoài GDD, có thêm vài thứ cho dễ chơi: kéo công trình để **đổi chỗ**, thả thẻ đè lên nhà để **đổi về tay**, thẻ trên tay **giữ số sao**, **tua nhanh** x2/x4, **bán** thẻ / công trình,
 **khoá ô** cửa hàng, **tự lưu** lượt chơi.
 Tầm bắn và tốc độ đi của mọi quân nhân 0,6 (`RangeScale`, `SpeedScale`) cho vừa chiến trường 96 × 54. Còn một lưới an toàn:
 nếu địch đã đến hết mà 150 giây sau trận vẫn chưa ngã ngũ thì tính là địch rút (phòng hai bên kẹt nhau mãi).
@@ -147,7 +149,7 @@ Build\HordeLab.exe -autoshot ketqua -faction 0 -waves 5
 ```
 Bot chọn phe, đặt thẻ, mua đồ, đánh 5 đợt, chụp màn hình từng pha và ghi kết quả từng đợt vào `ketqua\stats.txt`.
 Thêm `-batchmode` để chạy ngầm, nhanh hết mức (không chụp hình). Bot mặc định không ghi file lưu, để khỏi đè lượt chơi thật;
-thêm `-savetest` để thử cả phần lưu / nạp (ghi vào `run_autotest.json`).
+thêm `-savetest` để thử cả phần lưu / nạp (ghi vào `run_autotest.json`) và đổi nhà / thẻ có sao (`SWAP TEST` trong `stats.txt`).
 
 ```
 Build\HordeLab.exe -batchmode -bench ketqua.txt -stress 20000

@@ -94,10 +94,10 @@ namespace HordeLab
 
         public bool CanPlace(Vector2Int p) => IsOpen(p) && cells[p] == null;
 
-        public bool Place(Vector2Int p, int def)
+        public bool Place(Vector2Int p, int def, int stars = 1)
         {
             if (!CanPlace(p)) return false;
-            cells[p] = new Building { def = def };
+            cells[p] = new Building { def = def, stars = Mathf.Clamp(stars, 1, Tuning.MaxStars) };
             Recompute();
             return true;
         }
@@ -119,9 +119,10 @@ namespace HordeLab
             return b != null && b.def == def && b.stars == stars && b.stars < Tuning.MaxStars;
         }
 
-        public bool MergeCard(Vector2Int target, int def)
+        /// <summary>Gộp thẻ trên tay (có <paramref name="stars"/> sao) vào nhà cùng loại, cùng sao.</summary>
+        public bool MergeCard(Vector2Int target, int def, int stars = 1)
         {
-            if (!Tuning.MergeFromHand || !CanMerge(target, def, 1)) return false;
+            if (!Tuning.MergeFromHand || !CanMerge(target, def, stars)) return false;
             cells[target].stars++;
             Recompute();
             return true;
