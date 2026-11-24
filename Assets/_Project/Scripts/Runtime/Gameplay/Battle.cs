@@ -67,7 +67,8 @@ namespace HordeLab
         NativeArray<int> counters;
         NativeArray<int> cellStart, cursor, teamCount, cellOf, sortedIndex;
         NativeArray<float2> sortedPos;
-        NativeArray<byte> sortedInfo;
+        NativeArray<byte> sortedInfo, sortedType;
+        UnitStats[] baseStats;                     // chỉ số gốc (đã đo liftPx) để bật / tắt lõi chuyên quân mỗi đợt
         NativeArray<int> attackTarget;
         NativeArray<float3> shots;
         NativeArray<float4> unitGpu, particleGpu;
@@ -129,11 +130,12 @@ namespace HordeLab
             var p = Allocator.Persistent;
             units = new NativeArray<Unit>(Cfg.MaxUnits, p);
             stats = new NativeArray<UnitStats>(UnitType.Count, p);
+            baseStats = new UnitStats[UnitType.Count];
             for (int t = 0; t < UnitType.Count; t++)
             {
                 var st = GameData.Units[t].stats;
                 st.liftPx = PixelArt.FootLiftPx(t);      // đo từ sprite (kể cả PNG hoạ sĩ vẽ) để chân chạm đất đúng vị trí
-                stats[t] = st;
+                stats[t] = baseStats[t] = st;
             }
 
             arrows = new NativeArray<Arrow>(Cfg.MaxArrows, p);
@@ -148,6 +150,7 @@ namespace HordeLab
             sortedIndex = new NativeArray<int>(Cfg.MaxUnits, p);
             sortedPos = new NativeArray<float2>(Cfg.MaxUnits, p);
             sortedInfo = new NativeArray<byte>(Cfg.MaxUnits, p);
+            sortedType = new NativeArray<byte>(Cfg.MaxUnits, p);
             attackTarget = new NativeArray<int>(Cfg.MaxUnits, p);
             shots = new NativeArray<float3>(Cfg.MaxUnits, p);
 
@@ -332,7 +335,25 @@ namespace HordeLab
         }
 
         /// <summary>Gọi 1 tiểu đội side x side lính xếp hàng quanh <paramref name="center"/>. Trả về số lính.</summary>
-        public int SpawnSquad(int type, int team, float2 center, int side, float hpMul = 1f, float dmgMul = 1f, float regen = 0f)
+        /// <summary>
+        /// Bật lõi chuyên quân cho những loại quân người chơi có lõi (đầu mỗi đợt). Chỉ quân phe người chơi mới có lõi,
+        /// mà phe người chơi không bao giờ là phe địch / lính thuê, nên chỉnh chỉ số theo loại quân là an toàn.
+        /// </summary>
+        public void ApplyUnitAugments(System.Func<int, bool> has, bool fullMoon)
+        {
+            simHandle.Complete();
+            for (int t = 0; t < UnitType.Count; t++)
+            {
+                var st = baseStats[t];
+                bool on = has(t);
+                st.augOn = on ? 1 : 0;
+                if (on && t == UnitType.Swordsman) st.arrowResist += Aug.ShieldWallResist;            // Tường khiên
+                if (on && t == UnitType.Shaman && fullMoon) st.flags |= UFlag.HealAura;              // Trăng máu
+                stats[t] = st;
+            }
+        }
+
+        public int SpawnSquad(int type, int team, float2 center, int side, float hpMul = 1f, float dmgMul = 1f, float regen = 0f, bool leader = false)
         {
             simHandle.Complete();
             float gap = math.max(0.9f, stats[type].radius * 1.9f);   // xếp hàng theo cỡ thân
@@ -340,7 +361,17 @@ namespace HordeLab
             center.y = math.clamp(center.y, -Cfg.HalfH + 1f + half * gap, Cfg.HalfH - 1f - half * gap);
             for (int r = 0; r < side; r++)
                 for (int c = 0; c < side; c++)
+                {
                     SpawnUnit(type, team, center + new float2((c - half) * gap, (r - half) * gap) + rng.NextFloat2(-0.15f, 0.15f), hpMul, dmgMul, regen);
+                    if (leader && r == side / 2 && c == side / 2 && counters[C.Units] > 0)
+                    {
+                        // trưởng đạo: con giữa đạo, +50% máu, viền vàng, dùng kỹ năng của lõi chuyên quân
+                        int k = counters[C.Units] - 1;
+                        var u = units[k];
+                        u.leader = 1; u.hp *= 1.5f; u.maxHp *= 1.5f;
+                        units[k] = u;
+                    }
+                }
             return side * side;
         }
 
@@ -380,14 +411,14 @@ namespace HordeLab
             var h = new BuildGridJob
             {
                 units = units, stats = stats, counters = counters, cellStart = cellStart, cursor = cursor, teamCount = teamCount,
-                cellOf = cellOf, sortedIndex = sortedIndex, sortedPos = sortedPos, sortedInfo = sortedInfo
+                cellOf = cellOf, sortedIndex = sortedIndex, sortedPos = sortedPos, sortedInfo = sortedInfo, sortedType = sortedType
             }.Schedule();
             h = Mark(0, h);
 
             h = new ThinkMoveJob
             {
                 units = units, stats = stats, counters = counters, cellStart = cellStart, teamCount = teamCount,
-                sortedIndex = sortedIndex, sortedPos = sortedPos, sortedInfo = sortedInfo,
+                sortedIndex = sortedIndex, sortedPos = sortedPos, sortedInfo = sortedInfo, sortedType = sortedType,
                 attackTarget = attackTarget, shots = shots, dt = dt, frame = frame
             }.Schedule(nu, 64, h);
             h = Mark(1, h);
@@ -491,7 +522,7 @@ namespace HordeLab
             void D<T>(ref NativeArray<T> a) where T : struct { if (a.IsCreated) a.Dispose(); }
             D(ref units); D(ref stats); D(ref arrows); D(ref particles); D(ref stamps); D(ref counters);
             D(ref cellStart); D(ref cursor); D(ref teamCount); D(ref cellOf); D(ref sortedIndex);
-            D(ref sortedPos); D(ref sortedInfo); D(ref attackTarget); D(ref shots);
+            D(ref sortedPos); D(ref sortedInfo); D(ref sortedType); D(ref attackTarget); D(ref shots);
             D(ref unitGpu); D(ref arrowGpu); D(ref particleGpu);
 
             unitBuf?.Release(); arrowBuf?.Release(); particleBuf?.Release(); stampBuf?.Release();

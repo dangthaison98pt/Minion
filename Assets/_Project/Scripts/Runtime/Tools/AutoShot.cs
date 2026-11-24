@@ -141,6 +141,7 @@ namespace HordeLab
         }
 
         bool augShot, ownedShot;
+        static readonly bool allAugs = System.Array.IndexOf(System.Environment.GetCommandLineArgs(), "-allaugs") >= 0;
 
         /// <summary>Kiểm tra lõi (chạy cùng -savetest): bật tạm từng lõi, so số liệu trước / sau, rồi gỡ ra.</summary>
         void AugTest()
@@ -248,6 +249,11 @@ namespace HordeLab
                         foreach (var t in tiers) t.stars = 1;
                         game.city.Recompute();
                     }
+                    if (allAugs)
+                        for (int t = 0; t < UnitType.Buildable; t++) if (!game.Has(Aug.ForUnit(t))) game.Augments.Add(Aug.ForUnit(t));   // thử đủ 25 lõi
+                    if (System.Array.IndexOf(System.Environment.GetCommandLineArgs(), "-unitaugs") >= 0)
+                        for (int t = 0; t < UnitType.Buildable; t++)
+                            if (Faction.Of(t) == game.faction) game.Augments.Add(Aug.ForUnit(t));   // thử cả 5 lõi chuyên quân của phe
                     if (System.Array.IndexOf(System.Environment.GetCommandLineArgs(), "-legendary") >= 0)
                         for (int a = Aug.Dragon; a <= Aug.LastStand; a++) game.Augments.Add(a);   // thử cả 5 lõi huyền thoại ngay đợt 1
                     game.crystals = 50;                    // giữ 50 Tinh thể qua đợt 1 → hết đợt phải được lãi tối đa +5
@@ -278,6 +284,12 @@ namespace HordeLab
                 }
                 log.AppendLine($"--- Đợt {wave}: địch {GameData.Factions[game.attacker].name}, {game.EnemyPreviewCount()} quân | lưới {game.city.cells.Count} ô ({game.city.EmptyCount()} trống), tay {game.hand.Count} thẻ, tinh thể {game.crystals}");
                 game.StartWave();
+                if (allAugs)
+                {
+                    // thả 1 đạo 3x3 (có trưởng đạo) của MỌI loại quân để lõi nào cũng có dịp ra tay
+                    for (int t = 0; t < UnitType.Buildable; t++)
+                        battle.SpawnSquad(t, 0, new float2(Cfg.PlayerSpawnX + 2f + (t % 5) * 3f, -Cfg.HalfH + 6f + (t / 5) * 9f), 3, 1f, 1f, 0f, true);
+                }
                 if (played > 0 || Headless) battle.speed = 4;
 
                 float shotAt = Time.time + 22f;
@@ -323,6 +335,9 @@ namespace HordeLab
                 }
                 played++;
                 var r = game.city.res;
+                if (game.Augments.Exists(a => GameData.Augments[a].cat == AugCat.Specialist))
+                    log.AppendLine($"    chuyên quân: kỹ năng trưởng đạo {battle.Counter(C.LeaderSkill)}, khống chế trúng {battle.Counter(C.CcHits)}, hồi sinh {battle.Counter(C.Revives)}, " +
+                                   $"phân bào {battle.Counter(C.Splits)}, tên xuyên trúng thêm {battle.Counter(C.PierceHits)}, phản đòn / nảy {battle.Counter(C.Counters)}");
                 if (gapN > 0) log.AppendLine($"    rồng: chân lính khác gần nhất {gapMin:0.00}, trung bình {gapSum / gapN:0.00} (tổng bán kính rồng + lính bộ = {Cfg.RadiusGiant + Cfg.RadiusSmall:0.00})");
                 if (game.Augments.Exists(a => GameData.Augments[a].cat == AugCat.Legendary))
                     log.AppendLine($"    huyền thoại: rồng gọi {game.dragonsCalled}, thiên thạch {game.meteorsFired}, nỏ {game.boltsFired}, lính thuê {game.mercSquads} đội, last stand {game.lastStands}");

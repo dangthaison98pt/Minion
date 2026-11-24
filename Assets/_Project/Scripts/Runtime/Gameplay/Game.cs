@@ -478,6 +478,7 @@ namespace HordeLab
                 enemyWeights.Add(GameData.Units[t].waveWeight);
             }
 
+            battle.ApplyUnitAugments(t => Has(Aug.ForUnit(t)), IsFullMoon(wave));
             battle.simulate = true;
             battle.paused = false;
             phase = Phase.Battle;
@@ -520,7 +521,7 @@ namespace HordeLab
                 var pos = new float2(Cfg.PlayerSpawnX + rng.NextFloat(0f, 5f), rng.NextFloat(-Cfg.HalfH + 5f, Cfg.HalfH - 5f));
                 battle.SpawnSquad(type, 0, pos, side, b.hp * moon * (Has(Aug.IronSkin) ? 1f + Aug.IronSkinHp : 1f),
                                   b.dmg * moon * (Has(Aug.Sharpened) ? 1f + Aug.SharpenedDmg : 1f),
-                                  b.regen + (Has(Aug.Medics) ? Aug.MedicsRegen : 0f));
+                                  b.regen + (Has(Aug.Medics) ? Aug.MedicsRegen : 0f), true);   // mỗi đạo có 1 trưởng đạo
             }
         }
 
@@ -627,14 +628,28 @@ namespace HordeLab
         int EnemySquadCount() =>
             Mathf.Max(1, Mathf.RoundToInt(Tuning.EnemySquads(wave) * (IsBoss(wave) ? Tuning.BossSize : 1f) * (Has(Aug.Scouts) ? 1f - Aug.ScoutsCut : 1f)));
 
-        /// <summary>Bốc 3 lõi khác nhau mà người chơi chưa có. false nếu không còn đủ lõi để chọn.</summary>
+        /// <summary>
+        /// Bốc 3 lõi khác nhau mà người chơi chưa có. Lõi chuyên quân chỉ có khi đang có nhà lính của quân đó trên lưới;
+        /// ô đầu tiên nghiêng hẳn về lõi chuyên quân (70%), 2 ô sau 25%. false nếu không còn đủ lõi để chọn.
+        /// </summary>
         bool RollAugments()
         {
-            var pool = new List<int>();
-            for (int a = 0; a < Aug.Count; a++) if (!Has(a)) pool.Add(a);
-            if (pool.Count < augChoices.Length) return false;
+            var general = new List<int>();
+            var unit = new List<int>();
+            var owned = new HashSet<int>();
+            foreach (var b in city.cells.Values) if (b != null && b.Def.cat == Cat.Barracks) owned.Add(b.Def.unit);
+            for (int a = 0; a < Aug.Count; a++)
+            {
+                if (Has(a)) continue;
+                var d = GameData.Augments[a];
+                if (d.unit < 0) general.Add(a);
+                else if (owned.Contains(d.unit)) unit.Add(a);
+            }
+            if (general.Count + unit.Count < augChoices.Length) return false;
             for (int i = 0; i < augChoices.Length; i++)
             {
+                bool pickUnit = unit.Count > 0 && (general.Count == 0 || rnd.NextDouble() < (i == 0 ? 0.7 : 0.25));
+                var pool = pickUnit ? unit : general;
                 int k = rnd.Next(pool.Count);
                 augChoices[i] = pool[k];
                 pool.RemoveAt(k);

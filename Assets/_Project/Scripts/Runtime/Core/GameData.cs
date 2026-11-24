@@ -154,7 +154,7 @@ namespace HordeLab
         public const int Count = Expand + 1;
     }
 
-    public enum AugCat { Economy, Military, Utility, Legendary }
+    public enum AugCat { Economy, Military, Utility, Legendary, Specialist }
 
     /// <summary>Một lõi: hiệu ứng vĩnh viễn cho cả lượt chơi. Hiệu ứng nằm ở City / Game (tìm Aug.Tên).</summary>
     public class AugmentDef
@@ -162,6 +162,8 @@ namespace HordeLab
         public int id;
         public string name, desc;
         public AugCat cat;
+        public int unit = -1;          // lõi chuyên quân: loại quân; chỉ xuất hiện khi có nhà lính của quân này
+        public bool leaderSkill;       // kỹ năng của trưởng đạo (không phải mọi lính)
     }
 
     /// <summary>Mã lõi.</summary>
@@ -175,7 +177,35 @@ namespace HordeLab
         public const int FreeRoll = 14, Bargain = 15, LandGrant = 16, Recruit = 17, Architect = 18;
         // Huyền thoại: cơ chế riêng, không chỉ cộng chỉ số
         public const int Dragon = 19, Meteor = 20, Ballista = 21, Mercenary = 22, LastStand = 23;
-        public const int Count = 24;
+        // Chuyên quân: 25 lõi, mã = UnitBase + loại quân
+        public const int UnitBase = 24;
+        public static int ForUnit(int unitType) => unitType < UnitType.Buildable ? UnitBase + unitType : -1;
+        public const int Count = UnitBase + UnitType.Buildable;
+
+        // Số liệu lõi chuyên quân (số tạm)
+        public const float ShieldWallResist = 0.4f;
+        public const float VolleyEvery = 8f; public const int VolleyArrows = 7;
+        public const float ChargePierceRadius = 1.2f;
+        public const float ReviveRadius = 4f, ReviveChance = 0.25f; public const int ReviveMax = 10;
+        public const float FireBurn = 4f;
+        public const float RootAfter = 3f, RootRegen = 1f, RootSlow = 1.5f;
+        public const float PierceLength = 2.5f; public const int PierceExtra = 2;
+        public const float CounterRadius = 1.2f;
+        public const float VineEvery = 6f, VineTime = 1.5f;
+        public const float KiteFireRate = 2f;
+        public const float Thorns = 0.3f;
+        public const float AntiBigMul = 2f;
+        public const float BerserkLow = 0.3f;
+        public const int ClusterBombs = 3; public const float ClusterDamage = 0.4f;
+        public const float RamEvery = 8f, RamStun = 1f, RamRadius = 1.5f;
+        public const float RoarEvery = 12f, RoarFear = 1f, RoarRadius = 3f;
+        public const float PackBonus = 0.08f, PackMax = 0.4f, PackRadius = 2.5f;
+        public const float Backstab = 3f;
+        public const float DiveEvery = 15f, DiveDamage = 3f, DiveSplash = 2.5f;
+        public const float Lifesteal = 0.2f;
+        public const float GazeEvery = 7f, GazeStun = 1f;
+        public const float PortalEvery = 20f; public const int PortalMax = 3;
+        public const float ResonanceRange = 7f, ResonanceDamage = 0.6f;
 
         // Các con số (số tạm, chưa cân bằng)
         public const float ResBonus = 0.35f;          // Harvest / Timber / GoldRush / BabyBoom: +35% tài nguyên tương ứng
@@ -247,6 +277,39 @@ namespace HordeLab
             A(Aug.Ballista, AugCat.Legendary, "Ballista Towers", "Your walls fire heavy bolts at the closest enemy, about once a second.");
             A(Aug.Mercenary, AugCat.Legendary, "Mercenary Camp", $"Every {Aug.MercEvery:0}s a squad of {Aug.MercSide * Aug.MercSide} mercenaries from a random other faction joins you.");
             A(Aug.LastStand, AugCat.Legendary, "Last Stand", $"Once per wave, when the castle would fall it recovers {pct(Aug.LastStandHeal)}% of its HP instead.");
+
+            // ---- Chuyên quân: 1 lõi / loại quân. 👑 = kỹ năng của trưởng đạo ----
+            void SU(int t, bool lead, string name, string desc)
+            {
+                int id = Aug.ForUnit(t);
+                a[id] = new AugmentDef { id = id, cat = AugCat.Specialist, unit = t, leaderSkill = lead, name = name,
+                                         desc = (lead ? $"Squad leaders of {Units[t].name}: " : $"All {Units[t].name}: ") + desc };
+            }
+            SU(UnitType.Swordsman, false, "Shield Wall", $"take {pct(Aug.ShieldWallResist)}% less damage from arrows, bolts and javelins.");
+            SU(UnitType.Archer, true, "Arrow Volley", $"every {Aug.VolleyEvery:0}s fire a fan of {Aug.VolleyArrows} arrows.");
+            SU(UnitType.Cavalry, false, "Breakthrough", "a full-speed charge pierces the line and hits everything around the target.");
+            SU(UnitType.Monk, true, "Resurrection", $"allies who die nearby have a {pct(Aug.ReviveChance)}% chance to rise again at half HP (once each, up to {Aug.ReviveMax} per leader).");
+            SU(UnitType.Catapult, false, "Fire Shot", $"rocks set enemies on fire for {Aug.FireBurn:0}s (burning does not stack).");
+            SU(UnitType.Treant, false, "Take Root", $"after standing still for {Aug.RootAfter:0}s: cannot be knocked back, regenerates {Aug.RootRegen:0} HP/s and its blows slow enemies.");
+            SU(UnitType.ForestArcher, false, "Piercing Arrows", $"arrows go through and hit up to {Aug.PierceExtra} more enemies behind the target.");
+            SU(UnitType.BladeDancer, false, "Blade Dance", "every dodge is answered with a sweeping counter-attack.");
+            SU(UnitType.Druid, true, "Entangling Vines", $"every {Aug.VineEvery:0}s the next spell roots enemies in place for {Aug.VineTime:0.#}s.");
+            SU(UnitType.DeerRider, false, "Running Fire", $"shoot {Aug.KiteFireRate:0}x faster while riding around the enemy.");
+            SU(UnitType.ShieldWarrior, false, "Spiked Shields", $"reflect {pct(Aug.Thorns)}% of melee damage back to the attacker.");
+            SU(UnitType.Crossbow, false, "Armor Piercing", $"deal {Aug.AntiBigMul:0}x damage to large and giant enemies.");
+            SU(UnitType.Axeman, false, "Berserk", $"the lower their HP the harder they hit; under {pct(Aug.BerserkLow)}% HP they attack twice as fast.");
+            SU(UnitType.Cannon, false, "Cluster Shot", $"shells burst into {Aug.ClusterBombs} smaller explosions around the impact.");
+            SU(UnitType.GoatRider, true, "Mountain Ram", $"every {Aug.RamEvery:0}s a ram stuns nearby enemies for {Aug.RamStun:0}s.");
+            SU(UnitType.Bear, true, "Terrifying Roar", $"every {Aug.RoarEvery:0}s roar: nearby enemies flee in fear for {Aug.RoarFear:0}s.");
+            SU(UnitType.Wolf, false, "Pack Hunters", $"+{pct(Aug.PackBonus)}% damage for every wolf nearby (up to +{pct(Aug.PackMax)}%).");
+            SU(UnitType.Leopard, false, "Predator", $"hunt enemy ranged troops first; attacks from behind deal {Aug.Backstab:0}x damage.");
+            SU(UnitType.Shaman, false, "Blood Moon", "on full-moon waves the shaman's aura also heals the pack.");
+            SU(UnitType.Eagle, true, "Dive Bomb", $"every {Aug.DiveEvery:0}s the next javelin is a dive: {Aug.DiveDamage:0}x damage in a wide area.");
+            SU(UnitType.Aberration, false, "Mitosis", "on death, split into 2 Voidlings (Voidlings do not split again).");
+            SU(UnitType.Shade, false, "Soul Drain", $"heal for {pct(Aug.Lifesteal)}% of the damage dealt.");
+            SU(UnitType.Eye, true, "Paralyzing Gaze", $"every {Aug.GazeEvery:0}s the next bolt paralyzes its target for {Aug.GazeStun:0}s.");
+            SU(UnitType.Summoner, true, "Void Portal", $"every {Aug.PortalEvery:0}s summon an Aberration instead of Voidlings (up to {Aug.PortalMax} per leader each wave).");
+            SU(UnitType.Screamer, false, "Resonance", "every sonic wave bounces to one more enemy group nearby.");
             return a;
         }
 
@@ -282,7 +345,7 @@ namespace HordeLab
             u[UnitType.BladeDancer] = U("Blade Court", "Blade Dancer", "Striker (dodges)", s, new Res(5, 6, 0, 0), 9f, 3, 2f);
             s = S(18, 3, 2.2f, 18f, 2.7f, Mode.Shoot, 0, Proj.NatureOrb); s.splash = 2f; s.slow = 2.5f;
             u[UnitType.Druid] = U("Moon Temple", "Druid", "Support (slows enemies)", s, new Res(5, 0, 0, 6), 14f, 5, 1f);
-            u[UnitType.DeerRider] = U("Deer Glade", "Deer Rider", "Mobile (shoots on the move)", S(45, 6, 1.5f, 14f, 5.0f, Mode.Shoot, UFlag.Big | UFlag.Kite, Proj.ElfArrow, PKind.Blood, 12f), new Res(6, 5, 5, 0), 13f, 4, 1.5f);
+            u[UnitType.DeerRider] = U("Deer Glade", "Deer Rider", "Mobile (shoots on the move)", S(45, 6, 2.2f, 14f, 5.0f, Mode.Shoot, UFlag.Big | UFlag.Kite, Proj.ElfArrow, PKind.Blood, 12f), new Res(6, 5, 5, 0), 13f, 4, 1.5f);
 
             // ---------------- Người lùn ----------------
             u[UnitType.ShieldWarrior] = U("Stone Hall", "Shield Warrior", "Frontline (very tanky)", S(80, 6, 1.0f, 1.0f, 2.7f), new Res(6, 5, 0, 3), 9f, 1, 5f);

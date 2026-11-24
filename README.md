@@ -94,6 +94,43 @@ class `Aug` và `GameData.BuildAugments()` trong [`GameData.cs`](Assets/_Project
 
 Sức mạnh rồng, thiên thạch, nỏ và lính thuê nhân theo `Tuning.EnemyPower(đợt)` để không bị tụt hậu về cuối game.
 
+### Lõi chuyên quân (25 lõi, nhóm Specialist màu xanh lá)
+Mỗi loại quân có 1 lõi đổi cách nó đánh. Chỉ xuất hiện khi đang có **nhà lính của quân đó** trên lưới; ô đầu tiên của
+màn chọn lõi nghiêng hẳn về lõi chuyên quân (70%), 2 ô sau 25%. Mã lõi = `Aug.UnitBase + loại quân`, số liệu ở class `Aug`.
+
+- **Trưởng đạo:** mỗi đạo gọi ra có 1 trưởng đạo (con giữa đội hình): **viền vàng**, **+50% máu**. Lõi 👑 chỉ trưởng đạo dùng,
+  nên số lần kích hoạt tính theo số đạo, không theo số lính. Trưởng đạo chết thì đạo đó mất kỹ năng.
+- **Khống chế** (choáng / trói / sợ hãi) không cộng dồn; hết khống chế thì **miễn khống chế 2 giây** (`CC.Immune`).
+- Bỏng không chồng; Phân bào chỉ 1 tầng; Hồi sinh mỗi lính 1 lần, tối đa 10 lần / trưởng đạo.
+
+| Phe | Quân | Lõi | Tác dụng (số tạm) |
+|---|---|---|---|
+| Người | Kiếm sĩ khiên | Shield Wall | Kháng 40% tên / nỏ / lao |
+| Người | Cung thủ | 👑 Arrow Volley | Mỗi 8 giây bắn 1 loạt 7 mũi toả quạt |
+| Người | Kỵ binh | Breakthrough | Xung phong đầy đà thì xuyên hàng, đòn đâm quét quanh mục tiêu |
+| Người | Tu sĩ | 👑 Resurrection | Lính ta chết gần trưởng đạo: 25% đứng dậy với nửa máu |
+| Người | Máy bắn đá | Fire Shot | Đá gây bỏng 4 giây |
+| Tiên | Người cây | Take Root | Đứng yên 3 giây: không bị hất, hồi 1 máu/giây, đòn đánh làm chậm |
+| Tiên | Cung thủ rừng | Piercing Arrows | Tên xuyên, trúng thêm tối đa 2 con phía sau (70% sát thương) |
+| Tiên | Vũ kiếm sư | Blade Dance | Né được thì phản 1 nhát quét |
+| Tiên | Pháp sư tự nhiên | 👑 Entangling Vines | Mỗi 6 giây phép kế tiếp trói chân 1,5 giây |
+| Tiên | Kỵ sĩ hươu | Running Fire | Chạy vòng thì bắn nhanh gấp đôi (tốc bắn gốc đã giảm 1,5 → 2,2 giây) |
+| Người lùn | Chiến binh khiên | Spiked Shields | Phản 30% sát thương cận chiến |
+| Người lùn | Lính nỏ nặng | Armor Piercing | x2 sát thương lên quân to / khổng lồ |
+| Người lùn | Lính rìu | Berserk | Càng mất máu đánh càng mạnh; dưới 30% máu đánh nhanh gấp đôi |
+| Người lùn | Pháo | Cluster Shot | Đạn nổ xong văng 3 tiếng nổ nhỏ |
+| Người lùn | Kỵ sĩ dê núi | 👑 Mountain Ram | Mỗi 8 giây húc choáng địch quanh mục tiêu 1 giây |
+| Hoá thú | Người gấu | 👑 Terrifying Roar | Mỗi 12 giây gầm: địch quanh mình sợ hãi bỏ chạy 1 giây |
+| Hoá thú | Người sói | Pack Hunters | +8% sát thương mỗi sói đứng gần, tối đa +40% |
+| Hoá thú | Người báo | Predator | Ưu tiên quân đánh xa; đánh sau lưng x3 sát thương |
+| Hoá thú | Pháp sư bộ lạc | Blood Moon | Đợt trăng tròn vùng buff còn hồi máu |
+| Hoá thú | Người chim ưng | 👑 Dive Bomb | Mỗi 15 giây phát lao kế tiếp x3 sát thương, nổ lan |
+| Void | Kẻ dị dạng | Mitosis | Chết thì tách 2 Voidling |
+| Void | Bóng hư | Soul Drain | Hút 20% sát thương thành máu |
+| Void | Con mắt | 👑 Paralyzing Gaze | Mỗi 7 giây phát kế tiếp làm tê liệt 1 giây |
+| Void | Kẻ triệu hồi | 👑 Void Portal | Mỗi 20 giây gọi 1 Kẻ dị dạng thay vì Voidling (tối đa 3 / đợt) |
+| Void | Kẻ gào thét | Resonance | Sóng âm nảy sang 1 cụm địch khác (60% sát thương) |
+
 ## Những chỗ GDD chưa chốt → đang dùng số tạm
 Tất cả nằm trong class `Tuning` và bảng dữ liệu ở [`GameData.cs`](Assets/_Project/Scripts/Runtime/Core/GameData.cs), đổi một chỗ là xong.
 
@@ -209,6 +246,8 @@ Build\HordeLab.exe -autoshot ketqua -faction 0 -waves 5
 Bot chọn phe, đặt thẻ, mua đồ, đánh 5 đợt, chụp màn hình từng pha và ghi kết quả từng đợt vào `ketqua\stats.txt`.
 Thêm `-batchmode` để chạy ngầm, nhanh hết mức (không chụp hình). Bot mặc định không ghi file lưu, để khỏi đè lượt chơi thật;
 thêm `-savetest` để thử cả phần lưu / nạp (ghi vào `run_autotest.json`), đổi nhà / thẻ có sao (`SWAP TEST`) và lõi (`AUG TEST`) trong `stats.txt`.
+`-unitaugs`: bot có đủ 5 lõi chuyên quân của phe mình; `-allaugs`: bật đủ 25 lõi chuyên quân và đầu mỗi đợt thả 1 đạo của
+mọi loại quân, `stats.txt` ghi số lần kỹ năng trưởng đạo / khống chế / hồi sinh / phân bào / tên xuyên / phản đòn.
 Thêm cả `-legendary` thì bot có đủ 5 lõi huyền thoại từ đợt 1; `stats.txt` ghi rồng / thiên thạch / nỏ / lính thuê mỗi đợt.
 
 ```

@@ -45,6 +45,8 @@ namespace HordeLab
     public static class C
     {
         public const int Units = 0, Arrows = 1, Particles = 2, Stamps = 3;
+        // Đếm số lần lõi chuyên quân ra tay (công cụ kiểm tra đọc; xoá mỗi khi dọn sân)
+        public const int LeaderSkill = 10, CcHits = 11, Revives = 12, Splits = 13, PierceHits = 14, Counters = 15;
         public const int Dead0 = 4, Dead1 = 5, Breach = 6;   // Dead0 = quân ta tử trận, Dead1 = quân địch bị diệt, Breach = số đòn địch đã đánh trúng tường thành
         public const int Team0 = 8, Team1 = 9;               // số lính còn sống mỗi phe
         public const int Type0 = 16;                         // 16.. : số lượng mỗi loại lính
@@ -135,6 +137,7 @@ namespace HordeLab
         public float animFps;
         public float radius;         // bán kính thân, đo từ chân (Cfg.RadiusOf)
         public float arrowResist;    // giảm sát thương từ tên / nỏ / lao (0..1), ví dụ vảy rồng
+        public int augOn;            // 1 = người chơi có lõi chuyên quân của loại này (chỉ quân phe người chơi mới có lõi)
         public int liftPx;           // vẽ hình cao hơn vị trí bao nhiêu pixel để chân chạm đúng vị trí (Battle đo từ sprite)
     }
 
@@ -158,6 +161,26 @@ namespace HordeLab
         public int hasGoal;
         public int faceLeft;
         public int buffed;      // đang đứng trong vùng tăng sức mạnh của pháp sư bộ lạc
+
+        // ---- Lõi chuyên quân ----
+        public int leader;      // 1 = trưởng đạo (con giữa đạo lúc gọi ra): +50% máu, viền vàng, dùng kỹ năng của lõi
+        public float skillT;    // trưởng đạo: còn bao lâu mới dùng lại được kỹ năng
+        public int charges;     // trưởng đạo: số lần đã dùng kỹ năng có giới hạn (hồi sinh, cổng hư không)
+        public float cc;        // còn bị khống chế bao lâu (choáng / trói / sợ hãi)
+        public int ccKind;      // CC.Stun / CC.Root / CC.Fear
+        public float ccImmune;  // vừa hết khống chế: miễn khống chế thêm ngần này giây
+        public float2 ccSrc;    // sợ hãi: chạy ra xa điểm này
+        public float burn;      // còn bị bỏng bao lâu (không cộng dồn)
+        public float still;     // Người cây: đã đứng yên bao lâu (đủ 3 giây thì bén rễ)
+        public int pack;        // Người sói: số sói đồng đội đứng gần
+        public int revived;     // đã được hồi sinh 1 lần
+    }
+
+    /// <summary>Khống chế. Hết khống chế thì miễn khống chế <see cref="Immune"/> giây, khống chế không cộng dồn.</summary>
+    public static class CC
+    {
+        public const int None = 0, Stun = 1, Root = 2, Fear = 3;   // choáng: không đi, không đánh | trói: không đi, vẫn đánh | sợ: chạy ra xa
+        public const float Immune = 2f;
     }
 
     public struct Arrow
@@ -166,6 +189,17 @@ namespace HordeLab
         public float t, invDuration, arc, damage, splash, slow;
         public int team, kind;
         public int wall;        // 1 = bắn vào tường thành: chạm đích thì trừ 1 máu thành
+        // lõi chuyên quân
+        public float burn;      // chạm đất thì gây bỏng ngần này giây
+        public float cc; public int ccKind;   // chạm đất thì khống chế
+        public int fx;          // ArrowFx.*
+    }
+
+    public static class ArrowFx
+    {
+        public const int Pierce = 1;     // tên xuyên: trúng thêm tối đa 2 con phía sau
+        public const int AntiBig = 2;    // x2 sát thương lên quân to / khổng lồ
+        public const int Cluster = 4;    // nổ xong văng 3 quả nhỏ
     }
 
     public struct Particle
