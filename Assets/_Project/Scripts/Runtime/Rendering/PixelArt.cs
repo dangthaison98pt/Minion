@@ -211,8 +211,13 @@ namespace HordeLab
         /// Vẽ 1 khung hình của 1 loại quân, quay mặt sang phải, đã có viền.
         /// Lính bộ vẽ trong 10x10 rồi đặt vào khung 12x12 (chừa 1 pixel mỗi bên cho viền), quân to 16x16.
         /// </summary>
-        public static Canvas DrawUnit(int type, int state, int f)
+        public static Canvas DrawUnit(int type, int state, int f, bool useFiles = true)
         {
+            if (useFiles)
+            {
+                var art = UnitFrameFromFile(type, state, f);     // có file PNG (Resources/Art/Units) thì dùng nguyên, hoạ sĩ tự vẽ viền
+                if (art != null) return art;
+            }
             var s = DrawBody(type, state, f);
             if (s.W == InfantryPx)
             {

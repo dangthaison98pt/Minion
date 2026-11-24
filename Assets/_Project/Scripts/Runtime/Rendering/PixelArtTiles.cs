@@ -30,8 +30,8 @@ namespace HordeLab
             var atlas = new Canvas(TilePx * TileCols, TilePx * TileRows);
             for (int i = 0; i < TileCount; i++)
             {
-                var t = DrawTile(i);
-                EdgeShade(t);
+                var t = TileFromFile(i);                     // có file PNG (Resources/Art/Buildings) thì dùng nguyên
+                if (t == null) { t = DrawTile(i); EdgeShade(t); }
                 atlas.Blit(t, (i % TileCols) * TilePx, (i / TileCols) * TilePx);
             }
             return atlas;

@@ -130,6 +130,7 @@ nếu địch đã đến hết mà 150 giây sau trận vẫn chưa ngã ngũ t
 Assets/
 └─ _Project/                     ← toàn bộ nội dung của game (asset bên thứ ba để ngoài thư mục này)
    ├─ Scenes/Battle.unity
+   ├─ Resources/Art/             ← PNG từng quân / công trình để hoạ sĩ sửa (mục "Sửa art")
    ├─ Resources/Shaders/         ← nạp bằng Resources.Load("Shaders/...") nên phải nằm trong Resources
    └─ Scripts/
       ├─ Runtime/                ← assembly HordeLab.Runtime (Burst, Mathematics)
@@ -164,19 +165,42 @@ Build/                           ← bản build (.gitignore)
 | `Runtime/Tools/AutoShot.cs` | Bot chơi thử + chụp màn hình: `-autoshot <thư mục> [-faction 0..4] [-waves N] [-stress 20000] [-savetest]` |
 | `Runtime/Tools/Benchmark.cs` | Đo chi phí từng job, seed + dt cố định: `-batchmode -bench <file.txt> [-stress 20000]` |
 | `Editor/HordeBuild.cs` | Menu **Horde Lab**: tạo lại scene, xuất atlas sprite ra PNG, build file `.exe` |
+| `Editor/ArtTools.cs` | Menu **Xuất art ra PNG để chỉnh sửa** + tự cài đặt import cho PNG trong `Resources/Art` |
+| `Runtime/Rendering/ArtFiles.cs` | Đọc PNG từng quân / công trình (có file thì dùng file, thiếu thì vẽ bằng code) |
 
 ## Thêm / sửa nội dung
 - **Chỉnh số:** `Tuning` và các hàm `BuildUnits` / `BuildBuildings` trong `GameData.cs`.
 - **Thêm cơ chế cho quân:** thêm trường vào `UnitStats` (Config.cs) rồi dùng trong `ThinkMoveJob` / `ResolveJob` (SimJobs.cs).
 - **Thêm nhà buff:** thêm mã vào `B`, 1 dòng trong `BuildBuildings`, 1 `case` trong `City.Recompute`.
-- **Thay hình:** thay các hàm `Draw*` trong `PixelArt.cs`. Atlas lính: ô 16×16, 4 cột (khung hình) × 60 hàng
+- **Thay hình:** sửa file PNG trong `Assets/_Project/Resources/Art/` (xem mục **Sửa art** bên dưới). Không có file thì game
+  dùng hình vẽ bằng code: các hàm `Draw*` trong `PixelArt.cs`. Atlas lính: ô 16×16, 4 cột (khung hình) × 60 hàng
   (`loại * 2 + trạng thái`, 0 = đi, 1 = đánh), quay mặt sang phải; lính bộ vẽ 10×10 ở giữa ô.
   Quân khổng lồ (`UFlag.Giant`, hiện chỉ có Rồng, phải là loại cuối bảng) vẽ 32×32, mỗi khung chiếm 2×2 ô, 8 hàng atlas;
   shader nhận cờ 8 trong `_Units.w` để vẽ quad to gấp đôi.
   Không tự gọi `AddOutline`: `DrawUnit` tự thêm viền (lính bộ được chừa sẵn 1 pixel mỗi bên). Quân to 16×16 phải
   **chừa trống hàng / cột sát mép** cho viền, không thì chỗ đó bị hở viền.
-- **Thay tranh công trình:** mỗi công trình là 1 `case` trong `DrawTile` (PixelArtTiles.cs), vẽ trên ô 32×32.
+- **Thay tranh công trình:** sửa `Art/Buildings/<Tên>.png`; không có file thì dùng `case` trong `DrawTile` (PixelArtTiles.cs), ô 32×32.
   Menu **Horde Lab → Xuất atlas sprite ra PNG** để xem nhanh (`Docs/Screenshots/atlas_*.png`).
+
+## Sửa art
+Mỗi loại quân và mỗi công trình là **1 file PNG** trong `Assets/_Project/Resources/Art/`. Có file thì game dùng nguyên file đó,
+**không tự thêm viền** (bạn tự vẽ viền); xoá file thì game quay về hình vẽ bằng code.
+
+| Thư mục | File | Kích thước | Bố cục |
+|---|---|---|---|
+| `Art/Units/` | `<Tên quân>.png`, ví dụ `ShieldSwordsman.png`, `Dragon.png` | 64×32 (Rồng 128×64) | 4 cột = 4 khung hình, hàng trên = đi, hàng dưới = đánh. Khung 16×16 (Rồng 32×32), quay mặt sang **phải** (quay trái game tự lật) |
+| `Art/Buildings/` | `<Tên nhà>.png`, `_Empty.png` (ô trống), `_Unopened.png` (ô chưa mở) | 32×32 | 1 ô |
+
+- **Tên file** = tên trong game bỏ dấu cách và ký tự lạ ("Heavy Crossbow" → `HeavyCrossbow.png`). Tên quân / nhà xem ở `GameData.cs`.
+- **Lính bộ** (không phải quân to) chỉ được vẽ trong **12×12 ở giữa** mỗi khung 16×16 (chừa 2 pixel mỗi bên); phần ngoài bị cắt.
+  Quân to (kỵ binh, máy bắn đá, Người cây, gấu, rồng...) dùng trọn khung.
+- **Khung đánh:** khung 0–1 thường là lấy đà, khung 2–3 là ra đòn (lúc đó đạn / đòn đánh xuất hiện).
+- Sai kích thước hoặc không đọc được thì game báo cảnh báo trong Console và dùng hình vẽ bằng code.
+- PNG trong `Art/` tự được cài đúng kiểu pixel art khi import (lọc Point, không nén, bật Read/Write) — không cần chỉnh tay.
+- Menu **Horde Lab → Xuất art ra PNG để chỉnh sửa** ghi hình vẽ bằng code cho những quân / nhà **chưa có file**
+  (file đã có không bao giờ bị ghi đè). Muốn lấy lại bản gốc của 1 file: xoá file đó rồi chạy lại menu.
+- Tranh nhà lính có vẽ sẵn lính gác: sửa quân thì nhớ sửa cả tranh nhà, hoặc xoá file nhà rồi xuất lại để lấy lính gác mới.
+- Sửa xong bấm **Play** là thấy. Build `.exe` thì file trong `Resources/` tự được đóng gói.
 
 ## Kiểm tra tự động
 ```
