@@ -783,7 +783,7 @@ namespace HordeLab
             }
 
             crystalText.Set(g.crystals.ToString());
-            if (Over(crystalHot)) tipText = "<b>Energy Crystal</b>\nSpent between waves only: buy cards and reroll the shop." +
+            if (Over(crystalHot)) tipText = "<b>Energy Crystal</b>\nBuy cards and land, and reroll the shop (also during battle)." +
                 $"\n\nEach wave: +{Tuning.CrystalReward}, +{Tuning.WinBonus} more if the castle holds." +
                 $"\n<b>Interest</b>: at the end of each wave you get +1 for every {Tuning.InterestStep} you hold (max +{Tuning.InterestMax + InterestExtra})." +
                 $"\nYou hold {g.crystals} now: <color=#8fe8ff>+{Tuning.Interest(g.crystals, InterestExtra)}</color>";
