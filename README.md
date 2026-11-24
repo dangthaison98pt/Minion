@@ -40,6 +40,8 @@ Phần mô phỏng vẫn là lõi "vạn quân" cũ: **Job System + Burst + GPU 
    - Rê chuột vào thẻ / công trình để xem chi tiết; nhà buff sẽ tô viền vàng các ô nó tác động.
 3. **Bắt đầu đợt** → chỉ ngồi xem. Góc trên ghi *Enemies left*: số địch còn lại / tổng quân cả đợt (tính cả các tiểu đội chưa kéo đến). Nhà lính viền đỏ = đã hồi xong nhưng đang chờ đủ tài nguyên.
 4. Hết đợt: chọn 1 trong 3 thẻ + nhận 5 Tinh thể (+1 nếu giữ được thành), cộng **lãi** +1 cho mỗi 10 Tinh thể đang giữ (tối đa +5, như TFT) nên để dành cũng có lợi. Thành thất thủ thì mất 1 trong 3 tim nhưng vẫn sang đợt sau và vẫn nhận thưởng.
+   Xong **đợt 1, 6 và 12** thì trước đó được **chọn 1 trong 3 lõi** (giống Augment của TFT): thưởng vĩnh viễn cho cả lượt.
+   Lõi đang có ghi ở góc dưới bảng bên trái, rê chuột vào để xem chi tiết.
 5. Thắng hoặc thua cả lượt: chọn *New run* hoặc *Main menu*.
 
 | Phím | Tác dụng |
@@ -62,6 +64,28 @@ Phần mô phỏng vẫn là lõi "vạn quân" cũ: **Job System + Burst + GPU 
 - **Thắng / thua:** máu thành theo đợt, 3 tim, 30 đợt, đợt 6/12/18/24/30 đánh dấu là đợt trùm.
 - **Kẻ địch:** 3 phe thù địch, mỗi đợt bốc 1 phe, sự kiện thêm / bớt phe (luôn 2–4), báo sau khi đánh xong đợt, thấy trước phe sắp tấn công.
 - **Phần thưởng:** chọn 1 trong 3 thẻ + Tinh thể năng lượng; cửa hàng có roll. Chỉ ra thẻ phe mình và thẻ dùng chung.
+
+## Lõi (Augment)
+Chọn 1 trong 3 lõi ngẫu nhiên (không trùng lõi đã có) sau các đợt `Tuning.AugmentWaves` = 1, 6, 12. Danh sách + số liệu ở
+class `Aug` và `GameData.BuildAugments()` trong [`GameData.cs`](Assets/_Project/Scripts/Runtime/Core/GameData.cs); hiệu ứng tìm `Aug.<tên>` trong `City.cs` / `Game.cs`.
+
+| Nhóm | Lõi | Tác dụng (số tạm) |
+|---|---|---|
+| Kinh tế | Bountiful Harvest / Timber Boom / Gold Rush / Baby Boom | Nhà ra Lương thực / Gỗ / Vàng / Dân sinh thêm 35% |
+| Kinh tế | Stockpile | Đầu mỗi đợt +50 mỗi loại tài nguyên |
+| Kinh tế | Treasury | +15 Tinh thể ngay |
+| Kinh tế | Rich Get Richer | +5 Tinh thể ngay, trần lãi +3 (tối đa +8) |
+| Quân sự | Sharpened Steel / Iron Skin | Quân ta +20% sát thương / +25% máu |
+| Quân sự | Drill Sergeant | Nhà lính gọi quân nhanh hơn 20% |
+| Quân sự | Supply Lines | Mỗi lần gọi quân rẻ hơn 20% |
+| Quân sự | Field Medics | Quân ta hồi 1,5 máu / giây |
+| Quân sự | Stone Walls | Máu thành +150 (450) |
+| Quân sự | Scouts | Đợt địch ít hơn 15% quân |
+| Tiện ích | Lucky Dice | Lần roll đầu mỗi lần chuẩn bị miễn phí |
+| Tiện ích | Bargain Hunter | Thẻ trong cửa hàng rẻ hơn 1 (tối thiểu 1) |
+| Tiện ích | Land Grant | Nhận ngay 2 thẻ Mở rộng đất |
+| Tiện ích | Veteran Recruits | Nhận ngay 1 nhà lính 2 sao ngẫu nhiên của phe mình |
+| Tiện ích | Master Architect | Nhà buff mạnh hơn 40% |
 
 ## Những chỗ GDD chưa chốt → đang dùng số tạm
 Tất cả nằm trong class `Tuning` và bảng dữ liệu ở [`GameData.cs`](Assets/_Project/Scripts/Runtime/Core/GameData.cs), đổi một chỗ là xong.
@@ -90,7 +114,7 @@ Tất cả nằm trong class `Tuning` và bảng dữ liệu ở [`GameData.cs`]
 | Mọi chỉ số quân, chi phí, chu kỳ nhà | Số khởi điểm, chưa cân bằng |
 
 Ngoài GDD, có thêm vài thứ cho dễ chơi: kéo công trình để **đổi chỗ**, thả thẻ đè lên nhà để **đổi về tay**, thẻ trên tay **giữ số sao**, **tua nhanh** x2/x4, **bán** thẻ / công trình,
-**khoá ô** cửa hàng, **tự lưu** lượt chơi.
+**khoá ô** cửa hàng, **tự lưu** lượt chơi, **lõi** kiểu TFT.
 Tầm bắn và tốc độ đi của mọi quân nhân 0,6 (`RangeScale`, `SpeedScale`) cho vừa chiến trường 96 × 54. Còn một lưới an toàn:
 nếu địch đã đến hết mà 150 giây sau trận vẫn chưa ngã ngũ thì tính là địch rút (phòng hai bên kẹt nhau mãi).
 
@@ -151,7 +175,7 @@ Build\HordeLab.exe -autoshot ketqua -faction 0 -waves 5
 ```
 Bot chọn phe, đặt thẻ, mua đồ, đánh 5 đợt, chụp màn hình từng pha và ghi kết quả từng đợt vào `ketqua\stats.txt`.
 Thêm `-batchmode` để chạy ngầm, nhanh hết mức (không chụp hình). Bot mặc định không ghi file lưu, để khỏi đè lượt chơi thật;
-thêm `-savetest` để thử cả phần lưu / nạp (ghi vào `run_autotest.json`) và đổi nhà / thẻ có sao (`SWAP TEST` trong `stats.txt`).
+thêm `-savetest` để thử cả phần lưu / nạp (ghi vào `run_autotest.json`), đổi nhà / thẻ có sao (`SWAP TEST`) và lõi (`AUG TEST`) trong `stats.txt`.
 
 ```
 Build\HordeLab.exe -batchmode -bench ketqua.txt -stress 20000

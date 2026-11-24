@@ -34,6 +34,8 @@ namespace HordeLab
         public readonly Dictionary<Vector2Int, Building> cells = new Dictionary<Vector2Int, Building>();   // có khoá = ô đã mở, null = ô trống
         public Res res;
         public int faction;
+        public readonly List<int> augments = new List<int>();   // lõi đã chọn trong lượt chơi này
+        public bool Has(int aug) => augments.Contains(aug);
         public float battleTime;
 
         static readonly Vector2Int[] Dir4 = { new Vector2Int(1, 0), new Vector2Int(-1, 0), new Vector2Int(0, 1), new Vector2Int(0, -1) };
@@ -49,6 +51,7 @@ namespace HordeLab
         {
             this.faction = faction;
             cells.Clear();
+            augments.Clear();
             for (int y = 0; y < Tuning.StartGridSide; y++)
                 for (int x = 0; x < Tuning.StartGridSide; x++)
                     cells[new Vector2Int(x, y)] = null;
@@ -187,7 +190,7 @@ namespace HordeLab
                 var src = kv.Value;
                 if (src == null) continue;
                 var p = kv.Key;
-                float k = Tuning.StarBuff[src.stars - 1];
+                float k = Tuning.StarBuff[src.stars - 1] * (Has(Aug.Architect) ? 1f + Aug.ArchitectBuff : 1f);
 
                 // Vùng buff
                 if (src.Def.shape != Shape.None)
@@ -239,6 +242,7 @@ namespace HordeLab
                 if (faction == Faction.Beast && cat == Cat.Pop) f = 0.75f;
                 if (faction == Faction.Dwarf && b.def == B.GoldMine) f = 1.3f;
                 if (faction == Faction.Dwarf && cat == Cat.Barracks) f = 1f / 1.2f;
+                if (cat == Cat.Barracks && Has(Aug.Drill)) f *= 1f + Aug.DrillSpeed;
 
                 b.speed = Mathf.Max(0.4f, 1f + Mathf.Min(b.speedB, Tuning.BuffCap)) * f;
                 b.amount = 1f + Mathf.Min(b.amountB, Tuning.BuffCap);
@@ -253,8 +257,15 @@ namespace HordeLab
         // ------------------------------------------------------------------
         // Sản xuất & gọi quân (chạy trong trận)
         // ------------------------------------------------------------------
-        /// <summary>Sản lượng mỗi chu kỳ của một nhà tài nguyên, đã tính buff.</summary>
-        public float Yield(Building b)
+        /// <summary>Hệ số tài nguyên từ lõi (Bountiful Harvest, Timber Boom, Gold Rush, Baby Boom).</summary>
+        public float ResMul(int r) =>
+            r == ResId.Food && Has(Aug.Harvest) || r == ResId.Wood && Has(Aug.Timber) ||
+            r == ResId.Gold && Has(Aug.GoldRush) || r == ResId.Pop && Has(Aug.BabyBoom) ? 1f + Aug.ResBonus : 1f;
+
+        /// <summary>Sản lượng mỗi chu kỳ của một nhà tài nguyên, đã tính buff và lõi.</summary>
+        public float Yield(Building b) => YieldBase(b) * (b.Def.res >= 0 ? ResMul(b.Def.res) : 1f);
+
+        float YieldBase(Building b)
         {
             float star = Tuning.StarYield[b.stars - 1];
             var d = b.Def;
@@ -278,7 +289,7 @@ namespace HordeLab
         /// <summary>Tài nguyên cho 1 lần gọi quân của nhà lính (đã nhân số tiểu đội, Kho quân nhu, đặc trưng phe).</summary>
         public Res CallCost(Building b)
         {
-            Res c = GameData.Units[b.Def.unit].cost * (Tuning.StarTroopCost[b.stars - 1] * b.costMul);
+            Res c = GameData.Units[b.Def.unit].cost * (Tuning.StarTroopCost[b.stars - 1] * b.costMul * (Has(Aug.Supply) ? 1f - Aug.SupplyCut : 1f));
             c.pop *= GameData.Factions[faction].popCostMul;
             return c;
         }

@@ -140,6 +140,46 @@ namespace HordeLab
             log.AppendLine($"SWAP TEST: {(swapped && back && kept && intact ? "OK" : "FAIL")} (đổi={swapped}, đổi ngược={back}, về tay giữ sao={kept}, không mất nhà={intact})");
         }
 
+        bool augShot, ownedShot;
+
+        /// <summary>Kiểm tra lõi (chạy cùng -savetest): bật tạm từng lõi, so số liệu trước / sau, rồi gỡ ra.</summary>
+        void AugTest()
+        {
+            var city = game.city;
+            Building field = null, barracks = null;
+            foreach (var b in city.cells.Values)
+            {
+                if (b == null) continue;
+                if (b.def == B.Field && field == null) field = b;
+                if (b.Def.cat == Cat.Barracks && barracks == null) barracks = b;
+            }
+            bool On(int a) { city.augments.Add(a); city.Recompute(); return true; }
+            void Off(int a) { city.augments.Remove(a); city.Recompute(); }
+            var fails = new List<string>();
+            void Check(string name, bool ok) { if (!ok) fails.Add(name); }
+
+            if (field != null)
+            {
+                float y0 = city.Yield(field); On(Aug.Harvest); float y1 = city.Yield(field); Off(Aug.Harvest);
+                Check("Harvest", Mathf.Approximately(y1, y0 * (1f + Aug.ResBonus)));
+            }
+            if (barracks != null)
+            {
+                float c0 = city.CallCost(barracks).pop; On(Aug.Supply); float c1 = city.CallCost(barracks).pop; Off(Aug.Supply);
+                Check("Supply", Mathf.Approximately(c1, c0 * (1f - Aug.SupplyCut)));
+                float s0 = barracks.speed; On(Aug.Drill); float s1 = barracks.speed; Off(Aug.Drill);
+                Check("Drill", Mathf.Approximately(s1, s0 * (1f + Aug.DrillSpeed)));
+            }
+            int hp0 = game.MaxCastleHp; On(Aug.Walls); int hp1 = game.MaxCastleHp; Off(Aug.Walls);
+            Check("Walls", hp1 == hp0 + Aug.WallsHp);
+            int p0 = game.Price(B.Barracks); On(Aug.Bargain); int p1 = game.Price(B.Barracks); Off(Aug.Bargain);
+            Check("Bargain", p1 == Mathf.Max(1, p0 - Aug.BargainCut));
+            On(Aug.FreeRoll); int r1 = game.RollCost; Off(Aug.FreeRoll);
+            Check("FreeRoll", r1 == 0 && game.RollCost == Tuning.RollCost);
+            Check("RichGetRicher", Tuning.Interest(100, Aug.RichExtraCap) == Tuning.InterestMax + Aug.RichExtraCap);
+            log.AppendLine($"AUG TEST: {(fails.Count == 0 ? "OK" : "FAIL " + string.Join(", ", fails))} (nhà thử: {(field != null ? "Field" : "-")}, {(barracks != null ? barracks.Def.name : "-")})");
+        }
+
         IEnumerator BotRun()
         {
             log.AppendLine($"BOT CHƠI THỬ: phe {GameData.Factions[botFaction].name}, tối đa {maxWaves} đợt");
@@ -162,6 +202,14 @@ namespace HordeLab
             bool zoomed = false;
             while (played < maxWaves && game.phase != Phase.Lost && game.phase != Phase.Won)
             {
+                if (game.phase == Phase.Augment)
+                {
+                    if (!Headless && !augShot) { yield return new WaitForSecondsRealtime(1.7f); Shot("05b_chon_loi.png"); yield return Frames(3); augShot = true; }
+                    game.BotAct(botFaction);
+                    log.AppendLine($"    lõi: chọn {GameData.Augments[game.Augments[game.Augments.Count - 1]].name}");
+                    yield return null;
+                    continue;
+                }
                 if (game.phase == Phase.Reward)
                 {
                     log.AppendLine($"    tinh thể: thưởng +{game.lastCrystals}, thắng +{game.lastWinBonus}, lãi +{game.lastInterest} → còn {game.crystals}");
@@ -176,6 +224,7 @@ namespace HordeLab
                 }
 
                 // Pha chuẩn bị: đặt thẻ, mua đồ, rồi bắt đầu đợt
+                if (!Headless && !ownedShot && game.Augments.Count > 0) { yield return Frames(5); Shot("05c_loi_dang_co.png"); yield return Frames(3); ownedShot = true; }
                 int wave = game.wave;
                 game.BotPlaceAndShop();
                 if (played == 0)
@@ -188,6 +237,7 @@ namespace HordeLab
                 if (played == 0 && saveTest)
                 {
                     SwapTest();
+                    AugTest();
                     if (!Headless)
                     {
                         // Chụp 4 hạng sao (đồng / bạc / vàng / bạch kim) trên lưới: tạm nâng 4 nhà lên 1..4 sao rồi trả lại
@@ -254,7 +304,7 @@ namespace HordeLab
                 }
                 played++;
                 var r = game.city.res;
-                log.AppendLine($"    → {(game.lastWon ? "THẮNG" : "THUA")} sau {game.waveTime:0}s | thành {game.castleHp}/{Tuning.CastleHp} | diệt {battle.Counter(C.Dead1)} / mất {battle.Counter(C.Dead0)} | " +
+                log.AppendLine($"    → {(game.lastWon ? "THẮNG" : "THUA")} sau {game.waveTime:0}s | thành {game.castleHp}/{game.MaxCastleHp} | diệt {battle.Counter(C.Dead1)} / mất {battle.Counter(C.Dead0)} | " +
                                $"kho: {r.pop:0} dân, {r.food:0} lương, {r.wood:0} gỗ, {r.gold:0} vàng | tim {game.hearts}" +
                                (string.IsNullOrEmpty(game.eventNote) ? "" : $" | sự kiện: {game.eventNote}"));
             }

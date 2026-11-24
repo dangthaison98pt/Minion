@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace HordeLab
 {
-    public enum Phase { Menu, PickFaction, Prep, Battle, Reward, Lost, Won, Sandbox }
+    public enum Phase { Menu, PickFaction, Prep, Battle, Reward, Lost, Won, Sandbox, Augment }   // thêm vào cuối: file lưu ghi số
 
     /// <summary>Lượt chơi đang dở, ghi ra file JSON. Chỉ lưu ở pha chuẩn bị / phần thưởng (thoát giữa trận thì quay lại lúc chuẩn bị của đợt đó).</summary>
     [System.Serializable]
@@ -14,6 +14,7 @@ namespace HordeLab
         public int faction, hearts, wave, crystals, attacker, phase;
         public int[] hostile, hand, shop, reward;
         public int[] handStars;                          // bản lưu cũ không có → coi như 1 sao
+        public int[] augments, augChoices;               // lõi đã có + 3 lõi đang chờ chọn (pha Augment)
         public bool[] shopLocked;
         public string eventNote;
         public bool lastWon;
@@ -53,6 +54,10 @@ namespace HordeLab
         public readonly int[] shop = new int[Tuning.ShopSlots];          // -1 = đã bán
         public readonly bool[] shopLocked = new bool[Tuning.ShopSlots];   // ô bị khoá thì roll / tự làm mới không đổi thẻ ở ô đó
         public readonly int[] reward = new int[Tuning.RewardChoices];
+        public readonly int[] augChoices = new int[Tuning.AugmentChoices];   // 3 lõi đang chờ chọn (pha Augment)
+        public List<int> Augments => city.augments;
+        public bool Has(int aug) => city.Has(aug);
+        int rollsThisPrep;               // số lần roll trong lần chuẩn bị này (Lucky Dice: lần đầu miễn phí)
         public string eventNote;         // sự kiện đổi phe thù địch, báo sau khi đánh xong một đợt
         public bool lastWon;
         public int lastWave, lastCrystals;
@@ -150,13 +155,14 @@ namespace HordeLab
         /// <summary>Tự lưu: gọi sau mỗi thay đổi lúc chuẩn bị và khi vừa xong một đợt.</summary>
         public void SaveRun()
         {
-            if (!savingEnabled || (phase != Phase.Prep && phase != Phase.Reward)) return;
+            if (!savingEnabled || (phase != Phase.Prep && phase != Phase.Reward && phase != Phase.Augment)) return;
             var d = new SaveData
             {
                 faction = faction, hearts = hearts, wave = wave, crystals = crystals, attacker = attacker, phase = (int)phase,
                 hostile = hostile.ToArray(), hand = hand.ToArray(), handStars = handStars.ToArray(), shop = (int[])shop.Clone(), reward = (int[])reward.Clone(),
                 shopLocked = (bool[])shopLocked.Clone(), eventNote = eventNote, lastWon = lastWon, lastWave = lastWave, lastCrystals = lastCrystals, lastInterest = lastInterest, lastWinBonus = lastWinBonus,
-                pop = city.res.pop, food = city.res.food, wood = city.res.wood, gold = city.res.gold
+                pop = city.res.pop, food = city.res.food, wood = city.res.wood, gold = city.res.gold,
+                augments = city.augments.ToArray(), augChoices = (int[])augChoices.Clone()
             };
             int n = city.cells.Count, k = 0;
             d.cellX = new int[n]; d.cellY = new int[n]; d.cellDef = new int[n]; d.cellStars = new int[n];
@@ -206,6 +212,9 @@ namespace HordeLab
                 city.cells[new Vector2Int(d.cellX[i], d.cellY[i])] =
                     d.cellDef[i] >= 0 && d.cellDef[i] < B.Expand ? new Building { def = d.cellDef[i], stars = Mathf.Clamp(d.cellStars[i], 1, Tuning.MaxStars) } : null;
             city.res = new Res(d.pop, d.food, d.wood, d.gold);
+            if (d.augments != null) foreach (int a in d.augments) if (a >= 0 && a < Aug.Count && !city.augments.Contains(a)) city.augments.Add(a);
+            bool augPending = d.phase == (int)Phase.Augment && d.augChoices != null && d.augChoices.Length == augChoices.Length;
+            if (augPending) d.augChoices.CopyTo(augChoices, 0);
             city.Recompute();
 
             battle.simulate = false;
@@ -213,7 +222,8 @@ namespace HordeLab
             battle.speed = 1;
             battle.ResetField();
             endedAt = -1f;
-            phase = d.phase == (int)Phase.Reward ? Phase.Reward : Phase.Prep;
+            phase = augPending ? Phase.Augment : d.phase == (int)Phase.Reward ? Phase.Reward : Phase.Prep;
+            rollsThisPrep = 0;
             return true;
         }
 
@@ -228,6 +238,7 @@ namespace HordeLab
             hearts = Tuning.Hearts;
             wave = 1;
             crystals = Tuning.StartCrystals;
+            rollsThisPrep = 0;
             eventNote = null;
             city.Init(faction);
 
@@ -298,18 +309,21 @@ namespace HordeLab
             SaveRun();
         }
 
-        public bool CanRoll => phase == Phase.Prep && crystals >= Tuning.RollCost;
+        /// <summary>Giá lần roll kế tiếp (Lucky Dice: lần đầu mỗi lần chuẩn bị miễn phí).</summary>
+        public int RollCost => Has(Aug.FreeRoll) && rollsThisPrep < Aug.FreeRolls ? 0 : Tuning.RollCost;
+        public bool CanRoll => phase == Phase.Prep && crystals >= RollCost;
 
         public bool PayRoll()
         {
             if (!CanRoll) return false;
-            crystals -= Tuning.RollCost;
+            crystals -= RollCost;
+            rollsThisPrep++;
             RollShop();
             SaveRun();
             return true;
         }
 
-        public int Price(int card) => Tuning.CardPrice(GameData.Buildings[card].cat);
+        public int Price(int card) => Mathf.Max(1, Tuning.CardPrice(GameData.Buildings[card].cat) - (Has(Aug.Bargain) ? Aug.BargainCut : 0));
 
         public bool CanBuy(int slot) =>
             phase == Phase.Prep && shop[slot] >= 0 && crystals >= Price(shop[slot]) && hand.Count < Tuning.HandLimit;
@@ -434,9 +448,10 @@ namespace HordeLab
             if (phase != Phase.Prep) return;
             battle.ResetField();
             city.BeginBattle();
-            castleHp = Tuning.CastleHp;
+            castleHp = MaxCastleHp;
+            if (Has(Aug.Stockpile)) city.res = new Res(city.res.pop + Aug.StockpileRes, city.res.food + Aug.StockpileRes, city.res.wood + Aug.StockpileRes, city.res.gold + Aug.StockpileRes);
             endedAt = -1f;
-            squadsTotal = Mathf.Max(1, Mathf.RoundToInt(Tuning.EnemySquads(wave) * (IsBoss(wave) ? Tuning.BossSize : 1f)));
+            squadsTotal = EnemySquadCount();
             squadsLeft = squadsTotal;
             spawnAcc = 2f;                    // 2 tiểu đội đầu tới ngay
             waveTime = 0f;
@@ -492,7 +507,9 @@ namespace HordeLab
             for (int k = 0; k < city.Squads(b); k++)
             {
                 var pos = new float2(Cfg.PlayerSpawnX + rng.NextFloat(0f, 5f), rng.NextFloat(-Cfg.HalfH + 5f, Cfg.HalfH - 5f));
-                battle.SpawnSquad(type, 0, pos, side, b.hp * moon, b.dmg * moon, b.regen);
+                battle.SpawnSquad(type, 0, pos, side, b.hp * moon * (Has(Aug.IronSkin) ? 1f + Aug.IronSkinHp : 1f),
+                                  b.dmg * moon * (Has(Aug.Sharpened) ? 1f + Aug.SharpenedDmg : 1f),
+                                  b.regen + (Has(Aug.Medics) ? Aug.MedicsRegen : 0f));
             }
         }
 
@@ -525,7 +542,7 @@ namespace HordeLab
             if (wave >= Tuning.Waves) { phase = Phase.Won; DeleteSave(); return; }
 
             // Thua một đợt (còn tim) vẫn sang đợt sau và vẫn nhận đủ phần thưởng
-            lastInterest = Tuning.Interest(crystals);          // lãi tính trên số đang giữ, trước khi cộng thưởng
+            lastInterest = Tuning.Interest(crystals, Has(Aug.RichGetRicher) ? Aug.RichExtraCap : 0);   // lãi tính trên số đang giữ, trước khi cộng thưởng
             lastCrystals = Tuning.CrystalReward;
             lastWinBonus = won ? Tuning.WinBonus : 0;
             crystals += lastCrystals + lastWinBonus + lastInterest;
@@ -535,6 +552,47 @@ namespace HordeLab
             wave++;
             attacker = hostile[rnd.Next(hostile.Count)];
             RollShop();
+            rollsThisPrep = 0;
+            phase = System.Array.IndexOf(Tuning.AugmentWaves, lastWave) >= 0 && RollAugments() ? Phase.Augment : Phase.Reward;
+            SaveRun();
+        }
+
+        // ------------------------------------------------------------------
+        // Lõi
+        // ------------------------------------------------------------------
+        public int MaxCastleHp => Tuning.CastleHp + (Has(Aug.Walls) ? Aug.WallsHp : 0);
+
+        int EnemySquadCount() =>
+            Mathf.Max(1, Mathf.RoundToInt(Tuning.EnemySquads(wave) * (IsBoss(wave) ? Tuning.BossSize : 1f) * (Has(Aug.Scouts) ? 1f - Aug.ScoutsCut : 1f)));
+
+        /// <summary>Bốc 3 lõi khác nhau mà người chơi chưa có. false nếu không còn đủ lõi để chọn.</summary>
+        bool RollAugments()
+        {
+            var pool = new List<int>();
+            for (int a = 0; a < Aug.Count; a++) if (!Has(a)) pool.Add(a);
+            if (pool.Count < augChoices.Length) return false;
+            for (int i = 0; i < augChoices.Length; i++)
+            {
+                int k = rnd.Next(pool.Count);
+                augChoices[i] = pool[k];
+                pool.RemoveAt(k);
+            }
+            return true;
+        }
+
+        public void PickAugment(int i)
+        {
+            if (phase != Phase.Augment || i < 0 || i >= augChoices.Length) return;
+            int a = augChoices[i];
+            city.augments.Add(a);
+            switch (a)                    // lõi có tác dụng ngay
+            {
+                case Aug.Treasury: crystals += Aug.TreasuryCrystals; break;
+                case Aug.RichGetRicher: crystals += Aug.RichCrystals; break;
+                case Aug.LandGrant: for (int k = 0; k < Aug.LandGrantCards; k++) AddCard(B.Expand); break;
+                case Aug.Recruit: AddCard(B.Barracks + faction * 5 + rnd.Next(5), 2); break;
+            }
+            city.Recompute();
             phase = Phase.Reward;
             SaveRun();
         }
@@ -578,7 +636,7 @@ namespace HordeLab
             }
             if (phase == Phase.Battle)
             {
-                castleHp = Mathf.Max(0, Tuning.CastleHp - battle.Counter(C.Breach));
+                castleHp = Mathf.Max(0, MaxCastleHp - battle.Counter(C.Breach));
                 if (castleHp <= 0) EndWave(false);
                 else if (squadsLeft == 0 && EnemiesAlive == 0) EndWave(true);
                 else if (squadsLeft == 0 && waveTime - allSpawnedAt > Tuning.WaveTimeout) EndWave(true);   // phòng khi hai bên kẹt nhau mãi
@@ -653,6 +711,15 @@ namespace HordeLab
             {
                 case Phase.Menu: NewGame(); break;
                 case Phase.PickFaction: StartRun(botFaction); break;
+                case Phase.Augment:
+                {
+                    // ưu tiên lõi quân sự
+                    int pick = 0;
+                    for (int i = 0; i < augChoices.Length; i++)
+                        if (GameData.Augments[augChoices[i]].cat == AugCat.Military) { pick = i; break; }
+                    PickAugment(pick);
+                    break;
+                }
                 case Phase.Reward:
                 {
                     // ưu tiên nhà lính, rồi thẻ mở đất khi hết chỗ
@@ -684,7 +751,7 @@ namespace HordeLab
         public int EnemyPreviewCount()
         {
             int side = GameData.Factions[attacker].squadSide;
-            return Mathf.RoundToInt(Tuning.EnemySquads(wave) * (IsBoss(wave) ? Tuning.BossSize : 1f)) * side * side;
+            return EnemySquadCount() * side * side;
         }
 
         void BotPlaceHand()

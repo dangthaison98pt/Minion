@@ -65,7 +65,14 @@ namespace HordeLab
         TextMeshProUGUI tipTitle, tipSub, tipBody;
         Image tipLine, ghostImg;
         readonly Image[] tipStars = new Image[Tuning.MaxStars];
-        CanvasGroup rewardGroup, endGroup;
+        CanvasGroup rewardGroup, endGroup, augGroup;
+        RectTransform augScreen;
+        TextMeshProUGUI augTitle, augSub, augOwned;
+        readonly TextMeshProUGUI[] augCards = new TextMeshProUGUI[Tuning.AugmentChoices];
+        readonly Image[] augBands = new Image[Tuning.AugmentChoices];
+        static readonly Color[] AugColor = { new Color(1f, 0.85f, 0.29f), new Color(1f, 0.52f, 0.4f), new Color(0.56f, 0.91f, 1f) };
+        static readonly string[] AugHex = { "#ffd84a", "#ff8466", "#8fe8ff" };
+        static readonly string[] AugCatName = { "Economy", "Military", "Utility" };
         TextMeshProUGUI rewardTitle, rewardSub, rewardEvent, endTitle, endText, continueInfo, newGameNote;
         readonly RewardView[] rewardCards = new RewardView[Tuning.RewardChoices];
         Button continueBtn;
@@ -148,6 +155,7 @@ namespace HordeLab
             Frame(ghost, Color.white).Fill();
             BuildTooltip();
             BuildReward();
+            BuildAugment();
             BuildEnd();
             BuildFactionScreen();
             BuildMenu();
@@ -256,6 +264,7 @@ namespace HordeLab
                 var bg = Img(leftPanel, White, Slot, false, false, "Enemy").At(ox + 12f + i * 50f, 856f, 44f, 44f);
                 previewIcons[i] = Img(bg.transform, null, Color.white).AtCenter(0f, 0f, 52f, 52f);
             }
+            augOwned = Txt(leftPanel, "", 13f, TextAlignmentOptions.TopLeft, false, true).At(ox + 272f, 854f, 238f, 48f);
             battleInfo = Txt(leftPanel, "", 15f, TextAlignmentOptions.TopLeft, false, true).At(ox + 12f, 560f, 496f, 300f);
 
             // ô bán: luôn hiện lúc chuẩn bị
@@ -348,6 +357,28 @@ namespace HordeLab
             }
         }
 
+        void BuildAugment()
+        {
+            augScreen = Modal("Augment", 0.55f, out var p, 840f, 380f);
+            augGroup = augScreen.gameObject.AddComponent<CanvasGroup>();
+            augTitle = Txt(p, "", 26f, TextAlignmentOptions.Center, true).At(0f, 22f, 840f, 40f);
+            augSub = Txt(p, "", 16f, TextAlignmentOptions.Center).At(0f, 64f, 840f, 28f);
+            for (int i = 0; i < augCards.Length; i++)
+            {
+                int pick = i;
+                var card = Panel(p, true, "Augment card").At(30f + i * 265f, 104f, 250f, 246f);
+                augBands[i] = Img(card.transform, White, Color.white).At(14f, 14f, 222f, 6f);
+                augCards[i] = Txt(card.transform, "", 15f, TextAlignmentOptions.TopLeft, false, true).At(18f, 30f, 214f, 150f);
+                Btn(card.transform, "Choose", () => g.PickAugment(pick)).At(18f, 188f, 214f, 42f);
+            }
+        }
+
+        static string AugLine(int a)
+        {
+            var d = GameData.Augments[a];
+            return $"<color={AugHex[(int)d.cat]}><b>{d.name}</b></color>  {d.desc}";
+        }
+
         void BuildEnd()
         {
             end = Modal("End", 0.6f, out var p, 720f, 260f);
@@ -430,7 +461,7 @@ namespace HordeLab
         void TogglePause()
         {
             if (PauseOpen) { ClosePause(); return; }
-            if (g.phase != Phase.Prep && g.phase != Phase.Battle && g.phase != Phase.Reward) return;
+            if (g.phase != Phase.Prep && g.phase != Phase.Battle && g.phase != Phase.Reward && g.phase != Phase.Augment) return;
             pausedBefore = battle.paused;
             battle.paused = true;
             pause.gameObject.SetActive(true);
@@ -447,7 +478,8 @@ namespace HordeLab
         // Mỗi frame
         // ==================================================================
         bool Over(RectTransform rt) => rt.gameObject.activeInHierarchy && RectTransformUtility.RectangleContainsScreenPoint(rt, mouse, null);
-        bool InWorld => g.phase == Phase.Prep || g.phase == Phase.Battle || g.phase == Phase.Reward || g.phase == Phase.Lost || g.phase == Phase.Won;
+        bool InWorld => g.phase == Phase.Prep || g.phase == Phase.Battle || g.phase == Phase.Reward || g.phase == Phase.Augment || g.phase == Phase.Lost || g.phase == Phase.Won;
+        int InterestExtra => g.Has(Aug.RichGetRicher) ? Aug.RichExtraCap : 0;
         static float Smooth(float t) => t * t * (3f - 2f * t);
 
         void LateUpdate()
@@ -480,7 +512,7 @@ namespace HordeLab
             if (phase == Phase.Menu) RefreshMenu();
 
             infoDef = -1; infoStars = 1; infoBuilding = null; tipText = null; replaceTip = null; hoverCellValid = false;
-            bool modal = PauseOpen || phase == Phase.Reward || phase == Phase.Lost || phase == Phase.Won;
+            bool modal = PauseOpen || phase == Phase.Reward || phase == Phase.Augment || phase == Phase.Lost || phase == Phase.Won;
 
             if (InWorld)
             {
@@ -517,8 +549,8 @@ namespace HordeLab
             castleBar.Show(fight); enemiesText.Show(fight); speedBtn.Show(fight); pauseBtn.Show(fight);
             if (fight)
             {
-                castleFill.anchorMax = new Vector2(Mathf.Clamp01(g.castleHp / (float)Tuning.CastleHp), 1f);
-                castleText.Set($"Castle {g.castleHp}/{Tuning.CastleHp}");
+                castleFill.anchorMax = new Vector2(Mathf.Clamp01(g.castleHp / (float)g.MaxCastleHp), 1f);
+                castleText.Set($"Castle {g.castleHp}/{g.MaxCastleHp}");
                 enemiesText.Set($"<size=13><color=#aaaaaa>Enemies left</color></size>\n<color=#ff8f8f>{g.EnemiesRemaining:N0}</color>/{g.EnemiesTotal:N0}");
                 speedBtn.Label().Set($"x{battle.speed}");
                 pauseBtn.Label().Set(battle.paused ? ">" : "II");
@@ -527,8 +559,8 @@ namespace HordeLab
             crystalText.Set(g.crystals.ToString());
             if (Over(crystalHot)) tipText = "<b>Energy Crystal</b>\nSpent between waves only: buy cards and reroll the shop." +
                 $"\n\nEach wave: +{Tuning.CrystalReward}, +{Tuning.WinBonus} more if the castle holds." +
-                $"\n<b>Interest</b>: at the end of each wave you get +1 for every {Tuning.InterestStep} you hold (max +{Tuning.InterestMax})." +
-                $"\nYou hold {g.crystals} now: <color=#8fe8ff>+{Tuning.Interest(g.crystals)}</color>";
+                $"\n<b>Interest</b>: at the end of each wave you get +1 for every {Tuning.InterestStep} you hold (max +{Tuning.InterestMax + InterestExtra})." +
+                $"\nYou hold {g.crystals} now: <color=#8fe8ff>+{Tuning.Interest(g.crystals, InterestExtra)}</color>";
             for (int i = 0; i < ResId.Count; i++)
             {
                 resText[i].Set(Mathf.FloorToInt(city.res[i]).ToString("N0"));
@@ -583,6 +615,24 @@ namespace HordeLab
                 }
 
                 hostileText.Set(hostile);
+                if (g.Augments.Count == 0) augOwned.Set($"<color=#aaaaaa>Augments: none yet\n(pick one after wave {Tuning.AugmentWaves[0]})</color>");
+                else
+                {
+                    var ab = new StringBuilder("<color=#aaaaaa>Augments:</color> ");
+                    for (int i = 0; i < g.Augments.Count; i++)
+                    {
+                        var d = GameData.Augments[g.Augments[i]];
+                        ab.Append(i > 0 ? " · " : "").Append($"<color={AugHex[(int)d.cat]}>{d.name}</color>");
+                    }
+                    augOwned.Set(ab.ToString());
+                }
+                if (!modal && Over(augOwned.rectTransform))
+                {
+                    var tb = new StringBuilder("<b>Augments</b>\n");
+                    if (g.Augments.Count == 0) tb.Append($"Permanent bonuses for this run. Pick 1 of {Tuning.AugmentChoices} after waves {string.Join(", ", Tuning.AugmentWaves)}.");
+                    foreach (int a in g.Augments) tb.Append('\n').Append(AugLine(a));
+                    tipText = tb.ToString();
+                }
                 waveInfo.Set($"Wave {g.wave}: {FactionTag(g.attacker)} attack with about <color=#ffffff>{g.EnemyPreviewCount():N0}</color> troops." +
                              (g.IsBoss(g.wave) ? " <color=#ff8f6a>Boss wave!</color>" : ""));
                 int k = 0;
@@ -799,7 +849,7 @@ namespace HordeLab
             const float left = 152f, right = 276f, gap = 10f;
             float slotW = Mathf.Floor((w - left - right - gap * (shopSlots.Length - 1)) / shopSlots.Length);
             shopCrystals.Set(g.crystals.ToString());
-            rollBtn.Label().Set($"Reroll\n<size=14>{Tuning.RollCost} crystal</size>");
+            rollBtn.Label().Set(g.RollCost == 0 ? "Reroll\n<size=14><color=#9fe07a>FREE</color></size>" : $"Reroll\n<size=14>{g.RollCost} crystal</size>");
             rollBtn.SetOn(g.CanRoll);
 
             for (int i = 0; i < shopSlots.Length; i++)
@@ -943,6 +993,27 @@ namespace HordeLab
                     rewardCards[i].tile.sprite = Tiles[g.reward[i]];
                     InfoParts(g.reward[i], null, out string title, out string sub, out string body, out _);
                     rewardCards[i].text.Set($"<b><size=18><color=#ffe69e>{title}</color></size></b>\n{sub}\n\n{body}");
+                }
+            }
+
+            bool showAug = g.phase == Phase.Augment && pop > 0f;
+            augScreen.Show(showAug);
+            if (showAug)
+            {
+                augGroup.alpha = pop;
+                augGroup.interactable = pop >= 1f && !PauseOpen;
+                ((RectTransform)augScreen.GetChild(0)).anchoredPosition = new Vector2(0f, -(1f - pop) * 50f);
+                augTitle.Set(g.lastWon ? $"<color=#9fe07a>WAVE {g.lastWave}: CASTLE HELD!</color>" : $"<color=#ff8f8f>WAVE {g.lastWave}: CASTLE FELL — 1 heart lost</color>");
+                int left = 0;
+                foreach (int w in Tuning.AugmentWaves) if (w > g.lastWave) left++;
+                augSub.Set($"<color=#ffe69e>Choose an augment</color> — a permanent bonus for this run" +
+                           (left > 0 ? $" <color=#aaaaaa>({left} more later)</color>" : " <color=#aaaaaa>(last one)</color>"));
+                for (int i = 0; i < augCards.Length; i++)
+                {
+                    var d = GameData.Augments[g.augChoices[i]];
+                    augBands[i].color = AugColor[(int)d.cat];
+                    augCards[i].Set($"<color={AugHex[(int)d.cat]}><size=13>{AugCatName[(int)d.cat].ToUpper()}</size></color>\n" +
+                                    $"<b><size=21><color=#ffe69e>{d.name}</color></size></b>\n\n{d.desc}");
                 }
             }
 

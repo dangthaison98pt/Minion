@@ -31,7 +31,11 @@ namespace HordeLab
         public const int WinBonus = 1;                  // giữ được thành thì thêm, thua không có
         // Lãi: hết mỗi đợt, cứ InterestStep Tinh thể đang giữ thì được thêm 1, tối đa InterestMax → để dành mới có lợi
         public const int InterestStep = 10, InterestMax = 5;   // giống TFT
-        public static int Interest(int held) => Mathf.Min(Mathf.Max(held, 0) / InterestStep, InterestMax);
+        public static int Interest(int held, int extraCap = 0) => Mathf.Min(Mathf.Max(held, 0) / InterestStep, InterestMax + extraCap);
+
+        // ---- Lõi (giống Augment của TFT) ----
+        public static readonly int[] AugmentWaves = { 1, 6, 12 };   // xong các đợt này thì được chọn 1 trong 3 lõi
+        public const int AugmentChoices = 3;
         public static int CardPrice(Cat c) => c == Cat.Expand ? 5 : c == Cat.Barracks || c == Cat.BuffMil ? 4 : 3;
 
         // ---- Thành & tài nguyên ----
@@ -150,6 +154,40 @@ namespace HordeLab
         public const int Count = Expand + 1;
     }
 
+    public enum AugCat { Economy, Military, Utility }
+
+    /// <summary>Một lõi: hiệu ứng vĩnh viễn cho cả lượt chơi. Hiệu ứng nằm ở City / Game (tìm Aug.Tên).</summary>
+    public class AugmentDef
+    {
+        public int id;
+        public string name, desc;
+        public AugCat cat;
+    }
+
+    /// <summary>Mã lõi.</summary>
+    public static class Aug
+    {
+        // Kinh tế
+        public const int Harvest = 0, Timber = 1, GoldRush = 2, BabyBoom = 3, Stockpile = 4, Treasury = 5, RichGetRicher = 6;
+        // Quân sự
+        public const int Sharpened = 7, IronSkin = 8, Drill = 9, Supply = 10, Medics = 11, Walls = 12, Scouts = 13;
+        // Tiện ích
+        public const int FreeRoll = 14, Bargain = 15, LandGrant = 16, Recruit = 17, Architect = 18;
+        public const int Count = 19;
+
+        // Các con số (số tạm, chưa cân bằng)
+        public const float ResBonus = 0.35f;          // Harvest / Timber / GoldRush / BabyBoom: +35% tài nguyên tương ứng
+        public const float StockpileRes = 50f;        // đầu mỗi đợt +50 mỗi loại tài nguyên
+        public const int TreasuryCrystals = 15;
+        public const int RichExtraCap = 3, RichCrystals = 5;
+        public const float SharpenedDmg = 0.2f, IronSkinHp = 0.25f;
+        public const float DrillSpeed = 0.2f, SupplyCut = 0.2f, MedicsRegen = 1.5f;
+        public const int WallsHp = 150;
+        public const float ScoutsCut = 0.15f;
+        public const int FreeRolls = 1, BargainCut = 1, LandGrantCards = 2;
+        public const float ArchitectBuff = 0.4f;
+    }
+
     public static class GameData
     {
         public static readonly FactionDef[] Factions =
@@ -168,6 +206,34 @@ namespace HordeLab
 
         public static readonly UnitDef[] Units = BuildUnits();
         public static readonly BuildingDef[] Buildings = BuildBuildings();
+        public static readonly AugmentDef[] Augments = BuildAugments();
+
+        static AugmentDef[] BuildAugments()
+        {
+            var a = new AugmentDef[Aug.Count];
+            void A(int id, AugCat cat, string name, string desc) => a[id] = new AugmentDef { id = id, cat = cat, name = name, desc = desc };
+            int pct(float f) => Mathf.RoundToInt(f * 100f);
+            A(Aug.Harvest, AugCat.Economy, "Bountiful Harvest", $"All Food buildings produce {pct(Aug.ResBonus)}% more.");
+            A(Aug.Timber, AugCat.Economy, "Timber Boom", $"All Wood buildings produce {pct(Aug.ResBonus)}% more.");
+            A(Aug.GoldRush, AugCat.Economy, "Gold Rush", $"All Gold buildings produce {pct(Aug.ResBonus)}% more.");
+            A(Aug.BabyBoom, AugCat.Economy, "Baby Boom", $"All Pop buildings produce {pct(Aug.ResBonus)}% more.");
+            A(Aug.Stockpile, AugCat.Economy, "Stockpile", $"Every wave starts with +{Aug.StockpileRes:0} of each resource.");
+            A(Aug.Treasury, AugCat.Economy, "Treasury", $"Gain {Aug.TreasuryCrystals} Energy Crystals now.");
+            A(Aug.RichGetRicher, AugCat.Economy, "Rich Get Richer", $"Gain {Aug.RichCrystals} crystals now. Max interest +{Aug.RichExtraCap} (up to +{Tuning.InterestMax + Aug.RichExtraCap}).");
+            A(Aug.Sharpened, AugCat.Military, "Sharpened Steel", $"All your troops deal {pct(Aug.SharpenedDmg)}% more damage.");
+            A(Aug.IronSkin, AugCat.Military, "Iron Skin", $"All your troops have {pct(Aug.IronSkinHp)}% more HP.");
+            A(Aug.Drill, AugCat.Military, "Drill Sergeant", $"Troop buildings call {pct(Aug.DrillSpeed)}% faster.");
+            A(Aug.Supply, AugCat.Military, "Supply Lines", $"Every troop call costs {pct(Aug.SupplyCut)}% less.");
+            A(Aug.Medics, AugCat.Military, "Field Medics", $"All your troops regenerate {Aug.MedicsRegen:0.#} HP per second.");
+            A(Aug.Walls, AugCat.Military, "Stone Walls", $"The castle has +{Aug.WallsHp} HP (max {Tuning.CastleHp + Aug.WallsHp}).");
+            A(Aug.Scouts, AugCat.Military, "Scouts", $"Enemy waves bring {pct(Aug.ScoutsCut)}% fewer troops.");
+            A(Aug.FreeRoll, AugCat.Utility, "Lucky Dice", $"Your first {(Aug.FreeRolls == 1 ? "reroll" : Aug.FreeRolls + " rerolls")} between waves is free.");
+            A(Aug.Bargain, AugCat.Utility, "Bargain Hunter", $"Shop cards cost {Aug.BargainCut} crystal less (min 1).");
+            A(Aug.LandGrant, AugCat.Utility, "Land Grant", $"Gain {Aug.LandGrantCards} Expand Land cards now.");
+            A(Aug.Recruit, AugCat.Utility, "Veteran Recruits", "Gain a random 2-star troop building of your faction now.");
+            A(Aug.Architect, AugCat.Utility, "Master Architect", $"Buff buildings are {pct(Aug.ArchitectBuff)}% stronger.");
+            return a;
+        }
 
         static UnitStats S(float hp, float dmg, float cd, float range, float speed, int mode = Mode.Melee, int flags = 0,
                            int proj = 0, int blood = PKind.Blood, float fps = 9f)
