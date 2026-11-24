@@ -16,9 +16,11 @@ namespace HordeLab
         public bool BlockMouse;    // chuột đang ở trên bảng giao diện: lăn chuột / kéo là của giao diện, không phải của camera
         public int MinScale = 1;   // mức phóng vừa khít cả chiến trường vào màn hình
         public float2 Center;
+        /// <summary>Chiều cao (pixel màn hình) của thanh giao diện phía trên: chiến trường chỉ vẽ trong phần còn lại bên dưới.</summary>
+        public float TopInsetPx;
 
         Camera screenCam;
-        int lastW, lastH, lastScale;
+        int lastW, lastH, lastScale, lastInset;
         bool dragging;
         Vector3 dragStart;
         float2 dragCenter;
@@ -47,21 +49,32 @@ namespace HordeLab
             screenCam.allowMSAA = false;
             screenCam.allowHDR = false;
 
-            Scale = MinScale = math.max(1, (int)math.floor(math.min(Screen.width / (float)Cfg.GroundW, Screen.height / (float)Cfg.GroundH)));
+            Scale = MinScale = FitScale();
             Center = 0f;
             EnsureTarget();
             ApplyCamera();
         }
 
+        /// <summary>Mức phóng lớn nhất mà cả chiến trường vẫn lọt vùng hiển thị (dưới thanh giao diện).</summary>
+        int FitScale() => math.max(1, (int)math.floor(math.min(Screen.width / (float)Cfg.GroundW, ViewHeight / (float)Cfg.GroundH)));
+        float ViewHeight => math.max(1f, Screen.height - TopInsetPx);
+
         void EnsureTarget()
         {
-            if (Target != null && lastW == Screen.width && lastH == Screen.height && lastScale == Scale) return;
+            int inset = Mathf.RoundToInt(TopInsetPx);
+            if (Target != null && lastW == Screen.width && lastH == Screen.height && lastScale == Scale && lastInset == inset) return;
+            if (lastW != Screen.width || lastH != Screen.height || lastInset != inset)
+            {
+                MinScale = FitScale();                       // đổi cỡ cửa sổ / thanh giao diện: tính lại mức vừa khít
+                Scale = math.clamp(Scale, MinScale, MinScale + 5);
+            }
             lastW = Screen.width;
             lastH = Screen.height;
             lastScale = Scale;
+            lastInset = inset;
 
             int w = Mathf.CeilToInt(Screen.width / (float)Scale);
-            int h = Mathf.CeilToInt(Screen.height / (float)Scale);
+            int h = Mathf.CeilToInt(ViewHeight / (float)Scale);
             w += w & 1; // kích thước chẵn → mép pixel trùng lưới 1/PPU
             h += h & 1;
 

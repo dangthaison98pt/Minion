@@ -8,10 +8,11 @@ namespace HordeLab
         // 1 đơn vị thế giới = 10 pixel nghệ thuật. Lính bộ là 1 ô 10x10 pixel, quân to (kỵ binh, máy bắn đá...) 16x16.
         public const int PPU = 10;
 
-        // Thế giới 96 x 54 đơn vị = 960 x 540 pixel nghệ thuật, mặc định phóng x2 lên màn hình 1080p (lính to, dễ nhìn).
+        // Thế giới 96 x 50,4 đơn vị = 960 x 504 pixel nghệ thuật, mặc định phóng x2: ở 1080p vừa khít vùng DƯỚI thanh trên cùng
+        // (1080 - 72 = 1008 = 504 x 2), không có chỗ nào của chiến trường chui xuống dưới giao diện.
         // 26 đơn vị bên trái là bên trong thành (chỗ đặt lưới công trình), phần còn lại là chiến trường.
-        public const float HalfW = 48f, HalfH = 27f;
-        public const int GroundW = 960, GroundH = 540;
+        public const float HalfW = 48f, HalfH = 25.2f;
+        public const int GroundW = 960, GroundH = 504;
         public const int CastlePx = 260;       // bề rộng phần "trong thành" trên texture mặt đất
         public const int WallPx = 16;          // bề dày tường thành
 

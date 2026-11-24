@@ -492,6 +492,7 @@ namespace HordeLab
 
             // ảnh chiến trường
             var view = battle.View;
+            view.TopInsetPx = InWorld ? TopH * Screen.height / VH : 0f;   // trong game: chiến trường nằm dưới thanh trên cùng, không chui xuống dưới
             if (view.Target != null)
             {
                 viewImage.texture = view.Target;

@@ -4,7 +4,7 @@ Game làm theo [Docs/GDD.md](Docs/GDD.md): chọn 1 trong 5 phe, đặt công tr
 hàng nghìn lính tự đánh qua 30 đợt. Kinh tế và chiến đấu chạy cùng lúc: nhà tài nguyên sinh Dân / Lương thực / Gỗ / Vàng,
 nhà lính tự gọi quân mỗi khi hồi xong **và** kho đủ tài nguyên.
 
-Chiến trường 96×54 đơn vị, mặc định phóng x2 trên màn hình 1080p để lính to, dễ nhìn.
+Chiến trường 96×50,4 đơn vị (960×504 pixel), mặc định phóng x2: ở 1080p vừa khít vùng dưới thanh trên cùng, không chỗ nào bị giao diện che.
 Phần mô phỏng vẫn là lõi "vạn quân" cũ: **Job System + Burst + GPU instancing**, không dùng ECS, mỗi lính là 1 struct.
 
 ## Chạy thử ngay

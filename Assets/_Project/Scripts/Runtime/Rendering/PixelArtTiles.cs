@@ -567,7 +567,7 @@ namespace HordeLab
 
         /// <summary>Bảng nền: khung gỗ, ruột tối.</summary>
         public static Texture2D UiPanel() =>
-            Upscaled(FrameCanvas(Rgb(34, 28, 36, 240), Rgb(128, 86, 52), Rgb(170, 122, 74), Rgb(88, 58, 40)), "UiPanel");
+            Upscaled(FrameCanvas(Rgb(34, 28, 36), Rgb(128, 86, 52), Rgb(170, 122, 74), Rgb(88, 58, 40)), "UiPanel");
 
         /// <summary>Lá thẻ: khung vàng nhạt, ruột màu giấy sẫm.</summary>
         public static Texture2D UiCard() =>
