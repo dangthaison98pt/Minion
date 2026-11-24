@@ -42,43 +42,38 @@ namespace HordeLab.EditorTools
         const string IconDir = "Assets/_Project/Icon";
 
         /// <summary>
-        /// Xuất icon game (vẽ bằng code, PixelArt.DrawAppIcon) ra PNG cho từng cỡ Windows cần + bản xem ở Docs/Icon,
-        /// rồi gán làm icon của bản build.
+        /// Xuất icon game (vẽ bằng code, PixelArt.DrawAppIcon) ra 1 file PNG to (1024) rồi gán làm icon của bản build
+        /// cho mọi cỡ (Windows tự thu nhỏ). Bản xem ở Docs/Icon/icon.png.
         /// </summary>
         [MenuItem("Horde Lab/Xuất icon game")]
         public static void ApplyIcons()
         {
             Directory.CreateDirectory(IconDir);
             Directory.CreateDirectory("Docs/Icon");
+            string path = $"{IconDir}/AppIcon.png";
+            var t = PixelArt.AppIconTexture(1024);
+            File.WriteAllBytes(path, t.EncodeToPNG());
+            Object.DestroyImmediate(t);
+            t = PixelArt.AppIconTexture(512);
+            File.WriteAllBytes("Docs/Icon/icon.png", t.EncodeToPNG());
+            Object.DestroyImmediate(t);
+            AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceUpdate);
+            var imp = (TextureImporter)AssetImporter.GetAtPath(path);
+            imp.textureType = TextureImporterType.Default;
+            imp.mipmapEnabled = false;
+            imp.filterMode = FilterMode.Point;
+            imp.textureCompression = TextureImporterCompression.Uncompressed;
+            imp.alphaIsTransparency = true;
+            imp.maxTextureSize = 1024;
+            imp.SaveAndReimport();
+            var icon = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
             var target = NamedBuildTarget.Standalone;
-            int[] sizes = PlayerSettings.GetIconSizes(target, IconKind.Application);
-            foreach (int sz in new[] { 16, 32, 48, 64, 128, 256, 512 })
-            {
-                var t = PixelArt.AppIconTexture(sz);
-                File.WriteAllBytes($"Docs/Icon/icon_{sz}.png", t.EncodeToPNG());
-                Object.DestroyImmediate(t);
-            }
-            var icons = new Texture2D[sizes.Length];
-            for (int i = 0; i < sizes.Length; i++)
-            {
-                string path = $"{IconDir}/AppIcon_{sizes[i]}.png";
-                var t = PixelArt.AppIconTexture(sizes[i]);
-                File.WriteAllBytes(path, t.EncodeToPNG());
-                Object.DestroyImmediate(t);
-                AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceUpdate);
-                var imp = (TextureImporter)AssetImporter.GetAtPath(path);
-                imp.textureType = TextureImporterType.Default;
-                imp.mipmapEnabled = false;
-                imp.filterMode = FilterMode.Point;
-                imp.textureCompression = TextureImporterCompression.Uncompressed;
-                imp.alphaIsTransparency = true;
-                imp.SaveAndReimport();
-                icons[i] = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
-            }
+            int n = PlayerSettings.GetIconSizes(target, IconKind.Application).Length;
+            var icons = new Texture2D[n];
+            for (int i = 0; i < n; i++) icons[i] = icon;
             PlayerSettings.SetIcons(target, icons, IconKind.Application);
-            var main = AssetDatabase.LoadAssetAtPath<Texture2D>($"{IconDir}/AppIcon_{sizes[0]}.png");
-            PlayerSettings.SetIcons(NamedBuildTarget.Unknown, new[] { main }, IconKind.Any);   // icon mặc định
-            Debug.Log($"[HordeLab] Đã gán icon game: {sizes.Length} cỡ ({string.Join(", ", sizes)})");
+            PlayerSettings.SetIcons(NamedBuildTarget.Unknown, new[] { icon }, IconKind.Any);   // icon mặc định
+            Debug.Log("[HordeLab] Đã gán icon game (1 file 1024 cho mọi cỡ)");
         }
 
         [MenuItem("Horde Lab/Build Windows (.exe)")]

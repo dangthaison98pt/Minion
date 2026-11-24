@@ -13,7 +13,7 @@ bố cục giống hệt màn ngang.
 1080p và 4K phóng đúng x2 / x4 (sắc nét nhất); các cỡ còn lại phóng lẻ (720p x1,33, 900p x1,67, 1440p x2,67).
 Phần mô phỏng vẫn là lõi "vạn quân" cũ: **Job System + Burst + GPU instancing**, không dùng ECS, mỗi lính là 1 struct.
 
-**Icon game:** vẽ bằng code (`PixelArt.DrawAppIcon`, khiên vương miện + kiếm và rìu bắt chéo), bản build tự gán đủ 8 cỡ; PNG xem ở `Docs/Icon/`. Tên hiển thị: *Fantasy World War* (file chạy: `Build/FantasyWorldWar.exe`).
+**Icon game:** vẽ bằng code (`PixelArt.DrawAppIcon`, khiên vương miện + kiếm và rìu bắt chéo), bản build dùng 1 file icon 1024 (`Assets/_Project/Icon/AppIcon.png`) cho mọi cỡ; bản xem ở `Docs/Icon/icon.png`. Tên hiển thị: *Fantasy World War* (file chạy: `Build/FantasyWorldWar.exe`).
 
 ## Chạy thử ngay
 `Build/FantasyWorldWar.exe` — bản build sẵn (toàn màn hình không viền, Alt+Enter để ra cửa sổ).
