@@ -1163,7 +1163,7 @@ namespace HordeLab
         }
 
         static string ShapeName(Shape s) =>
-            s == Shape.Cross ? "cross (4 tiles)" : s == Shape.Ring ? "ring (8 tiles)" : s == Shape.Below ? "the tile below" : "the whole row";
+            s == Shape.Cross ? "Cross (4 tiles)" : s == Shape.Ring ? "Ring (8 tiles)" : s == Shape.Below ? "The tile below" : "The whole row";
 
         /// <summary>
         /// Tooltip gọn: mô tả ngắn + hàng icon chỉ số (<paramref name="chipsOut"/>) + vài dòng phụ (<paramref name="extra"/>: bonus, gợi ý).
@@ -1215,14 +1215,9 @@ namespace HordeLab
             }
             if (d.shape != Shape.None) chipsOut.Add(new TipChip(Shapes[(int)d.shape], W(ShapeName(d.shape)), true));
 
-            // gợi ý gộp / bán bằng icon
-            if ((b != null || cardStars > 1) && d.cat != Cat.Expand && stars < Tuning.MaxStars)
-            {
-                chipsOut.Add(new TipChip(StarFor(stars), "<color=#aaaaaa>x2 =</color>", true));       // 2 nhà cùng sao = 1 nhà thêm 1 sao
-                chipsOut.Add(new TipChip(StarFor(stars + 1), $"<color=#ffd84a>{stars + 1}</color>"));
-            }
+            // giá bán bằng icon
             if (b != null && g.phase == Phase.Prep)
-                chipsOut.Add(new TipChip(Crystal, $"<color=#8fe8ff>+{g.SellValue(b.stars)}</color> <color=#aaaaaa>sell</color>", stars >= Tuning.MaxStars));
+                chipsOut.Add(new TipChip(Crystal, $"<color=#8fe8ff>+{g.SellValue(b.stars)}</color> <color=#aaaaaa>Sell</color>", true));
             extra = ex.ToString().TrimEnd('\n');
         }
 
