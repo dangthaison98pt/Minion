@@ -253,6 +253,9 @@ namespace HordeLab
                     game.ui.fakeMouse = new Vector2(164f, 270f);          // rê vào ô đầu tiên của lưới để chụp tooltip
                     yield return Frames(5); Shot("03b_tooltip.png"); yield return Frames(3);
                     game.ui.fakeMouse = null;
+                    game.ui.fakeMouse = new Vector2(1920f - 200f, 36f);    // rê vào Tinh thể trên thanh trên: tooltip chỉ có chữ
+                    yield return Frames(5); Shot("03h_tooltip_chu.png"); yield return Frames(3);
+                    game.ui.fakeMouse = null;
                 }
                 if (played == 0 && saveTest)
                 {

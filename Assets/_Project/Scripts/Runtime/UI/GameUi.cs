@@ -333,15 +333,15 @@ namespace HordeLab
             statsPanel = p.rectTransform;
             statsPanel.anchorMin = statsPanel.anchorMax = statsPanel.pivot = new Vector2(0f, 1f);
             statsPanel.anchoredPosition = new Vector2(PanelW + 20f, -(TopH + 10f));
-            statsPanel.sizeDelta = new Vector2(300f, 128f);
-            statsText = Txt(statsPanel, "", 15f, TextAlignmentOptions.TopLeft, false, true).At(16f, 58f, 270f, 60f);
+            // bảng 300 rộng, lề trong 16 đều 4 phía: nút Stats trải hết chiều ngang, 2 dòng số căn giữa bên dưới
+            const float pw = 300f, inset = 16f, bh = 40f;
+            statsPanel.sizeDelta = new Vector2(pw, inset + bh + 8f + 44f + inset);
+            statsText = Txt(statsPanel, "", 15f, TextAlignmentOptions.Center, false, true).At(inset, inset + bh + 8f, pw - 2f * inset, 44f);
             statsBtn = Btn(hud, "Stats", () => statsOpen = !statsOpen, 18f);
-            statsBtn.Label().Fill(16f, 6f, 12f, 6f);                       // cao 44 như tab Shop: chữ có khoảng đệm
-            statsBtn.Label().alignment = TextAlignmentOptions.MidlineLeft;
             var br = statsBtn.GetComponent<RectTransform>();
             br.anchorMin = br.anchorMax = br.pivot = new Vector2(0f, 1f);
-            br.anchoredPosition = new Vector2(PanelW + 28f, -(TopH + 16f));
-            br.sizeDelta = new Vector2(132f, 44f);
+            br.anchoredPosition = new Vector2(PanelW + 20f + inset, -(TopH + 10f + inset));
+            br.sizeDelta = new Vector2(pw - 2f * inset, bh);
         }
 
         /// <summary>
@@ -1381,13 +1381,17 @@ namespace HordeLab
             tip.Show(show);
             if (!show) return;
 
-            const float w = 350f, pad = 18f, chipH = 24f, icon = 20f;
+            const float maxW = 350f, pad = 18f, chipH = 24f, icon = 20f;
             float headH = title != null ? 54f : 0f;
             tipBody.Set(body ?? "");
+            // tooltip chỉ có chữ: khung co theo độ dài chữ, không chừa khoảng trống thừa bên phải
+            bool textOnly = title == null && chips.Count == 0 && string.IsNullOrEmpty(extra);
+            float w = textOnly && !string.IsNullOrEmpty(body) ? Mathf.Min(maxW, Mathf.Ceil(tipBody.GetPreferredValues(body).x) + 2f * pad + 4f) : maxW;
             float bodyH = string.IsNullOrEmpty(body) ? 0f : tipBody.GetPreferredValues(body, w - 2f * pad, 0f).y;
+            bool more = chips.Count > 0 || !string.IsNullOrEmpty(extra);
 
             // hàng "icon + số": xếp trái sang phải, tràn thì xuống hàng
-            float y0 = pad + headH + bodyH + (bodyH > 0f ? 8f : 0f), cx = pad, cy = y0;
+            float y0 = pad + headH + bodyH + (bodyH > 0f && more ? 8f : 0f), cx = pad, cy = y0;   // khoảng cách chỉ khi còn phần dưới → đệm trên dưới bằng nhau
             while (chipIcons.Count < chips.Count)
             {
                 chipIcons.Add(Img(tip, null, Color.white, false, false, "Chip icon"));
@@ -1408,7 +1412,7 @@ namespace HordeLab
                 chipTexts[i].At(cx + icon + 4f, cy, tw, chipH);
                 cx += cw + 12f;
             }
-            float chipsH = chips.Count > 0 ? cy + chipH - y0 + 6f : 0f;
+            float chipsH = chips.Count > 0 ? cy + chipH - y0 + (string.IsNullOrEmpty(extra) ? 0f : 6f) : 0f;
             tipExtra.Set(extra ?? "");
             float extraH = string.IsNullOrEmpty(extra) ? 0f : tipExtra.GetPreferredValues(extra, w - 2f * pad, 0f).y;
             tipExtra.Show(extraH > 0f);
@@ -1426,7 +1430,7 @@ namespace HordeLab
                 tipLine.At(pad, pad + 46f, w - 2f * pad, 1f);
                 for (int i = 0; i < stars; i++) { tipStars[i].At(w - pad - (stars - i) * 16f, pad + 3f, 16f, 16f); tipStars[i].sprite = StarFor(stars); }
             }
-            tipBody.At(pad, pad + headH - 2f, w - 2f * pad, bodyH + 4f);
+            tipBody.At(pad, pad + headH, w - 2f * pad, bodyH + 4f);
 
             float mx = mouse.x / scale, my = (Screen.height - mouse.y) / scale;
             float x = mx + 24f, y = my + 14f;
