@@ -515,13 +515,14 @@ namespace HordeLab
             int type = b.Def.unit;
             float moon = MoonMul(type) * city.TroopPower(b);   // trăng tròn + số sao của nhà lính
             int side = GameData.Factions[faction].squadSide;
+            bool leader = HasLeaderSkill(type);
             ref var rng = ref battle.Rng;
             for (int k = 0; k < city.Squads(b); k++)
             {
                 var pos = new float2(Cfg.PlayerSpawnX + rng.NextFloat(0f, 5f), rng.NextFloat(-Cfg.HalfH + 5f, Cfg.HalfH - 5f));
                 battle.SpawnSquad(type, 0, pos, side, b.hp * moon * (Has(Aug.IronSkin) ? 1f + Aug.IronSkinHp : 1f),
                                   b.dmg * moon * (Has(Aug.Sharpened) ? 1f + Aug.SharpenedDmg : 1f),
-                                  b.regen + (Has(Aug.Medics) ? Aug.MedicsRegen : 0f), true);   // mỗi đạo có 1 trưởng đạo
+                                  b.regen + (Has(Aug.Medics) ? Aug.MedicsRegen : 0f), leader);   // chỉ có trưởng đạo khi có lõi kỹ năng trưởng đạo
             }
         }
 
@@ -572,6 +573,13 @@ namespace HordeLab
         // ------------------------------------------------------------------
         // Lõi
         // ------------------------------------------------------------------
+        /// <summary>Có lõi chuyên quân là kỹ năng trưởng đạo của loại quân này không (không có thì đạo không có trưởng đạo).</summary>
+        public bool HasLeaderSkill(int unitType)
+        {
+            int a = Aug.ForUnit(unitType);
+            return a >= 0 && Has(a) && GameData.Augments[a].leaderSkill;
+        }
+
         public int MaxCastleHp => Tuning.CastleHp + (Has(Aug.Walls) ? Aug.WallsHp : 0);
 
         /// <summary>Công cụ kiểm tra: thiên thạch kế tiếp rơi ngay bước sau.</summary>

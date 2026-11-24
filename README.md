@@ -98,7 +98,8 @@ Sức mạnh rồng, thiên thạch, nỏ và lính thuê nhân theo `Tuning.Ene
 Mỗi loại quân có 1 lõi đổi cách nó đánh. Chỉ xuất hiện khi đang có **nhà lính của quân đó** trên lưới; ô đầu tiên của
 màn chọn lõi nghiêng hẳn về lõi chuyên quân (70%), 2 ô sau 25%. Mã lõi = `Aug.UnitBase + loại quân`, số liệu ở class `Aug`.
 
-- **Trưởng đạo:** mỗi đạo gọi ra có 1 trưởng đạo (con giữa đội hình): **viền vàng**, **+50% máu**. Lõi 👑 chỉ trưởng đạo dùng,
+- **Trưởng đạo:** chỉ khi có lõi 👑 (kỹ năng trưởng đạo) của quân đó, mỗi đạo gọi ra mới có 1 trưởng đạo (con giữa đội hình):
+  **viền vàng**, **+50% máu**. Lõi 👑 chỉ trưởng đạo dùng,
   nên số lần kích hoạt tính theo số đạo, không theo số lính. Trưởng đạo chết thì đạo đó mất kỹ năng.
 - **Khống chế** (choáng / trói / sợ hãi) không cộng dồn; hết khống chế thì **miễn khống chế 2 giây** (`CC.Immune`).
 - Bỏng không chồng; Phân bào chỉ 1 tầng; Hồi sinh mỗi lính 1 lần, tối đa 10 lần / trưởng đạo.

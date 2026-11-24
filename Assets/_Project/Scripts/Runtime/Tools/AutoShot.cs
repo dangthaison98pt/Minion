@@ -288,7 +288,7 @@ namespace HordeLab
                 {
                     // thả 1 đạo 3x3 (có trưởng đạo) của MỌI loại quân để lõi nào cũng có dịp ra tay
                     for (int t = 0; t < UnitType.Buildable; t++)
-                        battle.SpawnSquad(t, 0, new float2(Cfg.PlayerSpawnX + 2f + (t % 5) * 3f, -Cfg.HalfH + 6f + (t / 5) * 9f), 3, 1f, 1f, 0f, true);
+                        battle.SpawnSquad(t, 0, new float2(Cfg.PlayerSpawnX + 2f + (t % 5) * 3f, -Cfg.HalfH + 6f + (t / 5) * 9f), 3, 1f, 1f, 0f, game.HasLeaderSkill(t));
                 }
                 if (played > 0 || Headless) battle.speed = 4;
 
