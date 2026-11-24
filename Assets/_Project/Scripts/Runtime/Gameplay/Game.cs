@@ -576,7 +576,7 @@ namespace HordeLab
             spawnAcc = 2f;                    // 2 tiểu đội đầu tới ngay
             waveTime = 0f;
             allSpawnedAt = -1f;
-            enemyPower = Tuning.EnemyPower(wave) * (IsBoss(wave) ? Tuning.BossPower : 1f) * Tuning.DiffPower[difficulty];
+            enemyPower = Tuning.EnemyPower(wave) * (IsBoss(wave) ? Tuning.BossPower : 1f);   // máu + sát thương quân thường như nhau ở mọi độ khó
 
             enemyTypes.Clear();
             enemyWeights.Clear();

@@ -745,7 +745,7 @@ namespace HordeLab
             string Pct(float v) => Mathf.RoundToInt(v * 100f) + "%";
             diffNote.Set(sel == 2
                 ? "<color=#ff8f6a>Hard</color>: the full horde. For veterans."
-                : $"<color=#9fe07a>{Tuning.DiffName[sel]}</color>: {Pct(Tuning.DiffSquads[sel])} enemies at {Pct(Tuning.DiffPower[sel])} strength, bosses {Pct(Tuning.DiffBoss[sel])} HP, +{Tuning.DiffCrystals[sel]} starting crystals.");
+                : $"<color=#9fe07a>{Tuning.DiffName[sel]}</color>: {Pct(Tuning.DiffSquads[sel])} enemies, bosses {Pct(Tuning.DiffBoss[sel])} HP, +{Tuning.DiffCrystals[sel]} starting crystals.");
         }
 
         /// <summary>Chữ 1 dòng, dài quá khung thì tự thu nhỏ (tới <paramref name="min"/>).</summary>
