@@ -110,6 +110,50 @@ namespace HordeLab
             return t;
         }
 
+        // ---- Ảnh do hoạ sĩ vẽ: Resources/Art/Cursor/Point.png (bắt buộc), Grab.png (không bắt buộc) ----
+        const string PointFile = "Art/Cursor/Point", GrabFile = "Art/Cursor/Grab";
+        static Vector2 pointHot, grabHot;
+
+        /// <summary>Co ảnh về cỡ <paramref name="size"/> (cạnh dài), lọc mượt. Ảnh phải đọc được (CursorImport đặt sẵn).</summary>
+        static Texture2D Resize(Texture2D src, int size)
+        {
+            float k = (float)size / Mathf.Max(src.width, src.height);
+            int w = Mathf.Max(1, Mathf.RoundToInt(src.width * k)), h = Mathf.Max(1, Mathf.RoundToInt(src.height * k));
+            var px = new Color[w * h];
+            for (int y = 0; y < h; y++)
+                for (int x = 0; x < w; x++)
+                    px[y * w + x] = src.GetPixelBilinear((x + 0.5f) / w, (y + 0.5f) / h);
+            var t = new Texture2D(w, h, TextureFormat.RGBA32, false) { filterMode = FilterMode.Bilinear, wrapMode = TextureWrapMode.Clamp };
+            t.SetPixels(px);
+            t.Apply();
+            return t;
+        }
+
+        /// <summary>Điểm bấm = pixel đặc cao nhất của hình (đầu ngón trỏ). Toạ độ con trỏ tính từ góc trên-trái.</summary>
+        static Vector2 TopHotspot(Texture2D t)
+        {
+            var px = t.GetPixels32();
+            for (int y = t.height - 1; y >= 0; y--)
+            {
+                int first = -1, last = -1;
+                for (int x = 0; x < t.width; x++) if (px[y * t.width + x].a > 128) { if (first < 0) first = x; last = x; }
+                if (first >= 0) return new Vector2((first + last) * 0.5f, t.height - 1 - y);
+            }
+            return Vector2.zero;
+        }
+
+        static bool LoadArt(int size)
+        {
+            var srcPoint = Resources.Load<Texture2D>(PointFile);
+            if (srcPoint == null || !srcPoint.isReadable) return false;
+            var srcGrab = Resources.Load<Texture2D>(GrabFile);
+            point = Resize(srcPoint, size);
+            grab = srcGrab != null && srcGrab.isReadable ? Resize(srcGrab, size) : null;
+            pointHot = TopHotspot(point);
+            grabHot = grab != null ? new Vector2(grab.width * 0.5f, grab.height * 0.5f) : pointHot;
+            return true;
+        }
+
         /// <summary>Gọi mỗi frame: đổi con trỏ khi trạng thái hoặc độ phân giải đổi.</summary>
         public static void Update(bool grabbing)
         {
@@ -119,14 +163,19 @@ namespace HordeLab
             {
                 if (point != null) Object.Destroy(point);
                 if (grab != null) Object.Destroy(grab);
-                point = Render(false, size); grab = Render(true, size);
+                if (!LoadArt(size))
+                {
+                    // chưa có ảnh: dùng hình vẽ bằng code
+                    point = Render(false, size); grab = Render(true, size);
+                    pointHot = new Vector2(0.37f * size, 0.03f * size); grabHot = new Vector2(0.55f * size, 0.55f * size);
+                }
                 builtSize = size; current = -1;
             }
-            int want = grabbing ? 1 : 0;
+            int want = grabbing && grab != null ? 1 : 0;
             if (want == current) return;
             current = want;
-            if (grabbing) Cursor.SetCursor(grab, new Vector2(0.55f * size, 0.55f * size), CursorMode.Auto);
-            else Cursor.SetCursor(point, new Vector2(0.37f * size, 0.03f * size), CursorMode.Auto);   // đầu ngón trỏ
+            if (want == 1) Cursor.SetCursor(grab, grabHot, CursorMode.Auto);
+            else Cursor.SetCursor(point, pointHot, CursorMode.Auto);
         }
     }
 }
