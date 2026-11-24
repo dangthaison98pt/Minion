@@ -31,12 +31,12 @@ namespace HordeLab.EditorTools
             Debug.Log("[HordeLab] Đã xuất Docs/Screenshots/atlas_units.png và atlas_stamps.png");
         }
 
-        /// <summary>Mặc định Build/HordeLab.exe; chạy dòng lệnh có thể thêm  -buildPath "thư mục/HordeLab.exe"  (dùng khi bản trong Build/ đang mở nên bị khoá).</summary>
+        /// <summary>Mặc định Build/FantasyWorldWar.exe; chạy dòng lệnh có thể thêm  -buildPath "thư mục/FantasyWorldWar.exe"  (dùng khi bản trong Build/ đang mở nên bị khoá).</summary>
         static string BuildPath()
         {
             var args = System.Environment.GetCommandLineArgs();
             int i = System.Array.IndexOf(args, "-buildPath");
-            return i >= 0 && i + 1 < args.Length ? args[i + 1] : "Build/HordeLab.exe";
+            return i >= 0 && i + 1 < args.Length ? args[i + 1] : "Build/FantasyWorldWar.exe";
         }
 
         const string IconDir = "Assets/_Project/Icon";

@@ -16,6 +16,7 @@ namespace HordeLab
         public int[] handStars;                          // bản lưu cũ không có → coi như 1 sao
         public int[] augments, augChoices;               // lõi đã có + 3 lõi đang chờ chọn (pha Augment)
         public bool[] augRerolled;                       // ô lõi nào đã dùng lượt đổi
+        public int augTier;                              // bậc của lần chọn lõi đang chờ (AugTier)
         public int flawless;                             // số đợt liên tiếp giữ thành không mất máu (mở khoá The Golden Emperor)
         public bool emperorUnlocked, emperorPending;     // lõi bí mật CỦA PHE NGƯỜI CHƠI (tên giữ từ bản cũ chỉ có Hoàng đế)
         public int secretCount;                          // tiến độ mở khoá của Thú (đợt trăng tròn thắng) / Hư không (tổng quân địch đã diệt)
@@ -60,6 +61,7 @@ namespace HordeLab
         public readonly int[] reward = new int[Tuning.RewardChoices];
         public readonly int[] augChoices = new int[Tuning.AugmentChoices];   // 3 lõi đang chờ chọn (pha Augment)
         public readonly bool[] augRerolled = new bool[Tuning.AugmentChoices]; // như TFT: mỗi ô đổi được 1 lần
+        public AugTier augTier;                          // bậc của lần chọn lõi đang chờ: cả 3 ô + lượt đổi đều cùng bậc
         public List<int> Augments => city.augments;
         public bool Has(int aug) => city.Has(aug);
         int rollsThisPrep;               // số lần roll trong lần chuẩn bị này (Lucky Dice: lần đầu miễn phí)
@@ -185,7 +187,7 @@ namespace HordeLab
                 hostile = hostile.ToArray(), hand = hand.ToArray(), handStars = handStars.ToArray(), shop = (int[])shop.Clone(), reward = (int[])reward.Clone(),
                 shopLocked = (bool[])shopLocked.Clone(), eventNote = eventNote, lastWon = lastWon, lastWave = lastWave, lastCrystals = lastCrystals, lastInterest = lastInterest, lastWinBonus = lastWinBonus,
                 pop = city.res.pop, food = city.res.food, wood = city.res.wood, gold = city.res.gold,
-                augments = city.augments.ToArray(), augChoices = (int[])augChoices.Clone(), augRerolled = (bool[])augRerolled.Clone(),
+                augments = city.augments.ToArray(), augChoices = (int[])augChoices.Clone(), augRerolled = (bool[])augRerolled.Clone(), augTier = (int)augTier,
                 flawless = flawless, emperorUnlocked = emperorUnlocked, emperorPending = emperorPending, secretCount = secretCount
             };
             int n = city.cells.Count, k = 0;
@@ -241,7 +243,7 @@ namespace HordeLab
             city.res = new Res(d.pop, d.food, d.wood, d.gold);
             if (d.augments != null) foreach (int a in d.augments) if (a >= 0 && a < Aug.Count && !city.augments.Contains(a)) city.augments.Add(a);
             bool augPending = d.phase == (int)Phase.Augment && d.augChoices != null && d.augChoices.Length == augChoices.Length;
-            if (augPending) d.augChoices.CopyTo(augChoices, 0);
+            if (augPending) { d.augChoices.CopyTo(augChoices, 0); augTier = (AugTier)Mathf.Clamp(d.augTier, 0, 2); }
             System.Array.Clear(augRerolled, 0, augRerolled.Length);
             if (augPending && d.augRerolled != null && d.augRerolled.Length == augRerolled.Length) d.augRerolled.CopyTo(augRerolled, 0);
             city.Recompute();
@@ -729,8 +731,25 @@ namespace HordeLab
         /// </summary>
         bool RollAugments()
         {
-            AugmentPools(out var general, out var unit, -1);
-            if (general.Count + unit.Count < augChoices.Length) return false;
+            // quay bậc theo xác suất của lần chọn này; vừa mở khoá lõi bí mật thì chắc chắn Prismatic
+            int pick = Mathf.Clamp(System.Array.IndexOf(Tuning.AugmentWaves, lastWave), 0, Tuning.AugTierOdds.Length - 1);
+            var odds = Tuning.AugTierOdds[pick];
+            int r = rnd.Next(odds[0] + odds[1] + odds[2]);
+            augTier = r < odds[0] ? AugTier.Silver : r < odds[0] + odds[1] ? AugTier.Gold : AugTier.Prismatic;
+            if (emperorPending && !Has(SecretAug)) augTier = AugTier.Prismatic;
+            // bậc đó không còn đủ 3 lõi thì lùi sang bậc gần nhất còn đủ
+            AugTier[] order = augTier == AugTier.Prismatic ? new[] { AugTier.Prismatic, AugTier.Gold, AugTier.Silver }
+                            : augTier == AugTier.Gold ? new[] { AugTier.Gold, AugTier.Silver, AugTier.Prismatic }
+                            : new[] { AugTier.Silver, AugTier.Gold, AugTier.Prismatic };
+            List<int> general = null, unit = null;
+            bool found = false;
+            foreach (var t in order)
+            {
+                augTier = t;
+                AugmentPools(out general, out unit, -1);
+                if (general.Count + unit.Count >= augChoices.Length) { found = true; break; }
+            }
+            if (!found) return false;
             System.Array.Clear(augRerolled, 0, augRerolled.Length);
             for (int i = 0; i < augChoices.Length; i++) augChoices[i] = DrawAugment(i, general, unit);
             // vừa mở khoá lõi bí mật: lần chọn này chắc chắn có, nằm ô giữa
@@ -754,6 +773,7 @@ namespace HordeLab
                 if (Has(a)) continue;
                 if (skipSlot >= 0 && System.Array.IndexOf(augChoices, a) >= 0) continue;   // đổi 1 ô: không ra trùng 3 ô đang hiện
                 if (Aug.IsSecret(a) && (a != SecretAug || !emperorUnlocked)) continue;   // lõi bí mật: chỉ của phe mình, chưa mở khoá thì không bao giờ ra
+                if (GameData.Augments[a].tier != augTier) continue;                       // cùng bậc với lần chọn này (kể cả lượt đổi)
                 var d = GameData.Augments[a];
                 if (d.unit < 0) general.Add(a);
                 else if (owned.Contains(d.unit)) unit.Add(a);

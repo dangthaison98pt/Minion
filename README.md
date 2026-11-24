@@ -13,10 +13,10 @@ bố cục giống hệt màn ngang.
 1080p và 4K phóng đúng x2 / x4 (sắc nét nhất); các cỡ còn lại phóng lẻ (720p x1,33, 900p x1,67, 1440p x2,67).
 Phần mô phỏng vẫn là lõi "vạn quân" cũ: **Job System + Burst + GPU instancing**, không dùng ECS, mỗi lính là 1 struct.
 
-**Icon game:** vẽ bằng code (`PixelArt.DrawAppIcon`, khiên vương miện + kiếm và rìu bắt chéo), bản build tự gán đủ 8 cỡ; PNG xem ở `Docs/Icon/`. Tên hiển thị: *Fantasy World War* (file chạy vẫn là `Build/HordeLab.exe`).
+**Icon game:** vẽ bằng code (`PixelArt.DrawAppIcon`, khiên vương miện + kiếm và rìu bắt chéo), bản build tự gán đủ 8 cỡ; PNG xem ở `Docs/Icon/`. Tên hiển thị: *Fantasy World War* (file chạy: `Build/FantasyWorldWar.exe`).
 
 ## Chạy thử ngay
-`Build/HordeLab.exe` — bản build sẵn (toàn màn hình không viền, Alt+Enter để ra cửa sổ).
+`Build/FantasyWorldWar.exe` — bản build sẵn (toàn màn hình không viền, Alt+Enter để ra cửa sổ).
 
 ## Mở project
 > ⚠️ Đặt project ở **đường dẫn ngắn** (ví dụ `D:\Unity\HordeLab`). Windows giới hạn đường dẫn 260 ký tự;
@@ -24,7 +24,7 @@ Phần mô phỏng vẫn là lõi "vạn quân" cũ: **Job System + Burst + GPU 
 
 1. Unity Hub → **Add project from disk** → chọn thư mục `HordeLab` (Unity **6000.3.12f1**).
 2. Scene `Assets/_Project/Scenes/Battle.unity` tự mở → bấm **Play**. (Bấm Play ở scene trống cũng được.)
-3. Muốn ra file `.exe`: menu **Horde Lab → Build Windows (.exe)** → nằm ở `Build/HordeLab.exe`.
+3. Muốn ra file `.exe`: menu **Horde Lab → Build Windows (.exe)** → nằm ở `Build/FantasyWorldWar.exe`.
 
 ## Cách chơi
 0. **Menu chính:** *Continue* chơi tiếp lượt đang lưu, *New run* bắt đầu lượt mới (ghi đè bản lưu), *Quit*.
@@ -80,6 +80,8 @@ Phần mô phỏng vẫn là lõi "vạn quân" cũ: **Job System + Burst + GPU 
 - **Phần thưởng:** chọn 1 trong 3 thẻ + Tinh thể năng lượng; cửa hàng có roll. Chỉ ra thẻ phe mình và thẻ dùng chung.
 
 ## Lõi (Augment)
+**Bậc lõi (như TFT):** mỗi lõi thuộc 1 bậc — **Silver** (cộng tài nguyên / tiện ích nhỏ: Harvest, Timber, Gold Rush, Baby Boom, Lucky Dice, Bargain Hunter, Scouts, Supply Lines, Drill Sergeant, Stone Walls), **Gold** (lõi mạnh + mọi lõi chuyên quân), **Prismatic** (5 lõi huyền thoại + lõi bí mật). Mỗi lần chọn lõi quay ra 1 bậc theo xác suất (`Tuning.AugTierOdds`, Silver/Gold/Prismatic: lần 1 50/45/5, lần 2 35/50/15, lần 3 20/55/25, lần 4 10/55/35, lần 5 5/50/45); cả 3 ô và lượt đổi ô đều cùng bậc. Bậc không còn đủ 3 lõi thì lùi sang bậc gần nhất. Vừa mở khoá lõi bí mật thì lần chọn đó chắc chắn là Prismatic. Thẻ có viền màu theo bậc (Prismatic: cầu vồng).
+
 Chọn 1 trong 3 lõi ngẫu nhiên (không trùng lõi đã có) sau các đợt `Tuning.AugmentWaves` = 1, 6, 12, 18, 24 (đợt 1 + mỗi đợt trùm; đợt 30 là đợt cuối), tổng cộng 5 lõi. Danh sách + số liệu ở
 class `Aug` và `GameData.BuildAugments()` trong [`GameData.cs`](Assets/_Project/Scripts/Runtime/Core/GameData.cs); hiệu ứng tìm `Aug.<tên>` trong `City.cs` / `Game.cs`.
 

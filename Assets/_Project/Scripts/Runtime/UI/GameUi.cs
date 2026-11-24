@@ -78,12 +78,19 @@ namespace HordeLab
         readonly TextMeshProUGUI[] augBig = new TextMeshProUGUI[Tuning.AugmentChoices], augName = new TextMeshProUGUI[Tuning.AugmentChoices],
                                    augLine = new TextMeshProUGUI[Tuning.AugmentChoices];
         readonly Image[] augIcon = new Image[Tuning.AugmentChoices], augBadge = new Image[Tuning.AugmentChoices];
+        readonly Image[] augFrames = new Image[Tuning.AugmentChoices];
         readonly RectTransform[] augCardRt = new RectTransform[Tuning.AugmentChoices];
         readonly Image[] augBands = new Image[Tuning.AugmentChoices];
         readonly Button[] augRolls = new Button[Tuning.AugmentChoices];
         static readonly Color[] AugColor = { new Color(1f, 0.85f, 0.29f), new Color(1f, 0.52f, 0.4f), new Color(0.56f, 0.91f, 1f), new Color(0.84f, 0.6f, 1f), new Color(0.62f, 0.88f, 0.48f) };
         static readonly string[] AugHex = { "#ffd84a", "#ff8466", "#8fe8ff", "#d79bff", "#9fe07a" };
         static readonly string[] AugCatName = { "Economy", "Military", "Utility", "Legendary", "Specialist" };
+        static readonly string[] TierName = { "Silver", "Gold", "Prismatic" };
+        static readonly string[] TierHex = { "#d6dde8", "#ffcf4a", "#f0b0ff" };
+        static readonly Color[] TierColor = { new Color(0.78f, 0.82f, 0.9f), new Color(1f, 0.78f, 0.25f), new Color(0.9f, 0.6f, 1f) };
+        /// <summary>Màu bậc lõi; Prismatic đổi màu cầu vồng chầm chậm.</summary>
+        static Color TierTint(AugTier t, float phase = 0f) =>
+            t == AugTier.Prismatic ? Color.HSVToRGB(Mathf.Repeat(Time.unscaledTime * 0.25f + phase, 1f), 0.45f, 1f) : TierColor[(int)t];
         TextMeshProUGUI rewardTitle, rewardSub, rewardEvent, endTitle, endText, continueInfo, newGameNote;
         readonly RewardView[] rewardCards = new RewardView[Tuning.RewardChoices];
         Button continueBtn;
@@ -571,6 +578,8 @@ namespace HordeLab
                 var card = Panel(p, true, "Augment card").At(30f + i * 265f, 104f, 250f, 296f);
                 augCardRt[i] = card.rectTransform;
                 augBands[i] = Img(card.transform, White, Color.white).At(14f, 14f, 222f, 6f);
+                augFrames[i] = Frame(card.transform, Color.white);                          // viền màu theo bậc lõi
+                augFrames[i].rectTransform.Fill(4f, 4f, 4f, 4f);
                 // thẻ gọn: nhóm · icon to (+ icon phụ ở góc) · SỐ TO · tên · 1 dòng ngắn. Mô tả đầy đủ: rê chuột vào thẻ
                 augCards[i] = Txt(card.transform, "", 12f, TextAlignmentOptions.Center).At(14f, 24f, 222f, 18f);
                 augIcon[i] = Img(card.transform, null, Color.white).At(87f, 46f, 76f, 76f);
@@ -1479,7 +1488,7 @@ namespace HordeLab
                 bool secret = System.Array.IndexOf(g.augChoices, g.SecretAug) >= 0;   // lõi bí mật vừa lộ diện
                 augSub.Set(secret
                     ? $"<color=#ffd24a>{SecretLine(g.faction)}</color> <color=#aaaaaa>— a secret augment</color>"
-                    : $"<color=#ffe69e>Choose an augment</color> — a permanent bonus for this run" +
+                    : $"<color=#ffe69e>Choose a</color> <color={TierHex[(int)g.augTier]}><b>{TierName[(int)g.augTier]}</b></color> <color=#ffe69e>augment</color> — a permanent bonus for this run" +
                       (left > 0 ? $" <color=#aaaaaa>({left} more later)</color>" : " <color=#aaaaaa>(last one)</color>"));
                 for (int i = 0; i < augCards.Length; i++)
                 {
@@ -1489,8 +1498,9 @@ namespace HordeLab
                     augRolls[i].Label().Set(g.augRerolled[i] ? "<color=#888888>Used</color>" : "Reroll");
                     if (!PauseOpen && Over(augRolls[i].GetComponent<RectTransform>()))
                         tipText = g.augRerolled[i] ? "This slot was already rerolled." : "<b>Reroll this augment</b>\nFree, once per slot. The other two stay.";
-                    augBands[i].color = AugColor[(int)d.cat];
-                    augCards[i].Set($"<color={AugHex[(int)d.cat]}>{AugCatName[(int)d.cat]}{(d.leaderSkill ? " · Leader" : "")}</color>");
+                    augBands[i].color = TierTint(d.tier, i * 0.12f);                       // dải màu = bậc lõi (Prismatic: cầu vồng)
+                    augFrames[i].color = TierTint(d.tier, i * 0.12f);
+                    augCards[i].Set($"<color={TierHex[(int)d.tier]}><b>{TierName[(int)d.tier]}</b></color> <color=#888888>·</color> <color={AugHex[(int)d.cat]}>{AugCatName[(int)d.cat]}{(d.leaderSkill ? " · Leader" : "")}</color>");
                     AugSprites(d, out var main, out var badge);
                     augIcon[i].sprite = main;
                     augBadge[i].Show(badge != null);

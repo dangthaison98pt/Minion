@@ -9,7 +9,7 @@ namespace HordeLab
 {
     /// <summary>
     /// Đo chi phí mô phỏng có kiểm soát. Chạy bản build:
-    ///     HordeLab.exe -batchmode -bench "ketqua.txt" [-stress 20000]
+    ///     FantasyWorldWar.exe -batchmode -bench "ketqua.txt" [-stress 20000]
     ///  - Seed và dt cố định → mọi lượt chạy đúng một kịch bản, so sánh được giữa các lần sửa code.
     ///  - Bấm giờ riêng từng job (Battle.profileJobs).
     ///  - Chạy vài lượt, báo số TỐT NHẤT giữa các lượt để lọc nhiễu do máy đang làm việc khác.

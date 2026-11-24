@@ -35,7 +35,12 @@ namespace HordeLab
         public static int Interest(int held, int extraCap = 0) => Mathf.Min(Mathf.Max(held, 0) / InterestStep, InterestMax + extraCap);
 
         // ---- Lõi (giống Augment của TFT) ----
-        public static readonly int[] AugmentWaves = { 1, 6, 12, 18, 24 };   // sau đợt 1 + mỗi đợt trùm (đợt 30 là đợt cuối) → 5 lõi
+        public static readonly int[] AugmentWaves = { 1, 6, 12, 18, 24 };
+        // Xác suất ra bậc Silver / Gold / Prismatic ở lần chọn lõi thứ 1..5 (càng về sau càng dễ ra lõi xịn)
+        public static readonly int[][] AugTierOdds =
+        {
+            new[] { 50, 45, 5 }, new[] { 35, 50, 15 }, new[] { 20, 55, 25 }, new[] { 10, 55, 35 }, new[] { 5, 50, 45 },
+        };   // sau đợt 1 + mỗi đợt trùm (đợt 30 là đợt cuối) → 5 lõi
         public const int AugmentChoices = 3;
         public static int CardPrice(Cat c) => c == Cat.Expand ? 5 : c == Cat.Barracks || c == Cat.BuffMil ? 4 : 3;
 
@@ -159,6 +164,9 @@ namespace HordeLab
 
     public enum AugCat { Economy, Military, Utility, Legendary, Specialist }
 
+    /// <summary>Bậc lõi như TFT: mỗi lần chọn lõi quay ra 1 bậc, cả 3 ô (và lượt đổi) đều cùng bậc đó.</summary>
+    public enum AugTier { Silver, Gold, Prismatic }
+
     /// <summary>Một lõi: hiệu ứng vĩnh viễn cho cả lượt chơi. Hiệu ứng nằm ở City / Game (tìm Aug.Tên).</summary>
     public class AugmentDef
     {
@@ -169,6 +177,7 @@ namespace HordeLab
         public bool leaderSkill;       // kỹ năng của trưởng đạo (không phải mọi lính)
         // Thẻ lõi gọn cho người lười đọc: 1 con số to + 1 dòng ngắn (desc đầy đủ hiện khi rê chuột)
         public string big, line;
+        public AugTier tier;
     }
 
     /// <summary>Mã lõi.</summary>
@@ -402,6 +411,10 @@ namespace HordeLab
             V(Aug.ThorAug, $"{Units[UnitType.Thor].stats.maxHp * Aug.AllyHp:0} HP", "Thunder fights for you");
             V(Aug.BerserkerAug, $"{Units[UnitType.Berserker].stats.maxHp * Aug.AllyHp:0} HP", "The Berserker joins the hunt");
             V(Aug.BroodAug, $"{Units[UnitType.Broodmother].stats.maxHp * Aug.AllyHp:0} HP", "The Broodmother hungers");
+            // ---- Bậc lõi: Silver = cộng chỉ số nhỏ / tiện ích, Gold = mạnh + mọi lõi chuyên quân, Prismatic = huyền thoại + bí mật ----
+            int[] silver = { Aug.Harvest, Aug.Timber, Aug.GoldRush, Aug.BabyBoom, Aug.FreeRoll, Aug.Bargain, Aug.Scouts, Aug.Supply, Aug.Drill, Aug.Walls };
+            for (int id = 0; id < a.Length; id++)
+                a[id].tier = a[id].cat == AugCat.Legendary ? AugTier.Prismatic : System.Array.IndexOf(silver, id) >= 0 ? AugTier.Silver : AugTier.Gold;
             void VU(int t, string big, string line) => V(Aug.ForUnit(t), big, line);
             VU(UnitType.Swordsman, $"-{pct(Aug.ShieldWallResist)}%", "Arrow damage taken");
             VU(UnitType.Archer, $"x{Aug.VolleyArrows}", "Leader fires an arrow volley");
