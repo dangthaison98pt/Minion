@@ -764,31 +764,40 @@ namespace HordeLab
         // ------------------------------------------------------------------
         RectTransform marketPick;
 
+        const float PickW = 228f, PickH = 104f;
+
         void BuildMarketPick()
         {
+            // bảng nhỏ ngay trên ô Market: 3 nút icon, bấm là chọn
             marketPick = Panel(root, true, "Market pick").rectTransform;
-            Txt(marketPick, "Market: trade Gold for", 22f, TextAlignmentOptions.Center, true).At(0f, 16f, 460f, 32f);
+            Txt(marketPick, "Trade Gold for", 15f, TextAlignmentOptions.Center, true).At(0f, 10f, PickW, 20f);
             int[] opts = { ResId.Food, ResId.Wood, ResId.Pop };
             for (int k = 0; k < opts.Length; k++)
             {
                 int r = opts[k];
-                var btn = Btn(marketPick, "", () => { var pm = g.PendingMarket; if (pm.HasValue) g.SetMarketTrade(pm.Value, r); }, 20f);
-                btn.At(20f + k * 144f, 58f, 132f, 64f);
-                Img(btn.transform, ResIcons[r], Color.white).At(12f, 12f, 35f, 40f);
+                var btn = Btn(marketPick, "", () => { var pm = g.PendingMarket; if (pm.HasValue) g.SetMarketTrade(pm.Value, r); }, 13f);
+                btn.At(14f + k * 68f, 32f, 64f, 62f);
+                Img(btn.transform, ResIcons[r], Color.white).At(18f, 6f, 28f, 32f);
                 btn.Label().Set(ResId.Name[r]);
-                btn.Label().rectTransform.Fill(52f, 0f, 6f, 0f);
-                btn.Label().alignment = TextAlignmentOptions.MidlineLeft;
+                btn.Label().rectTransform.Fill(0f, 40f, 0f, 4f);
+                btn.Label().alignment = TextAlignmentOptions.Center;
             }
-            Txt(marketPick, "Pick it up and place it again to switch.", 14f, TextAlignmentOptions.Center, false, false, Grey).At(0f, 128f, 460f, 22f);
             marketPick.gameObject.SetActive(false);
         }
 
         void RefreshMarketPick(bool modal)
         {
-            bool show = (g.phase == Phase.Prep || g.phase == Phase.Battle) && !modal && g.PendingMarket.HasValue;
+            var pm = g.PendingMarket;
+            bool show = (g.phase == Phase.Prep || g.phase == Phase.Battle) && !modal && pm.HasValue && cells.ContainsKey(pm.Value);
             marketPick.Show(show);
             if (!show) return;
-            marketPick.At(Mathf.Round(PanelW + (VW - PanelW - 460f) * 0.5f), TopH + 24f, 460f, 160f);
+            // đặt ngay trên ô Market (không đủ chỗ thì xuống dưới ô), không ra khỏi màn hình
+            var c = CellUiPos(pm.Value).Value;
+            float ch = cells[pm.Value].rt.rect.height;
+            float x = Mathf.Clamp(Mathf.Round(c.x - PickW * 0.5f), 4f, VW - PickW - 4f);
+            float y = c.y - ch * 0.5f - PickH - 2f;
+            if (y < TopH + 4f) y = c.y + ch * 0.5f + 2f;
+            marketPick.At(x, Mathf.Round(y), PickW, PickH);
             marketPick.SetAsLastSibling();
         }
 
