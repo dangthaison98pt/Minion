@@ -124,7 +124,14 @@ namespace HordeLab
         TextMeshProUGUI landCost, rollCost;
         Image landIcon, rollIcon, landCrystal, rollCrystal;
 
-        class RewardView { public Image tile; public TextMeshProUGUI text; }
+        class RewardView
+        {
+            public Image tile; public TextMeshProUGUI text, extra;
+            public RectTransform rt;
+            public readonly List<TipChip> chips = new List<TipChip>();
+            public readonly List<Image> icons = new List<Image>();
+            public readonly List<TextMeshProUGUI> texts = new List<TextMeshProUGUI>();
+        }
 
         // ==================================================================
         // Dựng
@@ -326,13 +333,15 @@ namespace HordeLab
             statsPanel = p.rectTransform;
             statsPanel.anchorMin = statsPanel.anchorMax = statsPanel.pivot = new Vector2(0f, 1f);
             statsPanel.anchoredPosition = new Vector2(PanelW + 20f, -(TopH + 10f));
-            statsPanel.sizeDelta = new Vector2(300f, 116f);
-            statsText = Txt(statsPanel, "", 15f, TextAlignmentOptions.TopLeft, false, true).At(16f, 44f, 270f, 64f);
-            statsBtn = Btn(hud, "STATS", () => statsOpen = !statsOpen, 15f);
+            statsPanel.sizeDelta = new Vector2(300f, 128f);
+            statsText = Txt(statsPanel, "", 15f, TextAlignmentOptions.TopLeft, false, true).At(16f, 58f, 270f, 60f);
+            statsBtn = Btn(hud, "Stats", () => statsOpen = !statsOpen, 18f);
+            statsBtn.Label().Fill(16f, 6f, 12f, 6f);                       // cao 44 như tab Shop: chữ có khoảng đệm
+            statsBtn.Label().alignment = TextAlignmentOptions.MidlineLeft;
             var br = statsBtn.GetComponent<RectTransform>();
             br.anchorMin = br.anchorMax = br.pivot = new Vector2(0f, 1f);
-            br.anchoredPosition = new Vector2(PanelW + 30f, -(TopH + 18f));
-            br.sizeDelta = new Vector2(96f, 30f);
+            br.anchoredPosition = new Vector2(PanelW + 28f, -(TopH + 16f));
+            br.sizeDelta = new Vector2(132f, 44f);
         }
 
         /// <summary>
@@ -369,10 +378,10 @@ namespace HordeLab
             shopBtn = Btn(hud, "", ToggleShop, 18f, "Shop tab");
             var tab = shopBtn.GetComponent<RectTransform>();
             tab.anchorMin = tab.anchorMax = tab.pivot = new Vector2(0f, 0f);
-            shopBtn.Label().At(10f, 0f, 80f, 38f);
+            shopBtn.Label().At(16f, 6f, 86f, 36f);                    // tab cao 48: chữ + icon có khoảng đệm, không dính viền
             shopBtn.Label().alignment = TextAlignmentOptions.MidlineLeft;
-            shopCrystalIcon = Img(tab, Crystal, Color.white).At(108f, 8f, 22f, 22f);
-            shopCrystals = Txt(tab, "", 19f, TextAlignmentOptions.MidlineLeft, true, false, new Color(0.56f, 0.91f, 1f)).At(134f, 0f, 50f, 38f);
+            shopCrystalIcon = Img(tab, Crystal, Color.white).At(110f, 12f, 24f, 24f);
+            shopCrystals = Txt(tab, "", 19f, TextAlignmentOptions.MidlineLeft, true, false, new Color(0.56f, 0.91f, 1f)).At(140f, 6f, 60f, 36f);
 
             // mua đất (như "Mua XP" của TFT): icon ô đất + giá
             const float bh = (DockH - DockInset * 2f - 8f) * 0.5f;      // 2 nút cao bằng nhau, nằm trọn trong viền
@@ -471,11 +480,40 @@ namespace HordeLab
                 int pick = i;
                 var card = Panel(p, true, "Reward card").At(30f + i * 265f, 104f, 250f, 388f);
                 var v = new RewardView();
+                v.rt = card.rectTransform;
                 v.tile = Img(card.transform, null, Color.white).At(77f, 18f, 96f, 96f);
-                v.text = Txt(card.transform, "", 14f, TextAlignmentOptions.TopLeft, false, true).At(18f, 124f, 214f, 200f);
+                v.text = Txt(card.transform, "", 14f, TextAlignmentOptions.TopLeft, false, true).At(18f, 124f, 214f, 100f);
+                v.extra = Txt(card.transform, "", 13f, TextAlignmentOptions.TopLeft, false, true);
                 Btn(card.transform, "Pick", () => g.PickReward(pick)).At(18f, 328f, 214f, 42f);
                 rewardCards[i] = v;
             }
+        }
+
+        /// <summary>Xếp các ô "icon + số" từ (x, y), rộng w, tràn thì xuống hàng. Trả về y ngay dưới hàng cuối.</summary>
+        float LayoutChips(RectTransform parent, List<TipChip> list, List<Image> icons, List<TextMeshProUGUI> texts, float x0, float y0, float w)
+        {
+            const float chipH = 24f, icon = 20f;
+            while (icons.Count < list.Count)
+            {
+                icons.Add(Img(parent, null, Color.white, false, false, "Chip icon"));
+                texts.Add(Txt(parent, "", 15f, TextAlignmentOptions.MidlineLeft, true));
+            }
+            float cx = x0, cy = y0;
+            for (int i = 0; i < icons.Count; i++)
+            {
+                bool on = i < list.Count;
+                icons[i].Show(on); texts[i].Show(on);
+                if (!on) continue;
+                var c = list[i];
+                texts[i].Set(c.text);
+                float tw = texts[i].GetPreferredValues(c.text).x + 2f, cw = icon + 4f + tw;
+                if ((c.br && cx > x0) || cx + cw > x0 + w) { cx = x0; cy += chipH; }
+                icons[i].sprite = c.icon;
+                icons[i].At(cx, cy + (chipH - icon) * 0.5f, icon, icon);
+                texts[i].At(cx + icon + 4f, cy, tw, chipH);
+                cx += cw + 12f;
+            }
+            return list.Count > 0 ? cy + chipH : y0;
         }
 
         void BuildAugment()
@@ -573,7 +611,7 @@ namespace HordeLab
             var bg = Img(root, White, new Color(0.03f, 0.03f, 0.05f, 0.9f), false, true, "Faction pick");
             factionScreen = bg.rectTransform;
             bg.Fill();
-            var title = Txt(factionScreen, "CHOOSE YOUR FACTION", 40f, TextAlignmentOptions.Center, true);
+            var title = Txt(factionScreen, "Choose your faction", 40f, TextAlignmentOptions.Center, true);
             title.rectTransform.anchorMin = new Vector2(0f, 1f); title.rectTransform.anchorMax = new Vector2(1f, 1f); title.rectTransform.pivot = new Vector2(0.5f, 1f);
             title.rectTransform.anchoredPosition = new Vector2(0f, -50f); title.rectTransform.sizeDelta = new Vector2(0f, 60f);
             var sub = Txt(factionScreen, $"Hold the castle for {Tuning.Waves} waves. Each time it falls you lose 1 of {Tuning.Hearts} hearts. Three other factions become your enemies.",
@@ -614,7 +652,7 @@ namespace HordeLab
             var shade = Img(menu, White, new Color(0.02f, 0.02f, 0.04f, 0.45f), false, true, "Shade");
             shade.Fill();
             var p = Panel(menu).At(120f, 250f, 520f, 560f).rectTransform;
-            Txt(p, "HORDE LAB", 60f, TextAlignmentOptions.Center, true, false, Gold).At(0f, 34f, 520f, 76f);
+            Txt(p, "Horde Lab", 60f, TextAlignmentOptions.Center, true, false, Gold).At(0f, 34f, 520f, 76f);
             Txt(p, "Build the castle. Watch the horde.", 17f, TextAlignmentOptions.Center, false, false, Grey).At(0f, 112f, 520f, 26f);
 
             continueBtn = Btn(p, "Continue", () => g.ContinueRun(), 24f).At(60f, 170f, 400f, 64f);
@@ -628,7 +666,7 @@ namespace HordeLab
         void BuildPause()
         {
             pause = Modal("Pause", 0.6f, out var p, 520f, 420f);
-            Txt(p, "PAUSED", 36f, TextAlignmentOptions.Center, true).At(0f, 28f, 520f, 50f);
+            Txt(p, "Paused", 36f, TextAlignmentOptions.Center, true).At(0f, 28f, 520f, 50f);
             Btn(p, "Resume", TogglePause, 22f).At(70f, 104f, 380f, 60f);
             Btn(p, "Save & quit to menu", () => { ClosePause(); g.QuitToMenu(); }, 22f).At(70f, 176f, 380f, 60f);
             Btn(p, "Abandon run", () => { ClosePause(); g.DeleteSave(); g.EnterMenu(); }, 22f).At(70f, 248f, 380f, 60f);
@@ -722,7 +760,7 @@ namespace HordeLab
         void RefreshTopBar()
         {
             for (int i = 0; i < hearts.Length; i++) hearts[i].color = new Color(1f, 1f, 1f, i < g.hearts ? 1f : 0.18f);
-            string tag = (g.IsBoss(g.wave) ? "  <color=#ff8f6a>BOSS</color>" : "") +
+            string tag = (g.IsBoss(g.wave) ? "  <color=#ff8f6a>Boss</color>" : "") +
                          (g.IsFullMoon(g.wave) && (g.attacker == Faction.Beast || g.faction == Faction.Beast) ? "  <color=#e8e6ff>Full moon</color>" : "");
             waveText.Set($"Wave <color=#ffffff>{g.wave}</color>/{Tuning.Waves}    Enemy");
             var wr = waveText.rectTransform;
@@ -770,9 +808,9 @@ namespace HordeLab
         {
             bool prep = g.phase == Phase.Prep, fight = g.phase == Phase.Battle;
             bool shopPhase = prep || fight;
-            titleText.Set("CASTLE");
+            titleText.Set("Castle");
             titleEmblem.sprite = Emblems[g.faction];
-            titleEmblem.At(28f + titleText.GetPreferredValues("CASTLE").x + 10f, 9f, 32f, 32f);
+            titleEmblem.At(28f + titleText.GetPreferredValues("Castle").x + 10f, 9f, 32f, 32f);
             if (!modal && Over(titleEmblem.rectTransform)) tipText = FactionTip(g.faction);
             RefreshGrid(modal);
 
@@ -793,7 +831,7 @@ namespace HordeLab
             // đợt tới (lúc đánh: đợt đang đánh)
             attackerEmblem.sprite = Emblems[g.attacker];
             if (!modal && Over(attackerEmblem.rectTransform)) tipText = FactionTip(g.attacker);
-            waveInfo.Set($"x{g.EnemyPreviewCount():N0}" + (g.IsBoss(g.wave) ? "\n<size=13><color=#ff8f6a>BOSS</color></size>" : ""));
+            waveInfo.Set($"x{g.EnemyPreviewCount():N0}" + (g.IsBoss(g.wave) ? "\n<size=13><color=#ff8f6a>Boss</color></size>" : ""));
             for (int i = 0; i < previewIcons.Length; i++) previewIcons[i].transform.parent.Show(false);
             int k = 0;
             for (int s = 0; s < 5; s++)
@@ -866,13 +904,13 @@ namespace HordeLab
                 bool overSell = !modal && Over(sellZone);
                 sellGlow.Show(overSell && (card || db != null));
                 int sellStars = db != null ? db.stars : dragCard >= 0 ? g.HandStars(dragCard) : selectedCard >= 0 ? g.HandStars(selectedCard) : 1;
-                sellText.Set(db != null || card ? $"SELL  <color=#8fe8ff>+{g.SellValue(sellStars)}</color>" : "<color=#888888>SELL</color>");
+                sellText.Set(db != null || card ? $"Sell  <color=#8fe8ff>+{g.SellValue(sellStars)}</color>" : "<color=#888888>Sell</color>");
             }
 
             // bảng thống kê trận (ẩn / hiện bằng nút STATS)
             statsBtn.GetComponent<RectTransform>().Show(fight);
             statsPanel.Show(fight && statsOpen);
-            statsBtn.Label().Set(statsOpen ? "STATS  -" : "STATS  +");
+            statsBtn.Label().Set(statsOpen ? "Stats  -" : "Stats  +");
             if (fight && statsOpen)
             {
                 int t = (int)g.waveTime;
@@ -1091,9 +1129,9 @@ namespace HordeLab
             dock.Show(open);
 
             // tab SHOP ngay trên mép cửa hàng (thu gọn thì nằm sát đáy)
-            tab.anchoredPosition = new Vector2(PanelW + 52f, 10f + (open ? DockH + 2f : 0f));   // nằm hẳn phía trên viền, không đè
-            tab.sizeDelta = new Vector2(190f, 38f);
-            shopBtn.Label().Set(open ? "SHOP  -" : "SHOP  +");
+            tab.anchoredPosition = new Vector2(PanelW + 52f, 10f + (open ? DockH + 2f : 0f));   // ngay trên viền cửa hàng
+            tab.sizeDelta = new Vector2(216f, 48f);
+            shopBtn.Label().Set(open ? "Shop  -" : "Shop  +");
             shopCrystals.Set(g.crystals.ToString());
 
             // nút Wave: góc dưới phải (trong cột phải của cửa hàng khi mở)
@@ -1256,7 +1294,7 @@ namespace HordeLab
                 rewardGroup.alpha = pop;
                 rewardGroup.interactable = pop >= 1f && !PauseOpen;
                 ((RectTransform)reward.GetChild(0)).anchoredPosition = new Vector2(0f, -(1f - pop) * 50f);
-                rewardTitle.Set(g.lastWon ? $"<color=#9fe07a>WAVE {g.lastWave}: CASTLE HELD!</color>" : $"<color=#ff8f8f>WAVE {g.lastWave}: CASTLE FELL — 1 heart lost</color>");
+                rewardTitle.Set(g.lastWon ? $"<color=#9fe07a>Wave {g.lastWave}: Castle held!</color>" : $"<color=#ff8f8f>Wave {g.lastWave}: Castle fell — 1 heart lost</color>");
                 var parts = new StringBuilder().Append(g.lastCrystals).Append(" reward");
                 if (g.lastWinBonus > 0) parts.Append(" + ").Append(g.lastWinBonus).Append(" win");
                 if (g.lastInterest > 0) parts.Append(" + ").Append(g.lastInterest).Append(" interest");
@@ -1266,9 +1304,17 @@ namespace HordeLab
                 rewardEvent.Set(string.IsNullOrEmpty(g.eventNote) ? "" : $"Event: {g.eventNote}");
                 for (int i = 0; i < rewardCards.Length; i++)
                 {
-                    rewardCards[i].tile.sprite = Tiles[g.reward[i]];
-                    InfoParts(g.reward[i], null, out string title, out string sub, out string body, out _);
-                    rewardCards[i].text.Set($"<b><size=18><color=#ffe69e>{title}</color></size></b>\n{sub}\n\n{body}");
+                    // giống tooltip: tên + loại + 1 dòng mô tả, rồi hàng icon chỉ số
+                    var rc = rewardCards[i];
+                    rc.tile.sprite = Tiles[g.reward[i]];
+                    rc.chips.Clear();
+                    InfoParts(g.reward[i], null, out string title, out string sub, out string body, out _, 1, rc.chips, out string extra);
+                    string head = $"<b><size=18><color=#ffe69e>{title}</color></size></b>\n<size=13><color=#aaaaaa>{sub}</color></size>\n{body}";
+                    rc.text.Set(head);
+                    float y = 124f + rc.text.GetPreferredValues(head, 214f, 0f).y + 8f;
+                    y = LayoutChips(rc.rt, rc.chips, rc.icons, rc.texts, 18f, y, 214f);
+                    rc.extra.Set(extra ?? "");
+                    rc.extra.At(18f, y + 2f, 214f, 60f);
                 }
             }
 
@@ -1279,7 +1325,7 @@ namespace HordeLab
                 augGroup.alpha = pop;
                 augGroup.interactable = pop >= 1f && !PauseOpen;
                 ((RectTransform)augScreen.GetChild(0)).anchoredPosition = new Vector2(0f, -(1f - pop) * 50f);
-                augTitle.Set(g.lastWon ? $"<color=#9fe07a>WAVE {g.lastWave}: CASTLE HELD!</color>" : $"<color=#ff8f8f>WAVE {g.lastWave}: CASTLE FELL — 1 heart lost</color>");
+                augTitle.Set(g.lastWon ? $"<color=#9fe07a>Wave {g.lastWave}: Castle held!</color>" : $"<color=#ff8f8f>Wave {g.lastWave}: Castle fell — 1 heart lost</color>");
                 int left = 0;
                 foreach (int w in Tuning.AugmentWaves) if (w > g.lastWave) left++;
                 augSub.Set($"<color=#ffe69e>Choose an augment</color> — a permanent bonus for this run" +
@@ -1293,7 +1339,7 @@ namespace HordeLab
                     if (!PauseOpen && Over(augRolls[i].GetComponent<RectTransform>()))
                         tipText = g.augRerolled[i] ? "This slot was already rerolled." : "<b>Reroll this augment</b>\nFree, once per slot. The other two stay.";
                     augBands[i].color = AugColor[(int)d.cat];
-                    augCards[i].Set($"<color={AugHex[(int)d.cat]}>{AugCatName[(int)d.cat].ToUpper()}{(d.leaderSkill ? " · LEADER" : "")}</color>");
+                    augCards[i].Set($"<color={AugHex[(int)d.cat]}>{AugCatName[(int)d.cat]}{(d.leaderSkill ? " · Leader" : "")}</color>");
                     AugSprites(d, out var main, out var badge);
                     augIcon[i].sprite = main;
                     augBadge[i].Show(badge != null);
@@ -1314,7 +1360,7 @@ namespace HordeLab
                 endGroup.interactable = pop >= 1f;
                 ((RectTransform)end.GetChild(0)).anchoredPosition = new Vector2(0f, -(1f - pop) * 50f);
                 bool won = g.phase == Phase.Won;
-                endTitle.Set(won ? "<color=#ffd84a>VICTORY!</color>" : "<color=#ff8f8f>DEFEAT</color>");
+                endTitle.Set(won ? "<color=#ffd84a>Victory!</color>" : "<color=#ff8f8f>Defeat</color>");
                 endText.Set(won ? $"{Game.The(g.faction)} held through all {Tuning.Waves} waves with {g.hearts} heart(s) left."
                                 : $"All {Tuning.Hearts} hearts lost on wave {g.lastWave}.");
             }
@@ -1494,7 +1540,7 @@ namespace HordeLab
             if (b == null && cardStars > 1) sb.Append($"\n<color=#ffd84a>{cardStars}-star card: built with {cardStars} stars.</color>");
             if ((b != null || cardStars > 1) && d.cat != Cat.Expand && stars < Tuning.MaxStars) sb.Append($"\n<color=#aaaaaa>Merge with another {stars}-star {d.name} to reach {stars + 1} stars.</color>");
             if (b != null && g.phase == Phase.Prep)
-                sb.Append($"\n<color=#aaaaaa>Drag it to SELL for {g.SellValue(b.stars)} crystal(s), or back onto your hand (keeps its stars).</color>");
+                sb.Append($"\n<color=#aaaaaa>Drag it to Sell for {g.SellValue(b.stars)} crystal(s), or back onto your hand (keeps its stars).</color>");
             body = sb.ToString().TrimEnd('\n');
         }
 
