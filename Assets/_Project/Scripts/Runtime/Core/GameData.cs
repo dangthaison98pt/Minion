@@ -164,6 +164,8 @@ namespace HordeLab
         public AugCat cat;
         public int unit = -1;          // lõi chuyên quân: loại quân; chỉ xuất hiện khi có nhà lính của quân này
         public bool leaderSkill;       // kỹ năng của trưởng đạo (không phải mọi lính)
+        // Thẻ lõi gọn cho người lười đọc: 1 con số to + 1 dòng ngắn (desc đầy đủ hiện khi rê chuột)
+        public string big, line;
     }
 
     /// <summary>Mã lõi.</summary>
@@ -310,6 +312,60 @@ namespace HordeLab
             SU(UnitType.Eye, true, "Paralyzing Gaze", $"every {Aug.GazeEvery:0}s the next bolt paralyzes its target for {Aug.GazeStun:0}s.");
             SU(UnitType.Summoner, true, "Void Portal", $"every {Aug.PortalEvery:0}s summon an Aberration instead of Voidlings (up to {Aug.PortalMax} per leader each wave).");
             SU(UnitType.Screamer, false, "Resonance", "every sonic wave bounces to one more enemy group nearby.");
+
+            // ---- Số to + dòng ngắn trên thẻ lõi ----
+            void V(int id, string big, string line) { a[id].big = big; a[id].line = line; }
+            string P(float f) => $"+{pct(f)}%";
+            V(Aug.Harvest, P(Aug.ResBonus), "More Food");
+            V(Aug.Timber, P(Aug.ResBonus), "More Wood");
+            V(Aug.GoldRush, P(Aug.ResBonus), "More Gold");
+            V(Aug.BabyBoom, P(Aug.ResBonus), "More Pop");
+            V(Aug.Stockpile, $"+{Aug.StockpileRes:0}", "Every resource, each wave");
+            V(Aug.Treasury, $"+{Aug.TreasuryCrystals}", "Crystals now");
+            V(Aug.RichGetRicher, $"+{Aug.RichCrystals}", $"Crystals now, interest up to +{Tuning.InterestMax + Aug.RichExtraCap}");
+            V(Aug.Sharpened, P(Aug.SharpenedDmg), "Troop damage");
+            V(Aug.IronSkin, P(Aug.IronSkinHp), "Troop HP");
+            V(Aug.Drill, P(Aug.DrillSpeed), "Faster troop calls");
+            V(Aug.Supply, $"-{pct(Aug.SupplyCut)}%", "Troop call cost");
+            V(Aug.Medics, $"+{Aug.MedicsRegen:0.#}/s", "Troops regenerate HP");
+            V(Aug.Walls, $"+{Aug.WallsHp}", "Castle HP");
+            V(Aug.Scouts, $"-{pct(Aug.ScoutsCut)}%", "Enemy troops");
+            V(Aug.FreeRoll, "FREE", "First shop reroll each wave");
+            V(Aug.Bargain, $"-{Aug.BargainCut}", "Shop card price");
+            V(Aug.LandGrant, $"+{Aug.LandGrantCards}", "Expand Land cards");
+            V(Aug.Recruit, "2-STAR", "Random troop building");
+            V(Aug.Architect, P(Aug.ArchitectBuff), "Buff building power");
+            V(Aug.Dragon, $"{Units[UnitType.Dragon].stats.maxHp:0} HP", "A fire dragon joins every wave");
+            V(Aug.Meteor, $"{Aug.MeteorEvery:0}s", "Meteors rain on the enemy");
+            V(Aug.Ballista, "1/s", "Walls fire heavy bolts");
+            V(Aug.Mercenary, $"x{Aug.MercSide * Aug.MercSide}", $"Mercenaries every {Aug.MercEvery:0}s");
+            V(Aug.LastStand, $"{pct(Aug.LastStandHeal)}%", "Castle heals once when it would fall");
+            void VU(int t, string big, string line) => V(Aug.ForUnit(t), big, line);
+            VU(UnitType.Swordsman, $"-{pct(Aug.ShieldWallResist)}%", "Arrow damage taken");
+            VU(UnitType.Archer, $"x{Aug.VolleyArrows}", "Leader fires an arrow volley");
+            VU(UnitType.Cavalry, "PIERCE", "Full charge breaks the line");
+            VU(UnitType.Monk, $"{pct(Aug.ReviveChance)}%", "Leader revives fallen allies");
+            VU(UnitType.Catapult, $"{Aug.FireBurn:0}s", "Rocks set enemies on fire");
+            VU(UnitType.Treant, $"+{Aug.RootRegen:0}/s", "Take root: heal, no knockback");
+            VU(UnitType.ForestArcher, "x2", "Arrows pierce 2 enemies");
+            VU(UnitType.BladeDancer, "COUNTER", "Dodge, then strike back");
+            VU(UnitType.Druid, $"{Aug.VineTime:0.#}s", "Leader's vines root enemies");
+            VU(UnitType.DeerRider, $"x{Aug.KiteFireRate:0}", "Fire rate while riding");
+            VU(UnitType.ShieldWarrior, $"{pct(Aug.Thorns)}%", "Reflect melee damage");
+            VU(UnitType.Crossbow, $"x{Aug.AntiBigMul:0}", "Damage to big enemies");
+            VU(UnitType.Axeman, "RAGE", "Stronger as HP drops");
+            VU(UnitType.Cannon, $"+{Aug.ClusterBombs}", "Shells split into blasts");
+            VU(UnitType.GoatRider, $"{Aug.RamStun:0}s", "Leader's ram stuns");
+            VU(UnitType.Bear, $"{Aug.RoarFear:0}s", "Leader's roar makes foes flee");
+            VU(UnitType.Wolf, $"+{pct(Aug.PackMax)}%", "Stronger in packs");
+            VU(UnitType.Leopard, $"x{Aug.Backstab:0}", "Hunts archers, backstabs");
+            VU(UnitType.Shaman, "HEAL", "Full moon: aura also heals");
+            VU(UnitType.Eagle, $"x{Aug.DiveDamage:0}", "Leader's dive hits an area");
+            VU(UnitType.Aberration, "+2", "Splits into Voidlings");
+            VU(UnitType.Shade, $"{pct(Aug.Lifesteal)}%", "Lifesteal");
+            VU(UnitType.Eye, $"{Aug.GazeStun:0}s", "Leader's gaze paralyzes");
+            VU(UnitType.Summoner, $"x{Aug.PortalMax}", "Leader opens Aberration portals");
+            VU(UnitType.Screamer, "x2", "Sonic wave bounces");
             return a;
         }
 

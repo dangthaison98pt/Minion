@@ -68,7 +68,11 @@ namespace HordeLab
         CanvasGroup rewardGroup, endGroup, augGroup;
         RectTransform augScreen;
         TextMeshProUGUI augTitle, augSub, augOwned;
-        readonly TextMeshProUGUI[] augCards = new TextMeshProUGUI[Tuning.AugmentChoices];
+        readonly TextMeshProUGUI[] augCards = new TextMeshProUGUI[Tuning.AugmentChoices];   // dòng nhóm (trên cùng)
+        readonly TextMeshProUGUI[] augBig = new TextMeshProUGUI[Tuning.AugmentChoices], augName = new TextMeshProUGUI[Tuning.AugmentChoices],
+                                   augLine = new TextMeshProUGUI[Tuning.AugmentChoices];
+        readonly Image[] augIcon = new Image[Tuning.AugmentChoices], augBadge = new Image[Tuning.AugmentChoices];
+        readonly RectTransform[] augCardRt = new RectTransform[Tuning.AugmentChoices];
         readonly Image[] augBands = new Image[Tuning.AugmentChoices];
         readonly Button[] augRolls = new Button[Tuning.AugmentChoices];
         static readonly Color[] AugColor = { new Color(1f, 0.85f, 0.29f), new Color(1f, 0.52f, 0.4f), new Color(0.56f, 0.91f, 1f), new Color(0.84f, 0.6f, 1f), new Color(0.62f, 0.88f, 0.48f) };
@@ -389,10 +393,67 @@ namespace HordeLab
             {
                 int pick = i;
                 var card = Panel(p, true, "Augment card").At(30f + i * 265f, 104f, 250f, 296f);
+                augCardRt[i] = card.rectTransform;
                 augBands[i] = Img(card.transform, White, Color.white).At(14f, 14f, 222f, 6f);
-                augCards[i] = Txt(card.transform, "", 15f, TextAlignmentOptions.TopLeft, false, true).At(18f, 30f, 214f, 200f);
+                // thẻ gọn: nhóm · icon to (+ icon phụ ở góc) · SỐ TO · tên · 1 dòng ngắn. Mô tả đầy đủ: rê chuột vào thẻ
+                augCards[i] = Txt(card.transform, "", 12f, TextAlignmentOptions.Center).At(14f, 24f, 222f, 18f);
+                augIcon[i] = Img(card.transform, null, Color.white).At(87f, 46f, 76f, 76f);
+                augIcon[i].preserveAspect = true;
+                augBadge[i] = Img(card.transform, null, Color.white).At(141f, 98f, 30f, 30f);
+                augBig[i] = Txt(card.transform, "", 30f, TextAlignmentOptions.Center, true).At(10f, 128f, 230f, 38f);
+                augName[i] = Txt(card.transform, "", 18f, TextAlignmentOptions.Center, true, false, new Color(1f, 0.9f, 0.62f)).At(10f, 166f, 230f, 24f);
+                augLine[i] = Txt(card.transform, "", 14f, TextAlignmentOptions.Top, false, true, Grey).At(18f, 192f, 214f, 40f);
                 Btn(card.transform, "Choose", () => g.PickAugment(pick)).At(18f, 238f, 138f, 42f);
                 augRolls[i] = Btn(card.transform, "Reroll", () => g.RerollAugment(pick), 15f).At(162f, 238f, 70f, 42f);   // mỗi ô đổi được 1 lần
+            }
+        }
+
+        /// <summary>Icon to + icon phụ ở góc cho thẻ lõi.</summary>
+        void AugSprites(AugmentDef d, out Sprite main, out Sprite badge)
+        {
+            badge = null;
+            if (d.unit >= 0)
+            {
+                main = UnitIcons[d.unit];
+                switch (d.unit)
+                {
+                    case UnitType.Swordsman: case UnitType.ForestArcher: case UnitType.Archer: badge = StatIcons[PixelArt.StatRange]; break;
+                    case UnitType.Monk: case UnitType.Treant: case UnitType.Shaman: case UnitType.Shade: badge = Heart; break;
+                    case UnitType.Catapult: case UnitType.Cannon: case UnitType.Eagle: case UnitType.Screamer: badge = StatIcons[PixelArt.StatSplash]; break;
+                    case UnitType.Druid: case UnitType.GoatRider: case UnitType.Bear: case UnitType.Eye: badge = StatIcons[PixelArt.StatTime]; break;
+                    case UnitType.DeerRider: badge = StatIcons[PixelArt.StatSpeed]; break;
+                    case UnitType.Aberration: case UnitType.Summoner: badge = UnitIcons[UnitType.Voidling]; break;
+                    default: badge = StatIcons[PixelArt.StatDamage]; break;
+                }
+                return;
+            }
+            switch (d.id)
+            {
+                case Aug.Harvest: main = ResIcons[ResId.Food]; badge = StatIcons[PixelArt.StatBonus]; break;
+                case Aug.Timber: main = ResIcons[ResId.Wood]; badge = StatIcons[PixelArt.StatBonus]; break;
+                case Aug.GoldRush: main = ResIcons[ResId.Gold]; badge = StatIcons[PixelArt.StatBonus]; break;
+                case Aug.BabyBoom: main = ResIcons[ResId.Pop]; badge = StatIcons[PixelArt.StatBonus]; break;
+                case Aug.Stockpile: main = Tiles[B.Barn]; badge = ResIcons[ResId.Gold]; break;
+                case Aug.Treasury: main = Crystal; break;
+                case Aug.RichGetRicher: main = Crystal; badge = StatIcons[PixelArt.StatBonus]; break;
+                case Aug.Sharpened: main = StatIcons[PixelArt.StatDamage]; break;
+                case Aug.IronSkin: main = Heart; break;
+                case Aug.Drill: main = StatIcons[PixelArt.StatTime]; badge = StatIcons[PixelArt.StatBonus]; break;
+                case Aug.Supply: main = ResIcons[ResId.Pop]; badge = Crystal; break;
+                case Aug.Medics: main = Heart; badge = StatIcons[PixelArt.StatBonus]; break;
+                case Aug.Walls: main = Tiles[PixelArt.TileCandidate]; badge = Heart; break;
+                case Aug.Scouts: main = StatIcons[PixelArt.StatRange]; break;
+                case Aug.FreeRoll: main = Crystal; badge = StatIcons[PixelArt.StatTime]; break;
+                case Aug.Bargain: main = Crystal; break;
+                case Aug.LandGrant: main = Tiles[B.Expand]; break;
+                case Aug.Recruit: main = Tiles[B.Barracks + g.faction * 5]; badge = StarFor(2); break;
+                case Aug.Architect: main = Shapes[(int)Shape.Ring]; badge = StatIcons[PixelArt.StatBonus]; break;
+                case Aug.Dragon: main = UnitIcons[UnitType.Dragon]; break;
+                case Aug.Meteor: main = MeteorIcon; break;
+                case Aug.Ballista: main = BoltIcon; break;
+                case Aug.Mercenary: main = UnitIcons[UnitType.Axeman]; badge = Crystal; break;
+                case Aug.LastStand: main = Heart; badge = StarFor(4); break;
+                default: main = Star; break;
             }
         }
 
@@ -548,7 +609,7 @@ namespace HordeLab
             }
             RefreshVeilAndModals();
             RefreshGhost();
-            RefreshTooltip(modal || !InWorld);
+            RefreshTooltip((modal && !(g.phase == Phase.Augment && !PauseOpen)) || !InWorld);   // màn chọn lõi vẫn hiện tooltip (mô tả đầy đủ)
             RefreshPerf();
 
             battle.View.BlockMouse = !InWorld || modal || panning || (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject() && !fakeMouse.HasValue);
@@ -1072,8 +1133,16 @@ namespace HordeLab
                     if (!PauseOpen && Over(augRolls[i].GetComponent<RectTransform>()))
                         tipText = g.augRerolled[i] ? "This slot was already rerolled." : "<b>Reroll this augment</b>\nFree, once per slot. The other two stay.";
                     augBands[i].color = AugColor[(int)d.cat];
-                    augCards[i].Set($"<color={AugHex[(int)d.cat]}><size=13>{AugCatName[(int)d.cat].ToUpper()}{(d.unit >= 0 ? " · " + GameData.Units[d.unit].name.ToUpper() : "")}{(d.leaderSkill ? " · LEADER" : "")}</size></color>\n" +
-                                    $"<b><size=21><color=#ffe69e>{d.name}</color></size></b>\n\n{d.desc}");
+                    augCards[i].Set($"<color={AugHex[(int)d.cat]}>{AugCatName[(int)d.cat].ToUpper()}{(d.leaderSkill ? " · LEADER" : "")}</color>");
+                    AugSprites(d, out var main, out var badge);
+                    augIcon[i].sprite = main;
+                    augBadge[i].Show(badge != null);
+                    augBadge[i].sprite = badge;
+                    augBig[i].Set($"<color={AugHex[(int)d.cat]}>{d.big}</color>");
+                    augName[i].Set(d.name);
+                    augLine[i].Set(d.line);
+                    if (!PauseOpen && Over(augCardRt[i]) && !Over(augRolls[i].GetComponent<RectTransform>()))
+                        tipText = $"<b>{d.name}</b>\n{d.desc}";                                  // mô tả đầy đủ khi rê chuột
                 }
             }
 

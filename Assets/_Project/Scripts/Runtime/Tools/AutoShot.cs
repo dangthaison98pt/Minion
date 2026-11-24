@@ -217,7 +217,13 @@ namespace HordeLab
                         bool can2 = game.CanRerollAugment(0);
                         bool distinct = after != game.augChoices[1] && after != game.augChoices[2];
                         log.AppendLine($"AUG REROLL TEST: {(can1 && !can2 && after != before && distinct ? "OK" : "FAIL")} ({GameData.Augments[before].name} -> {GameData.Augments[after].name}, đổi lần 2 bị chặn={!can2})");
-                        if (!Headless) { yield return Frames(3); Shot("05e_doi_loi.png"); yield return Frames(3); }
+                        if (!Headless)
+                        {
+                            yield return Frames(3); Shot("05e_doi_loi.png"); yield return Frames(3);
+                            game.ui.fakeMouse = new Vector2(960f - 265f, 520f);              // rê vào thẻ lõi đầu: tooltip mô tả đầy đủ
+                            yield return Frames(5); Shot("05f_tooltip_loi.png"); yield return Frames(3);
+                            game.ui.fakeMouse = null;
+                        }
                     }
                     game.BotAct(botFaction);
                     log.AppendLine($"    lõi: chọn {GameData.Augments[game.Augments[game.Augments.Count - 1]].name}");
