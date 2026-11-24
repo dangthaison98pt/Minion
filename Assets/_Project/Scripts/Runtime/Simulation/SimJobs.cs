@@ -121,6 +121,7 @@ namespace HordeLab
         public static bool Apply(ref Unit v, int kind, float dur, float2 src)
         {
             if (v.cc > 0f || v.ccImmune > 0f) return false;
+            if (v.team == 0 && v.type >= UnitType.Emperor) return false;          // boss đánh cho người chơi: miễn khống chế
             v.cc = dur; v.ccKind = kind; v.ccSrc = src;
             return true;
         }
@@ -893,7 +894,8 @@ namespace HordeLab
                     if (sa.splash > 0f || breakthrough)
                     {
                         // đòn quét: mọi địch quanh mục tiêu đều dính (kỵ binh xuyên hàng cũng vậy)
-                        int hits = Fx.Splash(units, cellStart, sortedIndex, n, v.pos, breakthrough ? Aug.ChargePierceRadius : sa.splash, 1 - a.team, dmg, sa.slow);
+                        float sr = breakthrough ? Aug.ChargePierceRadius : sa.splash + (a.team == 0 && a.type >= UnitType.Emperor ? Aug.AllySplash : 0f);   // boss phe ta chém rộng hơn
+                        int hits = Fx.Splash(units, cellStart, sortedIndex, n, v.pos, sr, 1 - a.team, dmg, sa.slow);
                         Fx.Spray(particles, counters, ref rng, hit, 0.5f, 3, sv.blood, 2.5f, 5f);
                         if (a.type >= UnitType.Emperor) { GiantHit(i, t, dmg, hits, n, ref rng); a = units[i]; }
                         if (augA && a.type == UnitType.Shade)
@@ -1222,7 +1224,7 @@ namespace HordeLab
                         }
                         else
                         {
-                            float resist = Proj.Piercing(a.kind) ? sv.arrowResist : 0f;
+                            float resist = Proj.Piercing(a.kind) ? (v.team == 0 && v.type >= UnitType.Emperor ? math.max(sv.arrowResist, Aug.AllyArmor) : sv.arrowResist) : 0f;
                             float big = (a.fx & ArrowFx.AntiBig) != 0 && (sv.flags & (UFlag.Big | UFlag.Giant)) != 0 ? Aug.AntiBigMul : 1f;   // Nỏ xuyên giáp
                             v.hp -= a.damage * big * (1f - resist) * rng.NextFloat(0.8f, 1.2f);
                             v.flash = 1f;
@@ -1273,7 +1275,7 @@ namespace HordeLab
                         float2 d = u.pos - a.to;
                         float along = math.dot(d, dir), across = math.abs(d.x * dir.y - d.y * dir.x);
                         if (along <= 0f || along > Aug.PierceLength || across > 0.5f) continue;
-                        u.hp -= a.damage * 0.7f * (1f - stats[u.type].arrowResist);
+                        u.hp -= a.damage * 0.7f * (1f - (u.team == 0 && u.type >= UnitType.Emperor ? math.max(stats[u.type].arrowResist, Aug.AllyArmor) : stats[u.type].arrowResist));
                         u.flash = 1f;
                         units[j] = u;
                         left--;
@@ -1422,16 +1424,18 @@ namespace HordeLab
                 if (u.hp > 0f) continue;
                 UnitStats s = stats[u.type];
 
-                // Boss Hoàng đế vàng: chết thì đứng dậy 1 lần với 50% máu, cột sáng vàng phóng lên trời
-                if (u.type == UnitType.Emperor && u.team == 1 && u.revived == 0)
+                // Hồi sinh 1 lần với 50% máu: boss Hoàng đế phe địch + mọi boss đánh cho người chơi. Cột sáng phóng lên trời
+                if (u.type >= UnitType.Emperor && u.revived == 0 && (u.team == 0 || u.type == UnitType.Emperor))
                 {
-                    u.hp = u.maxHp * Aug.EmperorRevive; u.revived = 1; u.flash = 1f; u.cc = 0f; u.burn = 0f; u.poison = 0f; u.ccImmune = 3f;
+                    u.hp = u.maxHp * (u.team == 0 ? Aug.AllyRevive : Aug.EmperorRevive); u.revived = 1; u.flash = 1f; u.cc = 0f; u.burn = 0f; u.poison = 0f; u.ccImmune = 3f;
                     units[i] = u;
+                    int fx = u.type == UnitType.WorldTree ? PKind.Leaf : u.type == UnitType.Thor ? PKind.Spark : u.type == UnitType.Broodmother ? PKind.VoidGoo
+                           : u.type == UnitType.Emperor ? PKind.Holy : PKind.Blood;
                     for (int k = 0; k < 30; k++)
                         Fx.Emit(particles, counters, new Particle { pos = u.pos + rng.NextFloat2(-0.5f, 0.5f), vel = rng.NextFloat2(-0.4f, 0.4f),
-                                                                     h = 0.2f + k * 0.18f, vh = rng.NextFloat(4f, 9f), maxLife = 1.8f, kind = PKind.Holy });
-                    Fx.Ring(particles, counters, u.pos, 3f, 20, PKind.Holy);
-                    Fx.Ring(particles, counters, u.pos, 5.5f, 28, PKind.Spark);
+                                                                     h = 0.2f + k * 0.18f, vh = rng.NextFloat(4f, 9f), maxLife = 1.8f, kind = (k & 1) == 0 ? PKind.Holy : fx });
+                    Fx.Ring(particles, counters, u.pos, 3f, 20, fx);
+                    Fx.Ring(particles, counters, u.pos, 5.5f, 28, PKind.Holy);
                     counters[C.Revives]++;
                     continue;
                 }

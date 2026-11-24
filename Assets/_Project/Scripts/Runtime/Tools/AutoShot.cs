@@ -330,9 +330,10 @@ namespace HordeLab
                             if (Faction.Of(t) == game.faction) game.Augments.Add(Aug.ForUnit(t));   // thử cả 5 lõi chuyên quân của phe
                     if (System.Array.IndexOf(System.Environment.GetCommandLineArgs(), "-legendary") >= 0)
                         for (int a = Aug.Dragon; a <= Aug.LastStand; a++) game.Augments.Add(a);   // thử cả 5 lõi huyền thoại ngay đợt 1
-                    if (System.Array.IndexOf(System.Environment.GetCommandLineArgs(), "-emperor") >= 0) game.Augments.Add(Aug.Emperor);   // thử lõi bí mật
-                    // -emperorpick: coi như vừa mở khoá → lần chọn lõi sau đợt 1 chắc chắn có The Golden Emperor
-                    if (System.Array.IndexOf(System.Environment.GetCommandLineArgs(), "-emperorpick") >= 0) game.emperorUnlocked = game.emperorPending = true;
+                    // -secret (cũ: -emperor): có sẵn lõi bí mật của phe; -secretpick (cũ: -emperorpick): coi như vừa mở khoá
+                    var cl = System.Environment.GetCommandLineArgs();
+                    if (System.Array.IndexOf(cl, "-secret") >= 0 || System.Array.IndexOf(cl, "-emperor") >= 0) game.Augments.Add(game.SecretAug);
+                    if (System.Array.IndexOf(cl, "-secretpick") >= 0 || System.Array.IndexOf(cl, "-emperorpick") >= 0) game.emperorUnlocked = game.emperorPending = true;
                     game.crystals = 50;                    // giữ 50 Tinh thể qua đợt 1 → hết đợt phải được lãi tối đa +5
                     // Cầm 1 thẻ 2 sao trên tay để thử lưu cả số sao của thẻ
                     Vector2Int held = default; bool holding = false;
@@ -431,7 +432,12 @@ namespace HordeLab
                 if (gapN > 0) log.AppendLine($"    rồng: chân lính khác gần nhất {gapMin:0.00}, trung bình {gapSum / gapN:0.00} (tổng bán kính rồng + lính bộ = {Cfg.RadiusGiant + Cfg.RadiusSmall:0.00})");
                 if (game.Augments.Exists(a => GameData.Augments[a].cat == AugCat.Legendary))
                     log.AppendLine($"    huyền thoại: rồng gọi {game.dragonsCalled}, thiên thạch {game.meteorsFired}, nỏ {game.boltsFired}, lính thuê {game.mercSquads} đội, last stand {game.lastStands}");
-                    if (game.Has(Aug.Emperor)) log.AppendLine($"    hoàng đế: chiếu chỉ {battle.Counter(C.Decrees)} lần, còn sống {battle.TypeCount(UnitType.Emperor)}");
+                    if (game.Has(game.SecretAug))
+                    {
+                        int su = Aug.SecretUnit(game.SecretAug);
+                        log.AppendLine($"    lõi bí mật {GameData.Augments[game.SecretAug].name}: chiêu {battle.Counter(C.BossSkills) + battle.Counter(C.Decrees)} lần, hồi sinh {battle.Counter(C.Revives)}, " +
+                                       $"còn sống {battle.TypeCount(su) + (su == UnitType.Berserker ? battle.TypeCount(UnitType.Fenrir) : 0)}, nhện con {battle.TypeCount(UnitType.Spiderling)}, diệt {battle.Counter(C.Dead1)}");
+                    }
                     if (game.bossesCalled > 0) log.AppendLine($"    boss {GameData.Units[game.bossType].name}: vào trận {game.bossesCalled}, dùng chiêu {battle.Counter(C.BossSkills) + (game.bossType == UnitType.Emperor ? battle.Counter(C.Decrees) : 0)} lần, còn sống {battle.TypeCount(game.bossType)}, khống chế {battle.Counter(C.CcHits)} lượt, hồi sinh {battle.Counter(C.Revives)}, Fenrir {battle.TypeCount(UnitType.Fenrir)}, nhện con {battle.TypeCount(UnitType.Spiderling)}");
                 log.AppendLine($"    → {(game.lastWon ? "THẮNG" : "THUA")} sau {game.waveTime:0}s | thành {game.castleHp}/{game.MaxCastleHp} | diệt {battle.Counter(C.Dead1)} / mất {battle.Counter(C.Dead0)} | " +
                                $"kho: {r.pop:0} dân, {r.food:0} lương, {r.wood:0} gỗ, {r.gold:0} vàng | tim {game.hearts}" +

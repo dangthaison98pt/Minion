@@ -186,11 +186,23 @@ namespace HordeLab
         public const int UnitBase = 24;
         public static int ForUnit(int unitType) => unitType < UnitType.Buildable ? UnitBase + unitType : -1;
         // Bí mật (easter egg): không bao giờ ra theo kiểu thường, phải mở khoá bằng điều kiện ẩn trong ván
-        public const int Emperor = UnitBase + UnitType.Buildable;
-        public const int Count = Emperor + 1;
+        // Mỗi phe 1 lõi bí mật gọi boss của phe mình đánh cho người chơi. Mã = Emperor + phe (giữ nguyên mã cũ của Emperor cho bản lưu)
+        public const int Emperor = UnitBase + UnitType.Buildable;                 // Người: The Golden Emperor
+        public const int WorldTreeAug = Emperor + 1, ThorAug = Emperor + 2, BerserkerAug = Emperor + 3, BroodAug = Emperor + 4;
+        public const int Count = Emperor + Faction.Count;
+        public static int SecretOf(int faction) => Emperor + faction;
+        public static bool IsSecret(int a) => a >= Emperor && a < Emperor + Faction.Count;
+        public static int SecretUnit(int a) => UnitType.BossOf(a - Emperor);
 
-        // The Golden Emperor (phe Người): giữ thành không mất máu đủ 5 đợt liên tiếp thì lần chọn lõi kế tiếp chắc chắn có
-        public const int EmperorStreak = 5;
+        // Điều kiện mở khoá (bí mật, mỗi phe 1 kiểu). Đạt thì lần chọn lõi kế tiếp chắc chắn có lõi bí mật của phe mình
+        public const int EmperorStreak = 5;        // Người: giữ thành không mất máu 5 đợt liên tiếp
+        public const int TreeWoodBuildings = 4;    // Tiên: có 4 nhà Gỗ trên lưới
+        public const int ThorGoldBuildings = 4;    // Lùn: có 4 nhà Vàng trên lưới
+        public const int BerserkMoonWins = 3;      // Thú: thắng 3 đợt trăng tròn
+        public const int BroodKills = 1500;        // Hư không: diệt tổng cộng 1500 quân địch
+
+        // Boss đánh cho người chơi: mạnh hơn hẳn bản gốc (bản boss phe địch dùng Tuning.BossHp)
+        public const float AllyHp = 2.8f, AllyDmg = 1.6f, AllyArmor = 0.75f, AllySplash = 0.8f, AllyRevive = 0.5f;
         public const float EmperorDelay = 3f;                                   // vào trận sau 3 giây; chết thì chờ đợt sau
         public const float EmperorAura = 4.5f, EmperorAuraHeal = 1f, EmperorAuraDps = 3f;   // hào quang: quân ta hồi 1 máu/s, địch mất 3 máu/s (nhân theo đợt)
         public const float DecreeEvery = 12f, DecreeRadius = 5.5f, DecreeDamage = 40f, DecreeStun = 1.5f, DecreeHeal = 0.25f;
@@ -300,12 +312,27 @@ namespace HordeLab
             A(Aug.Ballista, AugCat.Legendary, "Ballista Towers", "Your walls fire heavy bolts at the closest enemy, about once a second.");
             A(Aug.Mercenary, AugCat.Legendary, "Mercenary Camp", $"Every {Aug.MercEvery:0}s a squad of {Aug.MercSide * Aug.MercSide} mercenaries from a random other faction joins you.");
             A(Aug.LastStand, AugCat.Legendary, "Last Stand", $"Once per wave, when the castle would fall it recovers {pct(Aug.LastStandHeal)}% of its HP instead.");
-            var es = Units[UnitType.Emperor].stats;
+            // ---- Lõi bí mật: mỗi phe gọi boss của phe mình đánh cho người chơi ----
+            string allyCommon = $" Takes {pct(Aug.AllyArmor)}% less damage from arrows, bolts and javelins and cannot be stunned, rooted or feared. " +
+                                $"Grows stronger each wave. Rises again once per wave at {pct(Aug.AllyRevive)}% HP; if it falls again, it returns next wave.";
+            float AHp(int t) => Units[t].stats.maxHp * Aug.AllyHp;
+            float ADmg(int t) => Units[t].stats.damage * Aug.AllyDmg;
             A(Aug.Emperor, AugCat.Legendary, "The Golden Emperor",
-              $"The Emperor himself takes the field every wave: {es.maxHp:0} HP, his greatsword cleaves for {es.damage:0}. " +
-              $"Golden aura: nearby allies regenerate {Aug.EmperorAuraHeal:0} HP/s, nearby enemies burn for {Aug.EmperorAuraDps:0} damage/s. " +
-              $"Every {Aug.DecreeEvery:0}s, Imperial Decree: a golden shockwave deals {Aug.DecreeDamage:0} damage, stuns enemies for {Aug.DecreeStun:0.#}s " +
-              $"and heals allies for {pct(Aug.DecreeHeal)}% of their HP. Grows stronger each wave. There is only one Emperor: if he falls, he returns next wave.");
+              $"The Emperor himself takes the field every wave: {AHp(UnitType.Emperor):0} HP, his greatsword cleaves for {ADmg(UnitType.Emperor):0}. " +
+              $"Golden aura: nearby allies regenerate {Aug.EmperorAuraHeal:0} HP/s, nearby enemies burn. Every {Aug.DecreeEvery:0}s, Imperial Decree: " +
+              $"a golden shockwave hurts and stuns enemies for {Aug.DecreeStun:0.#}s and heals allies for {pct(Aug.DecreeHeal)}% of their HP." + allyCommon);
+            A(Aug.WorldTreeAug, AugCat.Legendary, "The World Tree",
+              $"The World Tree takes root on your side every wave: {AHp(UnitType.WorldTree):0} HP, its fists hit for {ADmg(UnitType.WorldTree):0}. " +
+              $"Every Treant you own regenerates {Aug.TreeRegen:0} HP/s anywhere on the field. Every {Aug.PunchEvery:0}s its punch sends a shockwave that hurls enemies back." + allyCommon);
+            A(Aug.ThorAug, AugCat.Legendary, "Thor",
+              $"Thor fights for you every wave: {AHp(UnitType.Thor):0} HP, his hammer hits for {ADmg(UnitType.Thor):0}. " +
+              $"Every blow sends chain lightning through {Aug.ThorChain} more enemies. Your troops near him attack {pct(Aug.Haste - 1f)}% faster." + allyCommon);
+            A(Aug.BerserkerAug, AugCat.Legendary, "The Berserker",
+              $"The Berserker fights for you every wave: {AHp(UnitType.Berserker):0} HP, his axe cleaves for {ADmg(UnitType.Berserker):0} and heals him for {pct(Aug.BerserkLifesteal)}% of the damage. " +
+              $"Below {pct(Aug.BerserkRage)}% HP he becomes Fenrir: enemies around flee in fear for {Aug.RageFear:0}s and he attacks much faster." + allyCommon);
+            A(Aug.BroodAug, AugCat.Legendary, "The Broodmother",
+              $"The Broodmother crawls to war for you every wave: {AHp(UnitType.Broodmother):0} HP, her venomous bite hits for {ADmg(UnitType.Broodmother):0} and poisons. " +
+              $"Every {Aug.BroodEvery:0}s she lays {Aug.BroodCount} spiderlings that bite with venom too." + allyCommon);
 
             // ---- Chuyên quân: 1 lõi / loại quân. 👑 = kỹ năng của trưởng đạo ----
             void SU(int t, bool lead, string name, string desc)
@@ -367,7 +394,11 @@ namespace HordeLab
             V(Aug.Ballista, "1/s", "Walls fire heavy bolts");
             V(Aug.Mercenary, $"x{Aug.MercSide * Aug.MercSide}", $"Mercenaries every {Aug.MercEvery:0}s");
             V(Aug.LastStand, $"{pct(Aug.LastStandHeal)}%", "Castle heals once when it would fall");
-            V(Aug.Emperor, $"{Units[UnitType.Emperor].stats.maxHp:0} HP", "The Emperor marches to war");
+            V(Aug.Emperor, $"{Units[UnitType.Emperor].stats.maxHp * Aug.AllyHp:0} HP", "The Emperor marches to war");
+            V(Aug.WorldTreeAug, $"{Units[UnitType.WorldTree].stats.maxHp * Aug.AllyHp:0} HP", "The World Tree awakens");
+            V(Aug.ThorAug, $"{Units[UnitType.Thor].stats.maxHp * Aug.AllyHp:0} HP", "Thunder fights for you");
+            V(Aug.BerserkerAug, $"{Units[UnitType.Berserker].stats.maxHp * Aug.AllyHp:0} HP", "The Berserker joins the hunt");
+            V(Aug.BroodAug, $"{Units[UnitType.Broodmother].stats.maxHp * Aug.AllyHp:0} HP", "The Broodmother hungers");
             void VU(int t, string big, string line) => V(Aug.ForUnit(t), big, line);
             VU(UnitType.Swordsman, $"-{pct(Aug.ShieldWallResist)}%", "Arrow damage taken");
             VU(UnitType.Archer, $"x{Aug.VolleyArrows}", "Leader fires an arrow volley");
