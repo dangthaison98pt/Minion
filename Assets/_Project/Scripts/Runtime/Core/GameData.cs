@@ -156,8 +156,8 @@ namespace HordeLab
         {
             new FactionDef { name = "Human", color = new Color(0.36f, 0.56f, 0.95f), hpMul = 0.9f,
                 strength = "Houses produce Pop 25% faster", weakness = "Frail: troops have 10% less HP" },
-            new FactionDef { name = "Elf", color = new Color(0.40f, 0.80f, 0.45f), hpMul = 1.5f, dmgMul = 1.5f, rangeMul = 1.15f, squadSide = 4,
-                strength = "Elite troops: 50% higher stats and longer range", weakness = "Each call brings only 16 troops (4x4)" },
+            new FactionDef { name = "Elf", color = new Color(0.40f, 0.80f, 0.45f), dmgMul = 1.5f,   // tinh nhuệ ở sát thương, không trâu rangeMul = 1.15f, squadSide = 4,
+                strength = "Elite troops: 50% more damage and longer range", weakness = "Each call brings only 16 troops (4x4)" },
             new FactionDef { name = "Dwarf", color = new Color(0.90f, 0.62f, 0.25f), speedMul = 0.8f,
                 strength = "Gold Mines dig 30% faster", weakness = "Troops move 20% slower and troop buildings call 20% slower" },
             new FactionDef { name = "Beastfolk", color = new Color(0.78f, 0.50f, 0.34f),

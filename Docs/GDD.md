@@ -177,7 +177,7 @@ Người chơi chọn một phe khi bắt đầu game.
 | Phe | Điểm mạnh | Điểm yếu |
 |---|---|---|
 | Người | Nhà ở sinh Dân nhanh hơn 25% | Thể chất yếu: quân ít máu hơn 10% |
-| Tiên | Lính tinh nhuệ: chỉ số mỗi lính cao hơn khoảng 50%, tầm bắn xa hơn | Mỗi lần gọi chỉ ra 16 lính (4×4) thay vì 25 (5×5) |
+| Tiên | Lính tinh nhuệ: sát thương mỗi lính cao hơn khoảng 50% (máu giữ nguyên), tầm bắn xa hơn | Mỗi lần gọi chỉ ra 16 lính (4×4) thay vì 25 (5×5) |
 | Người lùn | Mỏ vàng đào nhanh hơn 30% | Quân đi chậm hơn 20%, nhà lính gọi quân chậm hơn 20% |
 | Người hoá thú | Nhà ra Lương thực nhanh hơn 30%. Đợt trăng tròn (ví dụ cứ 3 đợt có 1 đợt, thấy trước khi xem trước đợt địch): quân mạnh hơn hẳn | Nhà ở sinh Dân chậm hơn 25% |
 | The Void | Quân mạnh hơn khoảng 30% | Mỗi lần gọi tốn gấp đôi Dân |
