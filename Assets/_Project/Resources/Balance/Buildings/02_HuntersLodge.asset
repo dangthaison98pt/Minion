@@ -14,13 +14,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: HordeLab.Runtime::HordeLab.BuildingBalance
   building: 2
   period: 3
-  amount: 2
-  yieldPerStar:
-    star1: 1
-    star2: 2
-    star3: 4
-    star4: 8
-  buffPerStar:
+  amount:
+    star1: 2
+    star2: 4
+    star3: 8
+    star4: 16
+  buffPower:
     star1: 1
     star2: 1.5
     star3: 2

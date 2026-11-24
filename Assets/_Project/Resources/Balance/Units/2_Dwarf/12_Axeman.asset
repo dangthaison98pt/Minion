@@ -13,30 +13,39 @@ MonoBehaviour:
   m_Name: 12_Axeman
   m_EditorClassIdentifier: HordeLab.Runtime::HordeLab.UnitBalance
   unitType: 12
-  maxHp: 40
-  damage: 13
+  maxHp:
+    star1: 40
+    star2: 56
+    star3: 72
+    star4: 88
+  damage:
+    star1: 13
+    star2: 18.2
+    star3: 23.4
+    star4: 28.6
+  costPop:
+    star1: 5
+    star2: 7.5
+    star3: 10
+    star4: 12.5
+  costFood:
+    star1: 0
+    star2: 0
+    star3: 0
+    star4: 0
+  costWood:
+    star1: 0
+    star2: 0
+    star3: 0
+    star4: 0
+  costGold:
+    star1: 5
+    star2: 7.5
+    star3: 10
+    star4: 12.5
   cooldown: 1
   range: 1
   speed: 3.1
-  costPop: 5
-  costFood: 0
-  costWood: 0
-  costGold: 5
   callTime: 9
-  hpPerStar:
-    star1: 1
-    star2: 1.4
-    star3: 1.8
-    star4: 2.2
-  damagePerStar:
-    star1: 1
-    star2: 1.4
-    star3: 1.8
-    star4: 2.2
-  costPerStar:
-    star1: 1
-    star2: 1.5
-    star3: 2
-    star4: 2.5
   minWave: 3
   waveWeight: 2

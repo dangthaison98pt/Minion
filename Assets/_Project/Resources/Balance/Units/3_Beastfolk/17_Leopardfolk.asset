@@ -13,30 +13,39 @@ MonoBehaviour:
   m_Name: 17_Leopardfolk
   m_EditorClassIdentifier: HordeLab.Runtime::HordeLab.UnitBalance
   unitType: 17
-  maxHp: 28
-  damage: 9
+  maxHp:
+    star1: 28
+    star2: 39
+    star3: 50
+    star4: 62
+  damage:
+    star1: 9
+    star2: 12.6
+    star3: 16.2
+    star4: 19.8
+  costPop:
+    star1: 5
+    star2: 7.5
+    star3: 10
+    star4: 12.5
+  costFood:
+    star1: 7
+    star2: 10.5
+    star3: 14
+    star4: 17.5
+  costWood:
+    star1: 0
+    star2: 0
+    star3: 0
+    star4: 0
+  costGold:
+    star1: 0
+    star2: 0
+    star3: 0
+    star4: 0
   cooldown: 0.8
   range: 1
   speed: 5.2
-  costPop: 5
-  costFood: 7
-  costWood: 0
-  costGold: 0
   callTime: 10
-  hpPerStar:
-    star1: 1
-    star2: 1.4
-    star3: 1.8
-    star4: 2.2
-  damagePerStar:
-    star1: 1
-    star2: 1.4
-    star3: 1.8
-    star4: 2.2
-  costPerStar:
-    star1: 1
-    star2: 1.5
-    star3: 2
-    star4: 2.5
   minWave: 4
   waveWeight: 1.5

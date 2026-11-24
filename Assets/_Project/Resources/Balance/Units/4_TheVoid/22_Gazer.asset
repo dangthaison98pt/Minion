@@ -13,30 +13,39 @@ MonoBehaviour:
   m_Name: 22_Gazer
   m_EditorClassIdentifier: HordeLab.Runtime::HordeLab.UnitBalance
   unitType: 22
-  maxHp: 16
-  damage: 5
+  maxHp:
+    star1: 16
+    star2: 22
+    star3: 29
+    star4: 35
+  damage:
+    star1: 5
+    star2: 7
+    star3: 9
+    star4: 11
+  costPop:
+    star1: 5
+    star2: 7.5
+    star3: 10
+    star4: 12.5
+  costFood:
+    star1: 0
+    star2: 0
+    star3: 0
+    star4: 0
+  costWood:
+    star1: 5
+    star2: 7.5
+    star3: 10
+    star4: 12.5
+  costGold:
+    star1: 0
+    star2: 0
+    star3: 0
+    star4: 0
   cooldown: 1.9
   range: 22
   speed: 2.6
-  costPop: 5
-  costFood: 0
-  costWood: 5
-  costGold: 0
   callTime: 10
-  hpPerStar:
-    star1: 1
-    star2: 1.4
-    star3: 1.8
-    star4: 2.2
-  damagePerStar:
-    star1: 1
-    star2: 1.4
-    star3: 1.8
-    star4: 2.2
-  costPerStar:
-    star1: 1
-    star2: 1.5
-    star3: 2
-    star4: 2.5
   minWave: 1
   waveWeight: 3

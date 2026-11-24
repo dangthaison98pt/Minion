@@ -298,7 +298,9 @@ namespace HordeLab
         /// <summary>Tài nguyên cho 1 lần gọi quân của nhà lính (đã nhân số tiểu đội, Kho quân nhu, đặc trưng phe).</summary>
         public Res CallCost(Building b)
         {
-            Res c = GameData.Units[b.Def.unit].cost * (GameData.Units[b.Def.unit].starCost[b.stars - 1] * b.costMul * (Has(Aug.Supply) ? 1f - Aug.SupplyCut : 1f));
+            var u = GameData.Units[b.Def.unit];
+            Res raw = u.costAt != null ? u.costAt[b.stars - 1] : u.cost * u.starCost[b.stars - 1];   // chi phí ở đúng mốc sao
+            Res c = raw * (b.costMul * (Has(Aug.Supply) ? 1f - Aug.SupplyCut : 1f));
             c.pop *= GameData.Factions[faction].popCostMul;
             return c;
         }

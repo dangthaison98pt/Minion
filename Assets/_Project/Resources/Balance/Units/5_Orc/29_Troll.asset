@@ -13,30 +13,39 @@ MonoBehaviour:
   m_Name: 29_Troll
   m_EditorClassIdentifier: HordeLab.Runtime::HordeLab.UnitBalance
   unitType: 29
-  maxHp: 160
-  damage: 16
+  maxHp:
+    star1: 160
+    star2: 224
+    star3: 288
+    star4: 352
+  damage:
+    star1: 16
+    star2: 22.4
+    star3: 28.8
+    star4: 35.2
+  costPop:
+    star1: 8
+    star2: 12
+    star3: 16
+    star4: 20
+  costFood:
+    star1: 14
+    star2: 21
+    star3: 28
+    star4: 35
+  costWood:
+    star1: 0
+    star2: 0
+    star3: 0
+    star4: 0
+  costGold:
+    star1: 0
+    star2: 0
+    star3: 0
+    star4: 0
   cooldown: 1.8
   range: 1.3
   speed: 2.2
-  costPop: 8
-  costFood: 14
-  costWood: 0
-  costGold: 0
   callTime: 16
-  hpPerStar:
-    star1: 1
-    star2: 1.4
-    star3: 1.8
-    star4: 2.2
-  damagePerStar:
-    star1: 1
-    star2: 1.4
-    star3: 1.8
-    star4: 2.2
-  costPerStar:
-    star1: 1
-    star2: 1.5
-    star3: 2
-    star4: 2.5
   minWave: 7
   waveWeight: 1

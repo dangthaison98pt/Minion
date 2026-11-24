@@ -13,30 +13,39 @@ MonoBehaviour:
   m_Name: 11_HeavyCrossbow
   m_EditorClassIdentifier: HordeLab.Runtime::HordeLab.UnitBalance
   unitType: 11
-  maxHp: 24
-  damage: 18
+  maxHp:
+    star1: 24
+    star2: 34
+    star3: 43
+    star4: 53
+  damage:
+    star1: 18
+    star2: 25.2
+    star3: 32.4
+    star4: 39.6
+  costPop:
+    star1: 5
+    star2: 7.5
+    star3: 10
+    star4: 12.5
+  costFood:
+    star1: 0
+    star2: 0
+    star3: 0
+    star4: 0
+  costWood:
+    star1: 5
+    star2: 7.5
+    star3: 10
+    star4: 12.5
+  costGold:
+    star1: 4
+    star2: 6
+    star3: 8
+    star4: 10
   cooldown: 3.6
   range: 22
   speed: 2.6
-  costPop: 5
-  costFood: 0
-  costWood: 5
-  costGold: 4
   callTime: 11
-  hpPerStar:
-    star1: 1
-    star2: 1.4
-    star3: 1.8
-    star4: 2.2
-  damagePerStar:
-    star1: 1
-    star2: 1.4
-    star3: 1.8
-    star4: 2.2
-  costPerStar:
-    star1: 1
-    star2: 1.5
-    star3: 2
-    star4: 2.5
   minWave: 1
   waveWeight: 3

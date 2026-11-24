@@ -27,7 +27,7 @@ namespace HordeLab.EditorTools
             for (int t = 0; t < unitDefs.Length; t++)
             {
                 if (unitDefs[t] == null) continue;
-                if (units.TryGetValue(t, out var have)) { if (have.FillMissingStars(unitDefs[t])) { EditorUtility.SetDirty(have); created++; } continue; }
+                if (units.ContainsKey(t)) continue;
                 int fi = Faction.Of(t);
                 string group = t >= UnitType.FirstGiant ? "Bosses & Legendary" : fi >= 0 ? $"{fi}_{Safe(factionDefs[fi].name)}" : "Special";
                 string dir = $"{Root}/Units/{group}";
@@ -45,7 +45,7 @@ namespace HordeLab.EditorTools
             for (int id = 0; id < B.Barracks; id++)
             {
                 if (buildingDefs[id] == null) continue;
-                if (buildings.TryGetValue(id, out var haveB)) { if (haveB.FillMissingStars(buildingDefs[id])) { EditorUtility.SetDirty(haveB); created++; } continue; }
+                if (buildings.ContainsKey(id)) continue;
                 var a = ScriptableObject.CreateInstance<BuildingBalance>();
                 a.CopyFrom(buildingDefs[id]);
                 AssetDatabase.CreateAsset(a, $"{Root}/Buildings/{id:00}_{Safe(buildingDefs[id].name)}.asset");

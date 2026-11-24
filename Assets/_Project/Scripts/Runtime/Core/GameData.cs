@@ -143,6 +143,7 @@ namespace HordeLab
         public float[] starHp = (float[])Tuning.StarTroopPower.Clone();
         public float[] starDamage = (float[])Tuning.StarTroopPower.Clone();
         public float[] starCost = (float[])Tuning.StarTroopCost.Clone();
+        public Res[] costAt;               // chi phí gọi theo từng mốc sao (từ asset); null = cost x starCost
     }
 
     public enum Cat { Food, Wood, Gold, Pop, BuffEco, BuffMil, Barracks, Expand }

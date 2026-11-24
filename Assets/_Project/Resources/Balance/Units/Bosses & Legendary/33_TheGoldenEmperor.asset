@@ -13,30 +13,39 @@ MonoBehaviour:
   m_Name: 33_TheGoldenEmperor
   m_EditorClassIdentifier: HordeLab.Runtime::HordeLab.UnitBalance
   unitType: 33
-  maxHp: 1400
-  damage: 30
+  maxHp:
+    star1: 1400
+    star2: 1960
+    star3: 2520
+    star4: 3080
+  damage:
+    star1: 30
+    star2: 42
+    star3: 54
+    star4: 66
+  costPop:
+    star1: 0
+    star2: 0
+    star3: 0
+    star4: 0
+  costFood:
+    star1: 0
+    star2: 0
+    star3: 0
+    star4: 0
+  costWood:
+    star1: 0
+    star2: 0
+    star3: 0
+    star4: 0
+  costGold:
+    star1: 0
+    star2: 0
+    star3: 0
+    star4: 0
   cooldown: 1.6
   range: 1.2
   speed: 2.6
-  costPop: 0
-  costFood: 0
-  costWood: 0
-  costGold: 0
   callTime: 0
-  hpPerStar:
-    star1: 1
-    star2: 1.4
-    star3: 1.8
-    star4: 2.2
-  damagePerStar:
-    star1: 1
-    star2: 1.4
-    star3: 1.8
-    star4: 2.2
-  costPerStar:
-    star1: 1
-    star2: 1.5
-    star3: 2
-    star4: 2.5
   minWave: 99
   waveWeight: 0

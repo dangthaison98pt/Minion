@@ -3,46 +3,42 @@ using UnityEngine;
 namespace HordeLab
 {
     /// <summary>
-    /// Số liệu nhà tài nguyên / nhà buff (GD điền): chu kỳ, sản lượng 1 sao và hệ số nâng cấp theo sao.
-    /// Tên, mô tả và hiệu ứng riêng từng nhà nằm trong code. Nhà lính lấy số liệu từ UnitBalance của loại quân.
+    /// Số liệu nhà tài nguyên / nhà buff (GD điền): chu kỳ, sản lượng ở từng mốc sao, độ mạnh buff theo sao.
+    /// Tên, mô tả và hiệu ứng riêng từng nhà (ví dụ +15% mỗi Wheat Field kề nhau, +50% của Windmill) nằm trong code.
+    /// Nhà lính lấy số liệu từ UnitBalance của loại quân.
     /// </summary>
     [CreateAssetMenu(menuName = "Fantasy World War/Building", fileName = "Building")]
     public class BuildingBalance : ScriptableObject
     {
         [HideInInspector] public int building = -1;    // mã công trình trong code (B.*)
 
-        [Header("Sản xuất (1 sao)")]
         [Tooltip("Giây mỗi chu kỳ sản xuất (0 = nhà buff, không tự sản xuất).")]
         [Min(0f)] public float period;
-        [Tooltip("Sản lượng mỗi chu kỳ khi 1 sao.")]
-        [Min(0f)] public float amount;
 
-        [Header("Nâng cấp theo sao (nhân với số 1 sao)")]
-        [Tooltip("Nhà tài nguyên: hệ số sản lượng khi 1 / 2 / 3 / 4 sao (Market: cả Vàng trả lẫn tài nguyên nhận).")]
-        public StarValues yieldPerStar = new StarValues(1f, 2f, 4f, 8f);
-        [Tooltip("Nhà buff: hệ số độ mạnh buff khi 1 / 2 / 3 / 4 sao.")]
-        public StarValues buffPerStar = new StarValues(1f, 1.5f, 2f, 2.5f);
+        [Header("Theo sao: 1★ 2★ 3★ 4★")]
+        [Tooltip("Nhà tài nguyên: sản lượng mỗi chu kỳ ở từng mốc sao (Market: số Vàng đổi = số tài nguyên nhận).")]
+        public StarValues amount;
+        [Tooltip("Nhà buff: hệ số độ mạnh buff (1 = đúng mức ghi trong mô tả, 2 = gấp đôi).")]
+        public StarValues buffPower;
 
         public void ApplyTo(BuildingDef b)
         {
             if (b == null) return;
-            b.period = period; b.amount = amount;
-            if (!yieldPerStar.IsEmpty) yieldPerStar.CopyTo(b.starYield);
-            if (!buffPerStar.IsEmpty) buffPerStar.CopyTo(b.starBuff);
+            b.period = period;
+            if (!amount.IsEmpty)
+            {
+                b.amount = amount.star1;
+                if (amount.star1 > 0f) for (int i = 0; i < 4; i++) b.starYield[i] = amount[i] / amount.star1;
+            }
+            if (!buffPower.IsEmpty) buffPower.CopyTo(b.starBuff);
         }
 
+        /// <summary>Điền số tạm từ code: 1★ = số gốc, các mốc sao khác theo tỉ lệ đang dùng.</summary>
         public void CopyFrom(BuildingDef b)
         {
-            building = b.id; period = b.period; amount = b.amount;
-            yieldPerStar = new StarValues(b.starYield); buffPerStar = new StarValues(b.starBuff);
-        }
-
-        public bool FillMissingStars(BuildingDef b)
-        {
-            bool changed = false;
-            if (yieldPerStar.IsEmpty) { yieldPerStar = new StarValues(b.starYield); changed = true; }
-            if (buffPerStar.IsEmpty) { buffPerStar = new StarValues(b.starBuff); changed = true; }
-            return changed;
+            building = b.id; period = b.period;
+            amount = StarValues.Scaled(b.amount, b.starYield);
+            buffPower = new StarValues(b.starBuff);
         }
     }
 }

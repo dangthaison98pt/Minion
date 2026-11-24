@@ -13,30 +13,39 @@ MonoBehaviour:
   m_Name: 27_BoarRider
   m_EditorClassIdentifier: HordeLab.Runtime::HordeLab.UnitBalance
   unitType: 27
-  maxHp: 90
-  damage: 10
+  maxHp:
+    star1: 90
+    star2: 126
+    star3: 162
+    star4: 198
+  damage:
+    star1: 10
+    star2: 14
+    star3: 18
+    star4: 22
+  costPop:
+    star1: 6
+    star2: 9
+    star3: 12
+    star4: 15
+  costFood:
+    star1: 9
+    star2: 13.5
+    star3: 18
+    star4: 22.5
+  costWood:
+    star1: 0
+    star2: 0
+    star3: 0
+    star4: 0
+  costGold:
+    star1: 0
+    star2: 0
+    star3: 0
+    star4: 0
   cooldown: 1.1
   range: 1.2
   speed: 4.6
-  costPop: 6
-  costFood: 9
-  costWood: 0
-  costGold: 0
   callTime: 12
-  hpPerStar:
-    star1: 1
-    star2: 1.4
-    star3: 1.8
-    star4: 2.2
-  damagePerStar:
-    star1: 1
-    star2: 1.4
-    star3: 1.8
-    star4: 2.2
-  costPerStar:
-    star1: 1
-    star2: 1.5
-    star3: 2
-    star4: 2.5
   minWave: 3
   waveWeight: 1.5

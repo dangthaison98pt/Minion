@@ -13,30 +13,39 @@ MonoBehaviour:
   m_Name: 03_Monk
   m_EditorClassIdentifier: HordeLab.Runtime::HordeLab.UnitBalance
   unitType: 3
-  maxHp: 20
-  damage: 2
+  maxHp:
+    star1: 20
+    star2: 28
+    star3: 36
+    star4: 44
+  damage:
+    star1: 2
+    star2: 2.8
+    star3: 3.6
+    star4: 4.4
+  costPop:
+    star1: 5
+    star2: 7.5
+    star3: 10
+    star4: 12.5
+  costFood:
+    star1: 0
+    star2: 0
+    star3: 0
+    star4: 0
+  costWood:
+    star1: 0
+    star2: 0
+    star3: 0
+    star4: 0
+  costGold:
+    star1: 5
+    star2: 7.5
+    star3: 10
+    star4: 12.5
   cooldown: 2
   range: 7
   speed: 2.8
-  costPop: 5
-  costFood: 0
-  costWood: 0
-  costGold: 5
   callTime: 14
-  hpPerStar:
-    star1: 1
-    star2: 1.4
-    star3: 1.8
-    star4: 2.2
-  damagePerStar:
-    star1: 1
-    star2: 1.4
-    star3: 1.8
-    star4: 2.2
-  costPerStar:
-    star1: 1
-    star2: 1.5
-    star3: 2
-    star4: 2.5
   minWave: 5
   waveWeight: 1

@@ -13,30 +13,39 @@ MonoBehaviour:
   m_Name: 24_Screamer
   m_EditorClassIdentifier: HordeLab.Runtime::HordeLab.UnitBalance
   unitType: 24
-  maxHp: 36
-  damage: 9
+  maxHp:
+    star1: 36
+    star2: 50
+    star3: 65
+    star4: 79
+  damage:
+    star1: 9
+    star2: 12.6
+    star3: 16.2
+    star4: 19.8
+  costPop:
+    star1: 9
+    star2: 13.5
+    star3: 18
+    star4: 22.5
+  costFood:
+    star1: 0
+    star2: 0
+    star3: 0
+    star4: 0
+  costWood:
+    star1: 0
+    star2: 0
+    star3: 0
+    star4: 0
+  costGold:
+    star1: 0
+    star2: 0
+    star3: 0
+    star4: 0
   cooldown: 3
   range: 7
   speed: 2.4
-  costPop: 9
-  costFood: 0
-  costWood: 0
-  costGold: 0
   callTime: 16
-  hpPerStar:
-    star1: 1
-    star2: 1.4
-    star3: 1.8
-    star4: 2.2
-  damagePerStar:
-    star1: 1
-    star2: 1.4
-    star3: 1.8
-    star4: 2.2
-  costPerStar:
-    star1: 1
-    star2: 1.5
-    star3: 2
-    star4: 2.5
   minWave: 7
   waveWeight: 1

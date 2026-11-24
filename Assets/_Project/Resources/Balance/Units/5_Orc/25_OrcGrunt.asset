@@ -13,30 +13,39 @@ MonoBehaviour:
   m_Name: 25_OrcGrunt
   m_EditorClassIdentifier: HordeLab.Runtime::HordeLab.UnitBalance
   unitType: 25
-  maxHp: 52
-  damage: 8
+  maxHp:
+    star1: 52
+    star2: 73
+    star3: 94
+    star4: 114
+  damage:
+    star1: 8
+    star2: 11.2
+    star3: 14.4
+    star4: 17.6
+  costPop:
+    star1: 5
+    star2: 7.5
+    star3: 10
+    star4: 12.5
+  costFood:
+    star1: 6
+    star2: 9
+    star3: 12
+    star4: 15
+  costWood:
+    star1: 0
+    star2: 0
+    star3: 0
+    star4: 0
+  costGold:
+    star1: 0
+    star2: 0
+    star3: 0
+    star4: 0
   cooldown: 1
   range: 1
   speed: 3
-  costPop: 5
-  costFood: 6
-  costWood: 0
-  costGold: 0
   callTime: 8
-  hpPerStar:
-    star1: 1
-    star2: 1.4
-    star3: 1.8
-    star4: 2.2
-  damagePerStar:
-    star1: 1
-    star2: 1.4
-    star3: 1.8
-    star4: 2.2
-  costPerStar:
-    star1: 1
-    star2: 1.5
-    star3: 2
-    star4: 2.5
   minWave: 1
   waveWeight: 5

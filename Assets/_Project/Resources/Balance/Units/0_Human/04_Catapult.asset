@@ -13,30 +13,39 @@ MonoBehaviour:
   m_Name: 04_Catapult
   m_EditorClassIdentifier: HordeLab.Runtime::HordeLab.UnitBalance
   unitType: 4
-  maxHp: 60
-  damage: 12
+  maxHp:
+    star1: 60
+    star2: 84
+    star3: 108
+    star4: 132
+  damage:
+    star1: 12
+    star2: 16.8
+    star3: 21.6
+    star4: 26.4
+  costPop:
+    star1: 8
+    star2: 12
+    star3: 16
+    star4: 20
+  costFood:
+    star1: 0
+    star2: 0
+    star3: 0
+    star4: 0
+  costWood:
+    star1: 14
+    star2: 21
+    star3: 28
+    star4: 35
+  costGold:
+    star1: 12
+    star2: 18
+    star3: 24
+    star4: 30
   cooldown: 7
   range: 34
   speed: 1.6
-  costPop: 8
-  costFood: 0
-  costWood: 14
-  costGold: 12
   callTime: 36
-  hpPerStar:
-    star1: 1
-    star2: 1.4
-    star3: 1.8
-    star4: 2.2
-  damagePerStar:
-    star1: 1
-    star2: 1.4
-    star3: 1.8
-    star4: 2.2
-  costPerStar:
-    star1: 1
-    star2: 1.5
-    star3: 2
-    star4: 2.5
   minWave: 7
   waveWeight: 0.5
