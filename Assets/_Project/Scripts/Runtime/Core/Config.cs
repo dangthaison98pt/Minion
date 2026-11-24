@@ -47,7 +47,8 @@ namespace HordeLab
         public const int Units = 0, Arrows = 1, Particles = 2, Stamps = 3;
         // Đếm số lần lõi chuyên quân ra tay (công cụ kiểm tra đọc; xoá mỗi khi dọn sân)
         public const int LeaderSkill = 10, CcHits = 11, Revives = 12, Splits = 13, PierceHits = 14, Counters = 15;
-        public const int Dead0 = 4, Dead1 = 5, Breach = 6;   // Dead0 = quân ta tử trận, Dead1 = quân địch bị diệt, Breach = số đòn địch đã đánh trúng tường thành
+        public const int Dead0 = 4, Dead1 = 5, Breach = 6;
+        public const int Decrees = 7;                        // số lần Hoàng đế vàng ban Chiếu chỉ   // Dead0 = quân ta tử trận, Dead1 = quân địch bị diệt, Breach = số đòn địch đã đánh trúng tường thành
         public const int Team0 = 8, Team1 = 9;               // số lính còn sống mỗi phe
         public const int Type0 = 16;                         // 16.. : số lượng mỗi loại lính
         public const int Length = Type0 + UnitType.Count;
@@ -59,7 +60,7 @@ namespace HordeLab
         public const int Human = 0, Elf = 1, Dwarf = 2, Beast = 3, Void = 4;
         public const int Count = 5;
         /// <summary>Phe của một loại quân; -1 = quân trung lập (Rồng của lõi Dragon's Pact).</summary>
-        public static int Of(int unitType) => unitType == UnitType.Voidling ? Void : unitType == UnitType.Dragon ? -1 : unitType / 5;
+        public static int Of(int unitType) => unitType == UnitType.Voidling ? Void : unitType >= UnitType.FirstGiant ? -1 : unitType / 5;
     }
 
     public static class UnitType
@@ -76,8 +77,14 @@ namespace HordeLab
         public const int Aberration = 20, Shade = 21, Eye = 22, Summoner = 23, Screamer = 24;
         public const int Voidling = 25;      // quân con do Kẻ triệu hồi sinh ra, không có nhà lính
         public const int Dragon = 26;        // rồng của lõi Dragon's Pact, không có nhà lính, không thuộc phe nào
+        public const int Emperor = 27;       // Hoàng đế vàng của lõi bí mật The Golden Emperor (phe Người), không có nhà lính
         public const int Buildable = 25;
-        public const int Count = 27;
+        public const int Count = 28;
+
+        // Quân khổng lồ (32x32) nằm ở CUỐI bảng, từ Dragon trở đi: mỗi con chiếm 8 hàng atlas 16px thay vì 2
+        public const int FirstGiant = Dragon, GiantCount = Count - FirstGiant;
+        /// <summary>Hàng atlas (ô 16px) bắt đầu khung hình của quân khổng lồ <paramref name="t"/>.</summary>
+        public static int GiantRow(int t) => t * 2 + 6 * (t - FirstGiant);
     }
 
     /// <summary>Cách tấn công của một loại quân.</summary>
@@ -97,7 +104,7 @@ namespace HordeLab
         public const int Big = 8;        // sprite 16x16
         public const int HealAura = 16;  // hồi máu đồng đội đứng gần
         public const int PowerAura = 32; // tăng sát thương đồng đội đứng gần
-        public const int Giant = 64;     // sprite 32x32, chiếm 2x2 ô atlas (chỉ loại quân CUỐI bảng mới được dùng: xem PixelArt.UnitRows)
+        public const int Giant = 64;     // sprite 32x32, chiếm 2x2 ô atlas (chỉ các loại quân CUỐI bảng, từ UnitType.FirstGiant)
     }
 
     /// <summary>Hình dạng viên đạn (hàng trong texture đạn).</summary>

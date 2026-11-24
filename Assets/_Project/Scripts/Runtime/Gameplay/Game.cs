@@ -16,6 +16,8 @@ namespace HordeLab
         public int[] handStars;                          // bản lưu cũ không có → coi như 1 sao
         public int[] augments, augChoices;               // lõi đã có + 3 lõi đang chờ chọn (pha Augment)
         public bool[] augRerolled;                       // ô lõi nào đã dùng lượt đổi
+        public int flawless;                             // số đợt liên tiếp giữ thành không mất máu (mở khoá The Golden Emperor)
+        public bool emperorUnlocked, emperorPending;
         public bool[] shopLocked;
         public string eventNote;
         public bool lastWon;
@@ -62,7 +64,12 @@ namespace HordeLab
         int rollsThisPrep;               // số lần roll trong lần chuẩn bị này (Lucky Dice: lần đầu miễn phí)
 
         // ---- Lõi huyền thoại trong trận ----
-        float dragonT, meteorT, ballistaT, mercT;
+        float dragonT, meteorT, ballistaT, mercT, emperorT;
+        bool emperorCalled;              // Hoàng đế đã ra trận trong đợt này (chết thì chờ đợt sau)
+        // ---- Lõi bí mật The Golden Emperor (phe Người) ----
+        public int flawless;             // số đợt liên tiếp giữ thành không mất máu
+        public bool emperorUnlocked;     // đã đạt điều kiện ẩn: từ giờ lõi này có thể ra khi chọn lõi
+        public bool emperorPending;      // lần chọn lõi kế tiếp chắc chắn có lõi này
         int castleBonus;                 // Last Stand: máu thành được hồi thêm trong đợt này
         public bool lastStandUsed;
         /// <summary>Đếm số lần lõi huyền thoại ra tay trong đợt (công cụ kiểm tra đọc).</summary>
@@ -172,7 +179,8 @@ namespace HordeLab
                 hostile = hostile.ToArray(), hand = hand.ToArray(), handStars = handStars.ToArray(), shop = (int[])shop.Clone(), reward = (int[])reward.Clone(),
                 shopLocked = (bool[])shopLocked.Clone(), eventNote = eventNote, lastWon = lastWon, lastWave = lastWave, lastCrystals = lastCrystals, lastInterest = lastInterest, lastWinBonus = lastWinBonus,
                 pop = city.res.pop, food = city.res.food, wood = city.res.wood, gold = city.res.gold,
-                augments = city.augments.ToArray(), augChoices = (int[])augChoices.Clone(), augRerolled = (bool[])augRerolled.Clone()
+                augments = city.augments.ToArray(), augChoices = (int[])augChoices.Clone(), augRerolled = (bool[])augRerolled.Clone(),
+                flawless = flawless, emperorUnlocked = emperorUnlocked, emperorPending = emperorPending
             };
             int n = city.cells.Count, k = 0;
             d.cellX = new int[n]; d.cellY = new int[n]; d.cellDef = new int[n]; d.cellStars = new int[n];
@@ -216,6 +224,7 @@ namespace HordeLab
             d.reward.CopyTo(reward, 0);
             System.Array.Clear(shopLocked, 0, shopLocked.Length);
             if (d.shopLocked != null) for (int i = 0; i < Mathf.Min(d.shopLocked.Length, shopLocked.Length); i++) shopLocked[i] = d.shopLocked[i];
+            flawless = d.flawless; emperorUnlocked = d.emperorUnlocked; emperorPending = d.emperorPending;
             eventNote = d.eventNote; lastWon = d.lastWon; lastWave = d.lastWave; lastCrystals = d.lastCrystals; lastInterest = d.lastInterest; lastWinBonus = d.lastWinBonus;
 
             city.Init(faction);
@@ -254,6 +263,7 @@ namespace HordeLab
             crystals = Tuning.StartCrystals;
             rollsThisPrep = 0;
             eventNote = null;
+            flawless = 0; emperorUnlocked = emperorPending = false;
             city.Init(faction);
 
             // 3 phe thù địch, không bao giờ có phe của người chơi
@@ -501,6 +511,7 @@ namespace HordeLab
             castleHp = MaxCastleHp;
             castleBonus = 0; lastStandUsed = false;
             dragonT = Aug.DragonDelay; meteorT = 3f; ballistaT = 1f; mercT = 6f;
+            emperorT = Aug.EmperorDelay; emperorCalled = false;
             dragonsCalled = meteorsFired = boltsFired = mercSquads = lastStands = 0;
             if (Has(Aug.Stockpile)) city.res = new Res(city.res.pop + Aug.StockpileRes, city.res.food + Aug.StockpileRes, city.res.wood + Aug.StockpileRes, city.res.gold + Aug.StockpileRes);
             endedAt = -1f;
@@ -595,6 +606,9 @@ namespace HordeLab
             lastWon = won;
             lastWave = wave;
             if (!won) hearts--;
+            // Lõi bí mật The Golden Emperor: phe Người giữ thành không mất máu đủ N đợt liên tiếp
+            flawless = won && battle.Counter(C.Breach) == 0 ? flawless + 1 : 0;
+            if (faction == Faction.Human && !emperorUnlocked && flawless >= Aug.EmperorStreak) emperorUnlocked = emperorPending = true;
             if (hearts <= 0) { phase = Phase.Lost; DeleteSave(); return; }
             if (wave >= Tuning.Waves) { phase = Phase.Won; DeleteSave(); return; }
 
@@ -640,6 +654,13 @@ namespace HordeLab
                 battle.SpawnSquad(UnitType.Dragon, 0, new float2(Cfg.PlayerSpawnX + 1f, rng.NextFloat(-6f, 6f)), 1, power, power);   // SpawnSquad tự chờ job xong
                 dragonsCalled++;
                 dragonT = Aug.DragonRespawn;
+            }
+
+            // Hoàng đế vàng: chỉ 1 con, mỗi đợt ra trận 1 lần (chết thì chờ đợt sau, không hồi sinh giữa trận như rồng)
+            if (Has(Aug.Emperor) && !emperorCalled && (emperorT -= dt) <= 0f)
+            {
+                battle.SpawnSquad(UnitType.Emperor, 0, new float2(Cfg.PlayerSpawnX + 1f, 0f), 1, power, power);
+                emperorCalled = true;
             }
 
             if (Has(Aug.Meteor) && (meteorT -= dt) <= 0f && battle.PickEnemy(0, false, out var target))
@@ -690,6 +711,12 @@ namespace HordeLab
             if (general.Count + unit.Count < augChoices.Length) return false;
             System.Array.Clear(augRerolled, 0, augRerolled.Length);
             for (int i = 0; i < augChoices.Length; i++) augChoices[i] = DrawAugment(i, general, unit);
+            // vừa mở khoá The Golden Emperor: lần chọn này chắc chắn có, nằm ô giữa
+            if (emperorPending && !Has(Aug.Emperor))
+            {
+                if (System.Array.IndexOf(augChoices, Aug.Emperor) < 0) augChoices[augChoices.Length / 2] = Aug.Emperor;
+                emperorPending = false;
+            }
             return true;
         }
 
@@ -704,6 +731,7 @@ namespace HordeLab
             {
                 if (Has(a)) continue;
                 if (skipSlot >= 0 && System.Array.IndexOf(augChoices, a) >= 0) continue;   // đổi 1 ô: không ra trùng 3 ô đang hiện
+                if (a == Aug.Emperor && (faction != Faction.Human || !emperorUnlocked)) continue;   // lõi bí mật: chưa mở khoá thì không bao giờ ra
                 var d = GameData.Augments[a];
                 if (d.unit < 0) general.Add(a);
                 else if (owned.Contains(d.unit)) unit.Add(a);

@@ -585,6 +585,69 @@ namespace HordeLab
     [BurstCompile(CompileSynchronously = true)]
     struct ResolveJob : IJob
     {
+        /// <summary>
+        /// Hoàng đế vàng (lõi The Golden Emperor). Hào quang: quân ta quanh mình hồi máu, địch quanh mình mất máu liên tục.
+        /// Chiếu chỉ (hồi chiêu riêng, dùng skillT): sóng vàng gây sát thương + choáng địch, hồi máu theo % cho quân ta.
+        /// </summary>
+        void Emperor(int i, int n, ref Random rng)
+        {
+            Unit e = units[i];
+            bool decree = e.skillT <= 0f;
+            float r = decree ? math.max(Aug.EmperorAura, Aug.DecreeRadius) : Aug.EmperorAura;
+            float aura2 = Aug.EmperorAura * Aug.EmperorAura, decree2 = Aug.DecreeRadius * Aug.DecreeRadius;
+            int cr = (int)math.ceil(r / Cfg.CellSize), cx = Cfg.CellX(e.pos.x), cy = Cfg.CellY(e.pos.y);
+            int foes = 0;
+            for (int pass = 0; pass < 2; pass++)
+            {
+                // lượt 1: hào quang + đếm địch trong tầm Chiếu chỉ; lượt 2 (chỉ khi ban Chiếu chỉ): hồi máu quân ta theo %
+                if (pass == 1 && !(decree && foes > 0)) break;
+                for (int y = math.max(cy - cr, 0); y <= math.min(cy + cr, Cfg.GridH - 1); y++)
+                    for (int x = math.max(cx - cr, 0); x <= math.min(cx + cr, Cfg.GridW - 1); x++)
+                    {
+                        int c = y * Cfg.GridW + x;
+                        for (int k = cellStart[c]; k < cellStart[c + 1]; k++)
+                        {
+                            int j = sortedIndex[k];
+                            if (j >= n || j == i) continue;
+                            Unit u = units[j];
+                            if (u.hp <= 0f) continue;
+                            float d2 = math.lengthsq(u.pos - e.pos);
+                            if (pass == 0)
+                            {
+                                if (u.team != e.team && d2 <= decree2) foes++;
+                                if (d2 > aura2) continue;
+                                if (u.team == e.team) u.hp = math.min(u.maxHp, u.hp + Aug.EmperorAuraHeal * dt);
+                                else u.hp -= Aug.EmperorAuraDps * e.dmgMul * dt;
+                            }
+                            else
+                            {
+                                if (u.team != e.team || d2 > decree2) continue;
+                                u.hp = math.min(u.maxHp, u.hp + u.maxHp * Aug.DecreeHeal);
+                            }
+                            units[j] = u;
+                        }
+                    }
+            }
+            // ánh vàng lấp lánh quanh hào quang
+            if (rng.NextFloat() < dt * 8f)
+            {
+                float ang = rng.NextFloat(0f, 6.2831853f), rad = rng.NextFloat(0.5f, Aug.EmperorAura);
+                Fx.Spray(particles, counters, ref rng, e.pos + new float2(math.cos(ang), math.sin(ang)) * rad, 0.2f, 1, PKind.Holy, 0.6f, 2.5f);
+            }
+            if (decree && foes > 0)
+            {
+                Fx.Splash(units, cellStart, sortedIndex, n, e.pos, Aug.DecreeRadius, 1 - e.team, Aug.DecreeDamage * e.dmgMul, 0f);
+                counters[C.CcHits] += Cc.Area(units, cellStart, sortedIndex, n, e.pos, Aug.DecreeRadius, 1 - e.team, CC.Stun, Aug.DecreeStun);
+                Fx.Ring(particles, counters, e.pos, Aug.DecreeRadius * 0.5f, 20, PKind.Holy);
+                Fx.Ring(particles, counters, e.pos, Aug.DecreeRadius, 28, PKind.Holy);
+                Fx.Spray(particles, counters, ref rng, e.pos, 1.2f, 14, PKind.Spark, 3f, 7f);
+                e = units[i];
+                e.skillT = Aug.DecreeEvery;
+                units[i] = e;
+                counters[C.Decrees]++;
+            }
+        }
+
         public NativeArray<Unit> units;
         [ReadOnly] public NativeArray<UnitStats> stats;
         [ReadOnly] public NativeArray<int> attackTarget;
@@ -596,11 +659,14 @@ namespace HordeLab
         public NativeArray<int> counters;
         public uint seed;
         public int summonCount;
+        public float dt;
 
         public void Execute()
         {
             var rng = new Random(seed);
             int n = counters[C.Units];
+            for (int i = 0; i < n; i++)
+                if (units[i].type == UnitType.Emperor && units[i].hp > 0f) Emperor(i, n, ref rng);
             for (int i = 0; i < n; i++)
             {
                 int t = attackTarget[i];
@@ -1277,7 +1343,7 @@ namespace HordeLab
             if ((stats[u.type].flags & UFlag.Giant) != 0)
             {
                 // quân khổng lồ 32x32: mỗi khung chiếm 2x2 ô, 2 khung / 2 hàng atlas, mỗi trạng thái 4 hàng
-                int grow = u.type * 2 + u.state * 4 + (frame >> 1) * 2;
+                int grow = UnitType.GiantRow(u.type) + u.state * 4 + (frame >> 1) * 2;
                 gpu[i] = new float4(u.pos, grow * 4 + (frame & 1) * 2, flags | 8);
             }
             else gpu[i] = new float4(u.pos, (u.type * 2 + u.state) * 4 + frame, flags);

@@ -183,7 +183,15 @@ namespace HordeLab
         // Chuyên quân: 25 lõi, mã = UnitBase + loại quân
         public const int UnitBase = 24;
         public static int ForUnit(int unitType) => unitType < UnitType.Buildable ? UnitBase + unitType : -1;
-        public const int Count = UnitBase + UnitType.Buildable;
+        // Bí mật (easter egg): không bao giờ ra theo kiểu thường, phải mở khoá bằng điều kiện ẩn trong ván
+        public const int Emperor = UnitBase + UnitType.Buildable;
+        public const int Count = Emperor + 1;
+
+        // The Golden Emperor (phe Người): giữ thành không mất máu đủ 5 đợt liên tiếp thì lần chọn lõi kế tiếp chắc chắn có
+        public const int EmperorStreak = 5;
+        public const float EmperorDelay = 3f;                                   // vào trận sau 3 giây; chết thì chờ đợt sau
+        public const float EmperorAura = 4.5f, EmperorAuraHeal = 1f, EmperorAuraDps = 3f;   // hào quang: quân ta hồi 1 máu/s, địch mất 3 máu/s (nhân theo đợt)
+        public const float DecreeEvery = 12f, DecreeRadius = 5.5f, DecreeDamage = 40f, DecreeStun = 1.5f, DecreeHeal = 0.25f;
 
         // Số liệu lõi chuyên quân (số tạm)
         public const float ShieldWallResist = 0.4f;
@@ -280,6 +288,12 @@ namespace HordeLab
             A(Aug.Ballista, AugCat.Legendary, "Ballista Towers", "Your walls fire heavy bolts at the closest enemy, about once a second.");
             A(Aug.Mercenary, AugCat.Legendary, "Mercenary Camp", $"Every {Aug.MercEvery:0}s a squad of {Aug.MercSide * Aug.MercSide} mercenaries from a random other faction joins you.");
             A(Aug.LastStand, AugCat.Legendary, "Last Stand", $"Once per wave, when the castle would fall it recovers {pct(Aug.LastStandHeal)}% of its HP instead.");
+            var es = Units[UnitType.Emperor].stats;
+            A(Aug.Emperor, AugCat.Legendary, "The Golden Emperor",
+              $"The Emperor himself takes the field every wave: {es.maxHp:0} HP, his greatsword cleaves for {es.damage:0}. " +
+              $"Golden aura: nearby allies regenerate {Aug.EmperorAuraHeal:0} HP/s, nearby enemies burn for {Aug.EmperorAuraDps:0} damage/s. " +
+              $"Every {Aug.DecreeEvery:0}s, Imperial Decree: a golden shockwave deals {Aug.DecreeDamage:0} damage, stuns enemies for {Aug.DecreeStun:0.#}s " +
+              $"and heals allies for {pct(Aug.DecreeHeal)}% of their HP. Grows stronger each wave. There is only one Emperor: if he falls, he returns next wave.");
 
             // ---- Chuyên quân: 1 lõi / loại quân. 👑 = kỹ năng của trưởng đạo ----
             void SU(int t, bool lead, string name, string desc)
@@ -341,6 +355,7 @@ namespace HordeLab
             V(Aug.Ballista, "1/s", "Walls fire heavy bolts");
             V(Aug.Mercenary, $"x{Aug.MercSide * Aug.MercSide}", $"Mercenaries every {Aug.MercEvery:0}s");
             V(Aug.LastStand, $"{pct(Aug.LastStandHeal)}%", "Castle heals once when it would fall");
+            V(Aug.Emperor, $"{Units[UnitType.Emperor].stats.maxHp:0} HP", "The Emperor marches to war");
             void VU(int t, string big, string line) => V(Aug.ForUnit(t), big, line);
             VU(UnitType.Swordsman, $"-{pct(Aug.ShieldWallResist)}%", "Arrow damage taken");
             VU(UnitType.Archer, $"x{Aug.VolleyArrows}", "Leader fires an arrow volley");
@@ -438,6 +453,10 @@ namespace HordeLab
             s = S(900, 24, 2.0f, 8f, 3.4f, Mode.Blast, UFlag.Big | UFlag.Giant, 0, PKind.Fire, 8f); s.splash = 3.2f;   // đi bộ: chiếm chỗ, chặn đường
             s.arrowResist = 0.8f;                                                                                       // vảy rồng: tên / nỏ / lao chỉ còn 20% sát thương
             u[UnitType.Dragon] = U("", "Dragon", "Legendary ally (fire breath)", s, default, 0f, 99, 0f);
+            // Hoàng đế vàng (lõi bí mật The Golden Emperor): khổng lồ giáp vàng, đại kiếm chém quét; hào quang + Chiếu chỉ ở ResolveJob
+            s = S(1400, 30, 1.6f, 1.2f, 2.6f, Mode.Melee, UFlag.Big | UFlag.Giant, 0, PKind.Blood, 7f); s.splash = 2.2f;
+            s.arrowResist = 0.5f; s.knock = 0.6f;                                                                       // giáp vàng: tên / nỏ / lao chỉ còn 50%; đòn chém hất lùi
+            u[UnitType.Emperor] = U("", "The Golden Emperor", "Legendary ally (Human)", s, default, 0f, 99, 0f);
 
             // Đặc trưng phe được nhân sẵn vào bảng chỉ số
             for (int t = 0; t < UnitType.Count; t++)

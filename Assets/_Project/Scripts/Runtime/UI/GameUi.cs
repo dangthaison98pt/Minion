@@ -625,6 +625,7 @@ namespace HordeLab
                 case Aug.Recruit: main = Tiles[B.Barracks + g.faction * 5]; badge = StarFor(2); break;
                 case Aug.Architect: main = Shapes[(int)Shape.Ring]; badge = StatIcons[PixelArt.StatBonus]; break;
                 case Aug.Dragon: main = UnitIcons[UnitType.Dragon]; break;
+                case Aug.Emperor: main = UnitIcons[UnitType.Emperor]; break;
                 case Aug.Meteor: main = MeteorIcon; break;
                 case Aug.Ballista: main = BoltIcon; break;
                 case Aug.Mercenary: main = UnitIcons[UnitType.Axeman]; badge = Crystal; break;
@@ -1466,8 +1467,11 @@ namespace HordeLab
                 augTitle.Set(g.lastWon ? $"<color=#9fe07a>Wave {g.lastWave}: Castle held!</color>" : $"<color=#ff8f8f>Wave {g.lastWave}: Castle fell — 1 heart lost</color>");
                 int left = 0;
                 foreach (int w in Tuning.AugmentWaves) if (w > g.lastWave) left++;
-                augSub.Set($"<color=#ffe69e>Choose an augment</color> — a permanent bonus for this run" +
-                           (left > 0 ? $" <color=#aaaaaa>({left} more later)</color>" : " <color=#aaaaaa>(last one)</color>"));
+                bool secret = System.Array.IndexOf(g.augChoices, Aug.Emperor) >= 0;   // lõi bí mật vừa lộ diện
+                augSub.Set(secret
+                    ? $"<color=#ffd24a>The walls never fell. The Emperor has noticed.</color> <color=#aaaaaa>— a secret augment</color>"
+                    : $"<color=#ffe69e>Choose an augment</color> — a permanent bonus for this run" +
+                      (left > 0 ? $" <color=#aaaaaa>({left} more later)</color>" : " <color=#aaaaaa>(last one)</color>"));
                 for (int i = 0; i < augCards.Length; i++)
                 {
                     var d = GameData.Augments[g.augChoices[i]];

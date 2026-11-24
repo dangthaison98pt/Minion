@@ -64,7 +64,7 @@ namespace HordeLab
             UnitIcons = new Sprite[UnitType.Count];
             for (int t = 0; t < UnitIcons.Length; t++)                                                           // khung đi đầu tiên
                 UnitIcons[t] = (GameData.Units[t].stats.flags & UFlag.Giant) != 0
-                    ? Cell(unitAtlas, 0, t, PixelArt.GiantPx, PixelArt.GiantPx)        // hàng t*2 (ô 16) = hàng t (ô 32)
+                    ? Cell(unitAtlas, 0, UnitType.GiantRow(t) / 2, PixelArt.GiantPx, PixelArt.GiantPx)   // hàng ô 16 → hàng ô 32
                     : Cell(unitAtlas, 0, t * 2, PixelArt.UnitCell, PixelArt.UnitCell);
 
             Shapes = new Sprite[5];

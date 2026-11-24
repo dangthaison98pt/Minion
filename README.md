@@ -103,6 +103,7 @@ class `Aug` và `GameData.BuildAugments()` trong [`GameData.cs`](Assets/_Project
 | Huyền thoại | Ballista Towers | Tường thành bắn mũi nỏ to (đạn `Proj.BigBolt`, đuôi lông đỏ) vào tên địch gần tường nhất (tầm 40), khoảng 1 phát / giây |
 | Huyền thoại | Mercenary Camp | Mỗi 20 giây 1 đội 4×4 lính thuê ngẫu nhiên của phe khác tới giúp |
 | Huyền thoại | Last Stand | Mỗi đợt, lần đầu thành sắp vỡ thì hồi lại 50% máu |
+| Bí mật (phe Người) | The Golden Emperor | Không bao giờ ra theo kiểu thường. Giữ thành **không mất máu 5 đợt liên tiếp** thì lần chọn lõi kế tiếp chắc chắn có (ô giữa), sau đó có thể ra lại. Hoàng đế vàng khổng lồ (`UnitType.Emperor`) ra trận mỗi đợt: hào quang quân ta hồi 1 máu/s, địch mất máu liên tục; mỗi 12s ban **Chiếu chỉ** (sóng vàng gây sát thương, choáng 1,5s, hồi 25% máu quân ta). Chỉ 1 con, chết thì chờ đợt sau. Bot: `-emperor` (có sẵn lõi), `-emperorpick` (coi như vừa mở khoá) |
 
 Sức mạnh rồng, thiên thạch, nỏ và lính thuê nhân theo `Tuning.EnemyPower(đợt)` để không bị tụt hậu về cuối game.
 

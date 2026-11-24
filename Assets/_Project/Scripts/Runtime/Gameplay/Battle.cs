@@ -426,7 +426,7 @@ namespace HordeLab
             h = new ResolveJob
             {
                 units = units, stats = stats, attackTarget = attackTarget, shots = shots, cellStart = cellStart, sortedIndex = sortedIndex,
-                arrows = arrows, particles = particles, counters = counters, seed = rng.NextUInt() | 1u, summonCount = GameData.SummonCount
+                arrows = arrows, particles = particles, counters = counters, seed = rng.NextUInt() | 1u, summonCount = GameData.SummonCount, dt = dt
             }.Schedule(h);
             h = Mark(2, h);
 

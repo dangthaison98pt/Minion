@@ -12,9 +12,9 @@ namespace HordeLab
     public static partial class PixelArt
     {
         // Ô atlas 16x16: lính bộ 10x10 (12x12 tính cả viền) vẽ ở giữa ô, quân to dùng trọn 16x16. 4 khung hình x (26 loại x 2 trạng thái)
-        // Quân khổng lồ (UFlag.Giant, hiện chỉ có Rồng, phải là loại CUỐI bảng): 32x32, 8 hàng atlas thay vì 2
+        // Quân khổng lồ (UFlag.Giant: Rồng, Hoàng đế vàng — nằm CUỐI bảng): 32x32, 8 hàng atlas thay vì 2 (UnitType.GiantRow)
         public const int GiantPx = 32;
-        public const int UnitCell = 16, InfantryPx = 10, UnitCols = 4, UnitRows = UnitType.Count * 2 + 6;
+        public const int UnitCell = 16, InfantryPx = 10, UnitCols = 4, UnitRows = UnitType.Count * 2 + 6 * UnitType.GiantCount;
         public const int StampPx = 20, StampCols = 8, StampRows = 3 + (UnitType.Count * 2 + StampCols - 1) / StampCols;
         public const int ProjW = 24, ProjH = 11;  // mỗi loại đạn 1 hàng 24x11 pixel (đạn thường vẽ 12x3 ở giữa, thiên thạch / nỏ to vẽ to hơn)
 
@@ -81,7 +81,7 @@ namespace HordeLab
         /// <summary>Bản xem cho người: mỗi hàng 1 loại quân, 4 khung đi + 4 khung đánh (atlas thật thì 2 hàng / loại).</summary>
         static Canvas UnitSheet()
         {
-            var sheet = new Canvas(GiantPx * 8, UnitCell * UnitType.Count + GiantPx - UnitCell);
+            var sheet = new Canvas(GiantPx * 8, UnitCell * UnitType.Count + (GiantPx - UnitCell) * UnitType.GiantCount);
             for (int type = 0; type < UnitType.Count; type++)
                 for (int state = 0; state < 2; state++)
                     for (int f = 0; f < 4; f++)
@@ -89,7 +89,8 @@ namespace HordeLab
                         var sprite = DrawUnit(type, state, f);
                         int cell = sprite.W > UnitCell ? GiantPx : UnitCell;          // quân khổng lồ: khung rộng 32
                         int pad = (cell - sprite.W) / 2;
-                        sheet.Blit(sprite, (state * 4 + f) * cell + pad, type * UnitCell + pad);
+                        int extra = type > UnitType.FirstGiant ? (type - UnitType.FirstGiant) * (GiantPx - UnitCell) : 0;   // quân khổng lồ cao 32
+                        sheet.Blit(sprite, (state * 4 + f) * cell + pad, type * UnitCell + extra + pad);
                     }
             return sheet;
         }
@@ -122,8 +123,8 @@ namespace HordeLab
                         var sprite = DrawUnit(type, state, f);
                         if (sprite.W > UnitCell)
                         {
-                            // khổng lồ 32x32: khung f nằm ở cột (f & 1) * 2, hàng type*2 + state*4 + (f >> 1)*2 (khớp PackUnitsJob)
-                            atlas.Blit(sprite, (f & 1) * GiantPx, (type * 2 + state * 4 + (f >> 1) * 2) * UnitCell);
+                            // khổng lồ 32x32: khung f nằm ở cột (f & 1) * 2, hàng GiantRow + state*4 + (f >> 1)*2 (khớp PackUnitsJob)
+                            atlas.Blit(sprite, (f & 1) * GiantPx, (UnitType.GiantRow(type) + state * 4 + (f >> 1) * 2) * UnitCell);
                             continue;
                         }
                         int pad = (UnitCell - sprite.W) / 2;   // lính bộ 10x10 nằm giữa ô 16x16
@@ -271,6 +272,7 @@ namespace HordeLab
                 case UnitType.Screamer: return DrawScreamer(state, f);
                 case UnitType.Voidling: return DrawVoidling(state, f);
                 case UnitType.Dragon: return DrawDragon(state, f);
+                case UnitType.Emperor: return DrawEmperor(state, f);
                 default: return DrawHumanoid(LookOf(type), state, f);
             }
         }
@@ -702,6 +704,79 @@ namespace HordeLab
             FillPoly(s, wing, b, (x, y) => ((x + y) % 4 == 0) ? membLight : memb);
             for (int i = 0; i + 3 < bone.Length; i += 4) Line(s, bone[i], bone[i + 1] + b, bone[i + 2], bone[i + 3] + b, dark);
             s.Set(bone[2], bone[3] + b, horn);                                                       // móng ở khớp cánh
+            return s;
+        }
+
+        /// <summary>
+        /// Hoàng đế vàng 32x32, quay mặt sang phải: giáp vàng, vương miện, râu bạc, áo choàng xanh của phe Người, đại kiếm.
+        /// Đi = 4 khung bước, kiếm vác trên vai. Đánh = khung 0-1 giơ kiếm qua đầu, khung 2-3 chém bổ xuống phía trước.
+        /// </summary>
+        static Canvas DrawEmperor(int state, int f)
+        {
+            var s = new Canvas(GiantPx, GiantPx);
+            Color32 gold = Rgb(226, 178, 58), goldL = Rgb(255, 224, 118), goldD = Rgb(168, 118, 32), goldX = Rgb(112, 74, 22);
+            Color32 cape = Rgb(46, 76, 168), capeD = Rgb(28, 46, 112), capeL = Rgb(74, 110, 206);
+            Color32 skin = Rgb(232, 182, 144), skinD = Rgb(186, 128, 98), beard = Rgb(238, 234, 222), beardD = Rgb(190, 184, 172);
+            Color32 steel = Rgb(222, 230, 240), steelD = Rgb(140, 152, 172), gem = Rgb(214, 44, 56), gemL = Rgb(255, 120, 120), eye = Rgb(40, 30, 40);
+            bool attack = state == 1;
+            bool stride = !attack && (f & 1) == 1;
+            int b = stride ? 1 : 0;                                    // bước chân: người hơi hạ xuống
+            int sway = attack ? (f < 2 ? -1 : 1) : (f == 1 ? 1 : f == 3 ? -1 : 0);   // áo choàng bay
+
+            // ---- áo choàng (sau lưng) ----
+            FillPoly(s, V(11, 10, 15, 10, 14, 26, 9 + sway, 29, 5 + sway, 28, 7, 19), b, (x, y) => x <= 8 + sway || y >= 27 ? capeD : (x + y) % 5 == 0 ? capeL : cape);
+
+            // ---- chân: chân xa tối, chân gần sáng; bước thì dang ra ----
+            int farX = stride ? 12 : 13, nearX = stride ? 17 : 16;
+            Box(s, farX, 22 + b, farX + 2, 27 + b, goldD); Box(s, farX - 1, 28 + b, farX + 2, 29 + b, goldX);
+            Box(s, nearX, 22 + b, nearX + 2, 27 + b, gold); s.Set(nearX, 23 + b, goldL); Box(s, nearX, 28 + b, nearX + 3, 29 + b, goldD);
+
+            // ---- thân giáp ----
+            Box(s, 11, 12 + b, 19, 21 + b, gold);
+            Box(s, 11, 12 + b, 12, 21 + b, goldD);                     // hông sau tối
+            Box(s, 14, 13 + b, 17, 15 + b, goldL);                     // ngực sáng
+            Line(s, 11, 18 + b, 19, 18 + b, goldX);                    // thắt lưng
+            s.Set(15, 18 + b, gem); s.Set(16, 18 + b, gemL);
+            Box(s, 11, 19 + b, 19, 21 + b, goldD);                     // váy giáp
+            for (int x = 12; x <= 19; x += 2) s.Set(x, 21 + b, goldX);
+            // vai giáp tròn
+            Box(s, 9, 11 + b, 12, 13 + b, goldD); s.Set(10, 11 + b, gold);
+            Box(s, 18, 11 + b, 21, 13 + b, goldL); s.Set(21, 13 + b, gold);
+
+            // ---- đầu: mặt, râu bạc, vương miện ----
+            Box(s, 13, 6 + b, 18, 10 + b, skin);
+            Box(s, 13, 6 + b, 14, 10 + b, skinD);
+            s.Set(17, 7 + b, eye);
+            Box(s, 14, 9 + b, 19, 11 + b, beard); s.Set(14, 11 + b, beardD); s.Set(19, 11 + b, beardD); s.Set(16, 12 + b, beard);
+            Box(s, 13, 4 + b, 18, 5 + b, goldL);                       // vành miện
+            s.Set(13, 3 + b, goldL); s.Set(15, 2 + b, goldL); s.Set(15, 3 + b, gold); s.Set(17, 3 + b, goldL); s.Set(18, 3 + b, gold);
+            s.Set(15, 4 + b, gem); s.Set(17, 4 + b, gem);
+
+            // ---- tay + đại kiếm ----
+            int hx, hy;                                                // vị trí tay cầm chuôi
+            if (!attack) { hx = 20; hy = 15 + b; }                     // đi: kiếm vác thẳng đứng bên người
+            else if (f < 2) { hx = 18; hy = 6; }                       // giơ kiếm qua đầu
+            else { hx = 22; hy = 16; }                                 // chém xuống
+            Line(s, 19, 13 + b, hx, hy, goldD); s.Set(hx, hy, goldD);  // cánh tay
+            if (!attack)
+            {
+                Line(s, hx + 1, hy - 1, hx + 6, hy - 12, steel); Line(s, hx + 2, hy - 1, hx + 7, hy - 12, steelD);   // lưỡi kiếm chéo lên
+                Line(s, hx - 1, hy + 1, hx + 2, hy - 2, goldL);                                                       // chắn tay
+                s.Set(hx - 1, hy + 2, goldX);                                                                          // núm chuôi
+            }
+            else if (f < 2)
+            {
+                int lift = f == 1 ? 1 : 0;
+                Line(s, hx - 1, hy - 1 - lift, hx - 9, hy - 5 - lift, steel); Line(s, hx - 1, hy - lift, hx - 9, hy - 4 - lift, steelD);   // kiếm ngả ra sau đầu
+                Line(s, hx - 1, hy - 3 - lift, hx + 1, hy + 1 - lift, goldL);
+            }
+            else
+            {
+                int reach = f == 3 ? 1 : 0;
+                Line(s, hx + 1, hy + 1, hx + 8 + reach, hy + 10 - reach, steel); Line(s, hx + 1, hy + 2, hx + 7 + reach, hy + 11 - reach, steelD);   // chém bổ xuống trước mặt
+                Line(s, hx - 1, hy + 2, hx + 2, hy - 1, goldL);
+                if (f == 3) { s.Set(hx + 10, hy + 9, goldL); s.Set(hx + 9, hy + 11, goldL); }                                      // tia sáng ở mũi kiếm
+            }
             return s;
         }
 
