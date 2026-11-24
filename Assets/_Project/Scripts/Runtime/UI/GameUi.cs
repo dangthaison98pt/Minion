@@ -726,14 +726,14 @@ namespace HordeLab
         // ------------------------------------------------------------------
         RectTransform settings, menuPanel;
         Button newGameBtn, menuSettingsBtn, quitBtn;
-        readonly Button[] setBtns = new Button[6];
+        readonly Button[] setBtns = new Button[5];
         public bool SettingsOpen => settings != null && settings.gameObject.activeSelf;
 
         void BuildSettings()
         {
-            settings = Modal("Settings", 0.6f, out var p, 560f, 530f);
+            settings = Modal("Settings", 0.6f, out var p, 560f, 470f);
             Txt(p, "Settings", 36f, TextAlignmentOptions.Center, true).At(0f, 28f, 560f, 50f);
-            string[] labels = { "Resolution", "Fullscreen", "VSync", "Show FPS", "Shop open in battle", "Battle speed" };
+            string[] labels = { "Resolution", "Fullscreen", "VSync", "Show FPS", "Shop open in battle" };   // tốc độ trận: nhớ theo lần bấm cuối trong trận, không cần mục riêng
             System.Action[] acts =
             {
                 Settings.CycleResolution,
@@ -741,7 +741,6 @@ namespace HordeLab
                 () => { Settings.VSync = !Settings.VSync; Settings.ApplyFrameRate(); },
                 () => Settings.ShowFps = !Settings.ShowFps,
                 () => Settings.BattleShopOpen = !Settings.BattleShopOpen,
-                () => Settings.BattleSpeed = Settings.BattleSpeed >= 4 ? 1 : Settings.BattleSpeed * 2,
             };
             for (int i = 0; i < labels.Length; i++)
             {
@@ -750,7 +749,7 @@ namespace HordeLab
                 Txt(p, labels[i], 20f, TextAlignmentOptions.MidlineLeft).At(50f, y, 300f, 48f);
                 setBtns[i] = Btn(p, "", () => { acts[k](); Settings.Save(); }, 20f).At(340f, y, 170f, 48f);
             }
-            Btn(p, "Back", CloseSettings, 22f).At(140f, 460f, 280f, 52f);
+            Btn(p, "Back", CloseSettings, 22f).At(140f, 400f, 280f, 52f);
             settings.gameObject.SetActive(false);
         }
 
@@ -777,7 +776,6 @@ namespace HordeLab
             setBtns[2].Label().Set(On(Settings.VSync));
             setBtns[3].Label().Set(On(Settings.ShowFps));
             setBtns[4].Label().Set(On(Settings.BattleShopOpen));
-            setBtns[5].Label().Set($"x{Settings.BattleSpeed}");
         }
 
         public void TogglePauseForTest() => TogglePause();

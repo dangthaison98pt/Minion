@@ -11,7 +11,7 @@ namespace HordeLab
         public static bool VSync = true;            // khoá khung hình theo màn hình
         public static bool ShowFps;                 // dòng FPS / số lính / số đạn ở góc dưới phải
         public static bool BattleShopOpen;          // vào trận cửa hàng mở sẵn hay thu gọn
-        public static int BattleSpeed = 1;          // tốc độ khi bắt đầu mỗi đợt: 1 / 2 / 4
+        public static int BattleSpeed = 1;          // tốc độ khi bắt đầu mỗi đợt: 1 / 2 / 4 (nhớ theo lần bấm cuối trong trận, không hiện trong Settings)
 
         public static bool Fullscreen => Screen.fullScreenMode != FullScreenMode.Windowed;
 
