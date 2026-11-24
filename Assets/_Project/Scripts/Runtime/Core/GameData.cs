@@ -34,7 +34,7 @@ namespace HordeLab
         public static int Interest(int held, int extraCap = 0) => Mathf.Min(Mathf.Max(held, 0) / InterestStep, InterestMax + extraCap);
 
         // ---- Lõi (giống Augment của TFT) ----
-        public static readonly int[] AugmentWaves = { 1, 6, 12 };   // xong các đợt này thì được chọn 1 trong 3 lõi
+        public static readonly int[] AugmentWaves = { 1, 6, 12, 18, 24 };   // sau đợt 1 + mỗi đợt trùm (đợt 30 là đợt cuối) → 5 lõi
         public const int AugmentChoices = 3;
         public static int CardPrice(Cat c) => c == Cat.Expand ? 5 : c == Cat.Barracks || c == Cat.BuffMil ? 4 : 3;
 

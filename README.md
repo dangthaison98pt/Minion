@@ -40,7 +40,7 @@ Phần mô phỏng vẫn là lõi "vạn quân" cũ: **Job System + Burst + GPU 
    - Rê chuột vào thẻ / công trình để xem chi tiết; nhà buff sẽ tô viền vàng các ô nó tác động.
 3. **Bắt đầu đợt** → chỉ ngồi xem. Góc trên ghi *Enemies left*: số địch còn lại / tổng quân cả đợt (tính cả các tiểu đội chưa kéo đến). Nhà lính viền đỏ = đã hồi xong nhưng đang chờ đủ tài nguyên.
 4. Hết đợt: chọn 1 trong 3 thẻ + nhận 5 Tinh thể (+1 nếu giữ được thành), cộng **lãi** +1 cho mỗi 10 Tinh thể đang giữ (tối đa +5, như TFT) nên để dành cũng có lợi. Thành thất thủ thì mất 1 trong 3 tim nhưng vẫn sang đợt sau và vẫn nhận thưởng.
-   Xong **đợt 1, 6 và 12** thì trước đó được **chọn 1 trong 3 lõi** (giống Augment của TFT): thưởng vĩnh viễn cho cả lượt.
+   Xong **đợt 1** và **mỗi đợt trùm** (6, 12, 18, 24) thì được **chọn 1 trong 3 lõi** (giống Augment của TFT): thưởng vĩnh viễn cho cả lượt.
    Lõi đang có ghi ở góc dưới bảng bên trái, rê chuột vào để xem chi tiết.
 5. Thắng hoặc thua cả lượt: chọn *New run* hoặc *Main menu*.
 
@@ -66,7 +66,7 @@ Phần mô phỏng vẫn là lõi "vạn quân" cũ: **Job System + Burst + GPU 
 - **Phần thưởng:** chọn 1 trong 3 thẻ + Tinh thể năng lượng; cửa hàng có roll. Chỉ ra thẻ phe mình và thẻ dùng chung.
 
 ## Lõi (Augment)
-Chọn 1 trong 3 lõi ngẫu nhiên (không trùng lõi đã có) sau các đợt `Tuning.AugmentWaves` = 1, 6, 12. Danh sách + số liệu ở
+Chọn 1 trong 3 lõi ngẫu nhiên (không trùng lõi đã có) sau các đợt `Tuning.AugmentWaves` = 1, 6, 12, 18, 24 (đợt 1 + mỗi đợt trùm; đợt 30 là đợt cuối), tổng cộng 5 lõi. Danh sách + số liệu ở
 class `Aug` và `GameData.BuildAugments()` trong [`GameData.cs`](Assets/_Project/Scripts/Runtime/Core/GameData.cs); hiệu ứng tìm `Aug.<tên>` trong `City.cs` / `Game.cs`.
 
 | Nhóm | Lõi | Tác dụng (số tạm) |
