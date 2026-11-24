@@ -76,7 +76,7 @@ Tất cả nằm trong class `Tuning` và bảng dữ liệu ở [`GameData.cs`]
 | Mỗi sao tăng gì | Nhà tài nguyên: sản lượng ×1/2/4/8. Nhà lính: vẫn 1 tiểu đội mỗi lần gọi, máu + sát thương lính ×1/1.4/1.8/2.2, chi phí mỗi lần gọi ×1/1.5/2/2.5. Nhà buff: độ mạnh ×1/1.5/2/2.5, cộng dồn tối đa +150% (Kho quân nhu giảm chi phí tối đa 60%) |
 | Bán thẻ / công trình | 1 Tinh thể × số nhà 1 sao đã gộp vào |
 | Giới hạn quân ta | 4.000 lính trên sân; quá mức thì nhà lính tạm ngừng gọi |
-| Tinh thể thưởng mỗi đợt | `3 + đợt / 3` |
+| Tinh thể thưởng mỗi đợt | `6 + đợt / 2` (đợt 1: 6, đợt 10: 11, đợt 30: 21); vào game có sẵn 5 |
 | Cửa hàng | 4 thẻ, giá 3–5, roll giá 1, roll thay mọi ô không bị khoá, tự làm mới miễn phí sau mỗi đợt |
 | Trùm | Chưa thiết kế → tạm là đợt đông hơn 60% và mạnh hơn 25% |
 | Phép hỗ trợ trong trận | Chưa có |

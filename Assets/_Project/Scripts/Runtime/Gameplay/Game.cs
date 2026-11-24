@@ -225,7 +225,7 @@ namespace HordeLab
             faction = playerFaction;
             hearts = Tuning.Hearts;
             wave = 1;
-            crystals = 0;
+            crystals = Tuning.StartCrystals;
             eventNote = null;
             city.Init(faction);
 

@@ -26,7 +26,8 @@ namespace HordeLab
         public const int ShopSlots = 4;
         public const int RollCost = 1;
         public const float EventChance = 0.25f;         // xác suất có sự kiện đổi phe thù địch sau mỗi đợt
-        public static int CrystalReward(int wave) => 3 + wave / 3;
+        public const int StartCrystals = 5;             // đủ mua 1 thẻ ngay đợt đầu
+        public static int CrystalReward(int wave) => 6 + wave / 2;   // đợt 1: 6, đợt 10: 11, đợt 20: 16, đợt 30: 21
         public static int CardPrice(Cat c) => c == Cat.Expand ? 5 : c == Cat.Barracks || c == Cat.BuffMil ? 4 : 3;
 
         // ---- Thành & tài nguyên ----
