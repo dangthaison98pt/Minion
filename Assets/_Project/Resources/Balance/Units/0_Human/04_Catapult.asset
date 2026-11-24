@@ -23,5 +23,20 @@ MonoBehaviour:
   costWood: 14
   costGold: 12
   callTime: 36
+  hpPerStar:
+    star1: 1
+    star2: 1.4
+    star3: 1.8
+    star4: 2.2
+  damagePerStar:
+    star1: 1
+    star2: 1.4
+    star3: 1.8
+    star4: 2.2
+  costPerStar:
+    star1: 1
+    star2: 1.5
+    star3: 2
+    star4: 2.5
   minWave: 7
   waveWeight: 0.5

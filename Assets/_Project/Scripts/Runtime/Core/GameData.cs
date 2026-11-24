@@ -139,6 +139,10 @@ namespace HordeLab
         public float callTime;             // thời gian hồi của nhà lính
         public int minWave = 1;            // khi làm địch: xuất hiện từ đợt này
         public float waveWeight = 1f;      // khi làm địch: tỉ lệ trong đội hình
+        // Nâng cấp theo sao của nhà lính (1..4 sao): hệ số nhân so với 1 sao
+        public float[] starHp = (float[])Tuning.StarTroopPower.Clone();
+        public float[] starDamage = (float[])Tuning.StarTroopPower.Clone();
+        public float[] starCost = (float[])Tuning.StarTroopCost.Clone();
     }
 
     public enum Cat { Food, Wood, Gold, Pop, BuffEco, BuffMil, Barracks, Expand }
@@ -146,6 +150,9 @@ namespace HordeLab
 
     public class BuildingDef
     {
+        // Nâng cấp theo sao (1..4 sao): hệ số sản lượng (nhà tài nguyên) và độ mạnh buff (nhà buff), so với 1 sao
+        public float[] starYield = (float[])Tuning.StarYield.Clone();
+        public float[] starBuff = (float[])Tuning.StarBuff.Clone();
         public int id;
         public string name, desc;
         public Cat cat;

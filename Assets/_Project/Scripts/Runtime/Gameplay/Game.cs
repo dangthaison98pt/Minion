@@ -637,15 +637,16 @@ namespace HordeLab
         void CallSquads(Building b)
         {
             int type = b.Def.unit;
-            float moon = MoonMul(type) * city.TroopPower(b);   // trăng tròn + số sao của nhà lính
+            float moon = MoonMul(type);                         // trăng tròn
+            float starHp = city.TroopHp(b), starDmg = city.TroopDmg(b);   // số sao của nhà lính
             int side = GameData.Factions[faction].squadSide;
             bool leader = HasLeaderSkill(type);
             ref var rng = ref battle.Rng;
             for (int k = 0; k < city.Squads(b); k++)
             {
                 var pos = new float2(Cfg.PlayerSpawnX + rng.NextFloat(0f, 5f), rng.NextFloat(-Cfg.HalfH + 5f, Cfg.HalfH - 5f));
-                battle.SpawnSquad(type, 0, pos, side, b.hp * moon * (Has(Aug.IronSkin) ? 1f + Aug.IronSkinHp : 1f) * (Has(Aug.TitanBlood) ? 1f + Aug.TitanHp : 1f),
-                                  b.dmg * moon * (Has(Aug.Sharpened) ? 1f + Aug.SharpenedDmg : 1f) * (Has(Aug.TitanBlood) ? 1f + Aug.TitanDmg : 1f),
+                battle.SpawnSquad(type, 0, pos, side, b.hp * moon * starHp * (Has(Aug.IronSkin) ? 1f + Aug.IronSkinHp : 1f) * (Has(Aug.TitanBlood) ? 1f + Aug.TitanHp : 1f),
+                                  b.dmg * moon * starDmg * (Has(Aug.Sharpened) ? 1f + Aug.SharpenedDmg : 1f) * (Has(Aug.TitanBlood) ? 1f + Aug.TitanDmg : 1f),
                                   b.regen + (Has(Aug.Medics) ? Aug.MedicsRegen : 0f), leader);   // chỉ có trưởng đạo khi có lõi kỹ năng trưởng đạo
             }
         }

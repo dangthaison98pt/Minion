@@ -26,7 +26,8 @@ namespace HordeLab.EditorTools
             var units = Index(Find<UnitBalance>(), a => a.unitType);
             for (int t = 0; t < unitDefs.Length; t++)
             {
-                if (units.ContainsKey(t) || unitDefs[t] == null) continue;
+                if (unitDefs[t] == null) continue;
+                if (units.TryGetValue(t, out var have)) { if (have.FillMissingStars(unitDefs[t])) { EditorUtility.SetDirty(have); created++; } continue; }
                 int fi = Faction.Of(t);
                 string group = t >= UnitType.FirstGiant ? "Bosses & Legendary" : fi >= 0 ? $"{fi}_{Safe(factionDefs[fi].name)}" : "Special";
                 string dir = $"{Root}/Units/{group}";
@@ -43,7 +44,8 @@ namespace HordeLab.EditorTools
             Folder($"{Root}/Buildings");
             for (int id = 0; id < B.Barracks; id++)
             {
-                if (buildings.ContainsKey(id) || buildingDefs[id] == null) continue;
+                if (buildingDefs[id] == null) continue;
+                if (buildings.TryGetValue(id, out var haveB)) { if (haveB.FillMissingStars(buildingDefs[id])) { EditorUtility.SetDirty(haveB); created++; } continue; }
                 var a = ScriptableObject.CreateInstance<BuildingBalance>();
                 a.CopyFrom(buildingDefs[id]);
                 AssetDatabase.CreateAsset(a, $"{Root}/Buildings/{id:00}_{Safe(buildingDefs[id].name)}.asset");
@@ -58,7 +60,11 @@ namespace HordeLab.EditorTools
             db.buildings = Sorted(buildings);
             EditorUtility.SetDirty(db);
             AssetDatabase.SaveAssets();
-            Debug.Log($"[HordeLab] Balance: tạo mới {created} asset; tổng {db.units.Length} loại quân, {db.buildings.Length} nhà ({Root})");
+            // ghi lại mọi asset theo định dạng mới nhất (asset cũ có thêm các ô mới, ví dụ nâng cấp theo sao)
+            var paths = new List<string>();
+            foreach (var guid in AssetDatabase.FindAssets("t:ScriptableObject", new[] { Root })) paths.Add(AssetDatabase.GUIDToAssetPath(guid));
+            AssetDatabase.ForceReserializeAssets(paths, ForceReserializeAssetsOptions.ReserializeAssets);
+            Debug.Log($"[HordeLab] Balance: tạo mới / bổ sung {created} asset; tổng {db.units.Length} loại quân, {db.buildings.Length} nhà ({Root})");
         }
 
         /// <summary>Kiểm tra: chỉ số game đọc từ asset có khớp chỉ số gốc trong code không (dùng sau khi vừa tạo asset).</summary>

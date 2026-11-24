@@ -1737,10 +1737,10 @@ namespace HordeLab
                 var f = GameData.Factions[d.faction];
                 Res cost = b != null ? city.CallCost(b) : new Res(u.cost.pop * f.popCostMul, u.cost.food, u.cost.wood, u.cost.gold);
                 float period = d.period / (b != null ? b.speed : 1f);
-                float power = b != null ? city.TroopPower(b) : 1f;
+                float powerHp = b != null ? city.TroopHp(b) : 1f, powerDmg = b != null ? city.TroopDmg(b) : 1f;
                 chipsOut.Add(new TipChip(UnitIcons[d.unit], W($"x{f.squadSide * f.squadSide}")));
-                chipsOut.Add(new TipChip(Heart, W($"{u.stats.maxHp * power * (b != null ? b.hp : 1f):0}")));
-                chipsOut.Add(new TipChip(StatIcons[PixelArt.StatDamage], W($"{u.stats.damage * power * (b != null ? b.dmg : 1f):0.#}")));
+                chipsOut.Add(new TipChip(Heart, W($"{u.stats.maxHp * powerHp * (b != null ? b.hp : 1f):0}")));
+                chipsOut.Add(new TipChip(StatIcons[PixelArt.StatDamage], W($"{u.stats.damage * powerDmg * (b != null ? b.dmg : 1f):0.#}")));
                 chipsOut.Add(new TipChip(StatIcons[PixelArt.StatRange], W($"{u.stats.range:0.#}")));
                 chipsOut.Add(new TipChip(StatIcons[PixelArt.StatSpeed], W($"{u.stats.speed:0.#}")));
                 if (u.stats.splash > 0f) chipsOut.Add(new TipChip(StatIcons[PixelArt.StatSplash], W($"{u.stats.splash:0.#}")));
@@ -1802,7 +1802,7 @@ namespace HordeLab
                 sb.Append($"Cost per call: <color=#ffffff>{cost.Describe()}</color>\n");
                 if (b != null)
                 {
-                    if (b.stars > 1) sb.Append($"<color=#ffd84a>{b.stars} stars: troops have +{(city.TroopPower(b) - 1f) * 100f:0}% HP and damage</color>\n");
+                    if (b.stars > 1) sb.Append($"<color=#ffd84a>{b.stars} stars: troops have +{(city.TroopHp(b) - 1f) * 100f:0}% HP, +{(city.TroopDmg(b) - 1f) * 100f:0}% damage</color>\n");
                     if (b.dmg > 1.001f) sb.Append($"<color=#9fe07a>+{(b.dmg - 1f) * 100f:0}% damage</color>\n");
                     if (b.hp > 1.001f) sb.Append($"<color=#9fe07a>+{(b.hp - 1f) * 100f:0}% HP</color>\n");
                     if (b.regen > 0f) sb.Append($"<color=#9fe07a>Regenerates {b.regen:0.#} HP/s</color>\n");

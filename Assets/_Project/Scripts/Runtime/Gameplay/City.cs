@@ -195,7 +195,7 @@ namespace HordeLab
                 var src = kv.Value;
                 if (src == null) continue;
                 var p = kv.Key;
-                float k = Tuning.StarBuff[src.stars - 1] * (Has(Aug.Architect) ? 1f + Aug.ArchitectBuff : 1f);
+                float k = src.Def.starBuff[src.stars - 1] * (Has(Aug.Architect) ? 1f + Aug.ArchitectBuff : 1f);
 
                 // Vùng buff
                 if (src.Def.shape != Shape.None)
@@ -270,11 +270,11 @@ namespace HordeLab
         /// <summary>Sản lượng mỗi chu kỳ của một nhà tài nguyên, đã tính buff và lõi.</summary>
         public float Yield(Building b) => YieldBase(b) * (b.def == B.Market ? (b.trade >= 0 ? ResMul(b.trade) : 1f) : b.Def.res >= 0 ? ResMul(b.Def.res) : 1f);
         /// <summary>Vàng Market trả mỗi chu kỳ.</summary>
-        public float MarketCost(Building b) => Tuning.MarketTrade * Tuning.StarYield[b.stars - 1];
+        public float MarketCost(Building b) => Tuning.MarketTrade * b.Def.starYield[b.stars - 1];
 
         float YieldBase(Building b)
         {
-            float star = Tuning.StarYield[b.stars - 1];
+            float star = b.Def.starYield[b.stars - 1];
             var d = b.Def;
             switch (b.def)
             {
@@ -291,12 +291,14 @@ namespace HordeLab
         public int Squads(Building b) => Has(Aug.Legion) ? Aug.LegionSquads : 1;
 
         /// <summary>Hệ số máu + sát thương của lính theo số sao của nhà lính.</summary>
-        public float TroopPower(Building b) => Tuning.StarTroopPower[b.stars - 1];
+        /// <summary>Hệ số máu / sát thương của lính theo số sao của nhà lính (số liệu từng loại quân).</summary>
+        public float TroopHp(Building b) => GameData.Units[b.Def.unit].starHp[b.stars - 1];
+        public float TroopDmg(Building b) => GameData.Units[b.Def.unit].starDamage[b.stars - 1];
 
         /// <summary>Tài nguyên cho 1 lần gọi quân của nhà lính (đã nhân số tiểu đội, Kho quân nhu, đặc trưng phe).</summary>
         public Res CallCost(Building b)
         {
-            Res c = GameData.Units[b.Def.unit].cost * (Tuning.StarTroopCost[b.stars - 1] * b.costMul * (Has(Aug.Supply) ? 1f - Aug.SupplyCut : 1f));
+            Res c = GameData.Units[b.Def.unit].cost * (GameData.Units[b.Def.unit].starCost[b.stars - 1] * b.costMul * (Has(Aug.Supply) ? 1f - Aug.SupplyCut : 1f));
             c.pop *= GameData.Factions[faction].popCostMul;
             return c;
         }
@@ -363,7 +365,7 @@ namespace HordeLab
                     if (b.timer < d.period) continue;
                     if (b.def == B.Tavern)
                     {
-                        float food = 2f * Tuning.StarYield[b.stars - 1];
+                        float food = 2f * b.Def.starYield[b.stars - 1];
                         if (res.food < food) { b.timer = d.period; b.waiting = true; continue; }
                         res.food -= food;
                         b.waiting = false;
