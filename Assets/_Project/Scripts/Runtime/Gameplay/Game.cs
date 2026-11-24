@@ -243,7 +243,7 @@ namespace HordeLab
             city.cells.Clear();
             for (int i = 0; i < d.cellX.Length; i++)
                 city.cells[new Vector2Int(d.cellX[i], d.cellY[i])] =
-                    d.cellDef[i] >= 0 && d.cellDef[i] < B.Expand ? new Building { def = d.cellDef[i], stars = Mathf.Clamp(d.cellStars[i], 1, Tuning.MaxStars) } : null;
+                    d.cellDef[i] >= 0 && d.cellDef[i] < B.Count && d.cellDef[i] != B.Expand ? new Building { def = d.cellDef[i], stars = Mathf.Clamp(d.cellStars[i], 1, Tuning.MaxStars) } : null;
             city.res = new Res(d.pop, d.food, d.wood, d.gold);
             if (d.augments != null) foreach (int a in d.augments) if (a >= 0 && a < Aug.Count && !city.augments.Contains(a)) city.augments.Add(a);
             bool augPending = d.phase == (int)Phase.Augment && d.augChoices != null && d.augChoices.Length == augChoices.Length;
@@ -293,8 +293,8 @@ namespace HordeLab
 
             // Bộ thẻ khởi đầu (số tạm): đủ để chạy 2 nhà lính đầu tiên của phe
             ClearHand();
-            AddCard(B.Barracks + faction * 5);
-            AddCard(B.Barracks + faction * 5 + 1);
+            AddCard(B.BarracksOf(faction * 5));
+            AddCard(B.BarracksOf(faction * 5 + 1));
             AddCard(B.Cabin);
             AddCard(B.Cabin);
             AddCard(B.Field);
@@ -327,7 +327,7 @@ namespace HordeLab
             float r = (float)rnd.NextDouble() * total;
             if (r < shared) return (int)r;
             r -= shared;
-            if (r < 5 * barracksW) return B.Barracks + faction * 5 + Mathf.Min(4, (int)(r / barracksW));
+            if (r < 5 * barracksW) return B.BarracksOf(faction * 5 + Mathf.Min(4, (int)(r / barracksW)));
             return B.Expand;
         }
 
@@ -638,6 +638,7 @@ namespace HordeLab
             flawless = won && battle.Counter(C.Breach) == 0 ? flawless + 1 : 0;
             if (faction == Faction.Beast && won && IsFullMoon(wave)) secretCount++;
             if (faction == Faction.Void) secretCount += battle.Counter(C.Dead1);
+            if (faction == Faction.Orc) secretCount = won ? secretCount + 1 : 0;              // chuỗi thắng liên tiếp
             if (!emperorUnlocked && SecretConditionMet()) emperorUnlocked = emperorPending = true;
             if (hearts <= 0) { phase = Phase.Lost; DeleteSave(); return; }
             if (wave >= Tuning.Waves) { phase = Phase.Won; DeleteSave(); return; }
@@ -841,7 +842,7 @@ namespace HordeLab
                 case Aug.RichGetRicher: crystals += Aug.RichCrystals; break;
                 case Aug.DragonHoard: crystals += Aug.HoardCrystals; break;
                 case Aug.LandGrant: for (int k = 0; k < Aug.LandGrantCards; k++) AddCard(B.Expand); break;
-                case Aug.Recruit: AddCard(B.Barracks + faction * 5 + rnd.Next(5), 2); break;
+                case Aug.Recruit: AddCard(B.BarracksOf(faction * 5 + rnd.Next(5)), 2); break;
             }
             city.Recompute();
             phase = Phase.Reward;
@@ -858,6 +859,7 @@ namespace HordeLab
                 case Faction.Elf: return Count(Cat.Wood) >= Aug.TreeWoodBuildings;
                 case Faction.Dwarf: return Count(Cat.Gold) >= Aug.ThorGoldBuildings;
                 case Faction.Beast: return secretCount >= Aug.BerserkMoonWins;
+                case Faction.Orc: return secretCount >= Aug.WarbossStreak;
                 default: return secretCount >= Aug.BroodKills;
             }
         }

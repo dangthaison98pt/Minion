@@ -163,9 +163,12 @@ namespace HordeLab
         public const int Cabin = 9, Residential = 10, Tavern = 11;
         public const int Windmill = 12, Well = 13, RangerHut = 14, Mint = 15, TradeRoad = 16, Plaza = 17;
         public const int Forge = 18, TrainingGround = 19, Depot = 20, Banner = 21, Infirmary = 22;
-        public const int Barracks = 23;                         // 23..47
-        public const int Expand = Barracks + UnitType.Buildable; // thẻ mở thêm ô trống
-        public const int Count = Expand + 1;
+        public const int Barracks = 23;                         // 23..47: nhà lính 5 phe đầu (mã cũ, giữ cho bản lưu)
+        public const int Expand = Barracks + 25;                // 48: thẻ mở thêm ô trống
+        public const int OrcBarracks = Expand + 1;              // 49..53: nhà lính phe Orc (nối sau để bản lưu cũ vẫn đúng)
+        public const int Count = OrcBarracks + 5;
+        /// <summary>Mã nhà lính gọi loại quân <paramref name="unitType"/>.</summary>
+        public static int BarracksOf(int unitType) => unitType < 25 ? Barracks + unitType : OrcBarracks + (unitType - 25);
     }
 
     public enum AugCat { Economy, Military, Utility, Legendary, Specialist }
@@ -199,15 +202,24 @@ namespace HordeLab
         public const int Dragon = 19, Meteor = 20, Ballista = 21, Mercenary = 22, LastStand = 23;
         // Chuyên quân: 25 lõi, mã = UnitBase + loại quân
         public const int UnitBase = 24;
-        public static int ForUnit(int unitType) => unitType < UnitType.Buildable ? UnitBase + unitType : -1;
+        public static int ForUnit(int unitType) => unitType < 25 ? UnitBase + unitType : unitType < UnitType.Buildable ? OrcUnitBase + (unitType - 25) : -1;
         // Bí mật (easter egg): không bao giờ ra theo kiểu thường, phải mở khoá bằng điều kiện ẩn trong ván
         // Mỗi phe 1 lõi bí mật gọi boss của phe mình đánh cho người chơi. Mã = Emperor + phe (giữ nguyên mã cũ của Emperor cho bản lưu)
-        public const int Emperor = UnitBase + UnitType.Buildable;                 // Người: The Golden Emperor
+        public const int Emperor = UnitBase + 25;                                 // Người: The Golden Emperor (mã cố định cho bản lưu)
         public const int WorldTreeAug = Emperor + 1, ThorAug = Emperor + 2, BerserkerAug = Emperor + 3, BroodAug = Emperor + 4;
         // Prismatic thêm (mã nối sau lõi bí mật để bản lưu cũ vẫn đúng)
-        public const int Legion = Emperor + Faction.Count, TitanBlood = Legion + 1, WarDrums = Legion + 2, Undying = Legion + 3,
+        public const int Legion = Emperor + 5, TitanBlood = Legion + 1, WarDrums = Legion + 2, Undying = Legion + 3,
                          SkyLances = Legion + 4, GoldenAge = Legion + 5, IronFortress = Legion + 6, DragonHoard = Legion + 7;
-        public const int Count = DragonHoard + 1;
+        // Phe Orc (thêm sau): 5 lõi chuyên quân + lõi bí mật, nối cuối bảng
+        public const int OrcUnitBase = DragonHoard + 1, OrcSecret = OrcUnitBase + 5;
+        public const int Count = OrcSecret + 1;
+        public const int WarbossStreak = 5;                         // Orc: thắng 5 đợt liên tiếp
+        public const float GruntExecute = 1.5f;                     // Bloodlust: +50% sát thương lên địch dưới nửa máu
+        public const float SpearDmg = 1.5f;                         // Heavy Spears
+        public const float TrampleStun = 0.8f;                      // Trample: xung phong đầy đà húc choáng
+        public const float DrumRadius = 3.5f, DrumRadiusAug = 7f;   // War Drummer: quân ta trong vùng đánh nhanh (Haste)
+        public const float TrollRegen = 3f, TrollRegenAug = 8f;     // Troll tự hồi máu
+        public const float WarCryEvery = 12f, WarCryRadius = 8f, WarCryHaste = 5f, WarCryHeal = 0.15f, WarCryFear = 1.5f, WarCryFearRadius = 4f;   // Warboss
         public const int LegionSquads = 2;
         public const float TitanHp = 0.6f, TitanDmg = 0.3f;
         public const float WarDrumsSpeed = 1.4f;                    // đánh nhanh x1.4 (hồi đòn chia 1.4)
@@ -216,9 +228,9 @@ namespace HordeLab
         public const float GoldenAgeMul = 2f;
         public const int FortressHp = 500; public const float FortressThorns = 15f;
         public const int HoardCrystals = 30, HoardInterest = 5;
-        public static int SecretOf(int faction) => Emperor + faction;
-        public static bool IsSecret(int a) => a >= Emperor && a < Emperor + Faction.Count;
-        public static int SecretUnit(int a) => UnitType.BossOf(a - Emperor);
+        public static int SecretOf(int faction) => faction < 5 ? Emperor + faction : OrcSecret;
+        public static bool IsSecret(int a) => (a >= Emperor && a < Emperor + 5) || a == OrcSecret;
+        public static int SecretUnit(int a) => UnitType.BossOf(a == OrcSecret ? Faction.Orc : a - Emperor);
 
         // Điều kiện mở khoá (bí mật, mỗi phe 1 kiểu). Đạt thì lần chọn lõi kế tiếp chắc chắn có lõi bí mật của phe mình
         public const int EmperorStreak = 5;        // Người: giữ thành không mất máu 5 đợt liên tiếp
@@ -301,6 +313,8 @@ namespace HordeLab
                 strength = "Food buildings work 30% faster. Full moon (every 3rd wave): troops are much stronger", weakness = "Houses produce Pop 25% slower" },
             new FactionDef { name = "The Void", color = new Color(0.68f, 0.40f, 0.92f), hpMul = 1.3f, dmgMul = 1.3f, popCostMul = 2f,
                 strength = "Troops are 30% stronger", weakness = "Every call costs double Pop" },
+            new FactionDef { name = "Orc", color = new Color(0.46f, 0.74f, 0.28f), hpMul = 1.2f, rangeMul = 0.75f,
+                strength = "Brutes: troops have 20% more HP", weakness = "Wild aim: ranged troops have 25% less range" },
         };
 
         public static readonly UnitDef[] Units = BuildUnits();
@@ -369,6 +383,9 @@ namespace HordeLab
             A(Aug.BerserkerAug, AugCat.Legendary, "The Berserker",
               $"The Berserker fights for you every wave: {AHp(UnitType.Berserker):0} HP, his axe cleaves for {ADmg(UnitType.Berserker):0} and heals him for {pct(Aug.BerserkLifesteal)}% of the damage. " +
               $"Below {pct(Aug.BerserkRage)}% HP he becomes Fenrir: enemies around flee in fear for {Aug.RageFear:0}s and he attacks much faster." + allyCommon);
+            A(Aug.OrcSecret, AugCat.Legendary, "The Warboss",
+              $"The Warboss stomps to war for you every wave: {AHp(UnitType.Warboss):0} HP, his cleaver hits for {ADmg(UnitType.Warboss):0}. " +
+              $"Every {Aug.WarCryEvery:0}s, War Cry: your troops within {Aug.WarCryRadius:0} attack {pct(Aug.Haste - 1f)}% faster for {Aug.WarCryHaste:0}s and heal {pct(Aug.WarCryHeal)}% HP, nearby enemies flee in fear." + allyCommon);
             A(Aug.BroodAug, AugCat.Legendary, "The Broodmother",
               $"The Broodmother crawls to war for you every wave: {AHp(UnitType.Broodmother):0} HP, her venomous bite hits for {ADmg(UnitType.Broodmother):0} and poisons. " +
               $"Every {Aug.BroodEvery:0}s she lays {Aug.BroodCount} spiderlings that bite with venom too." + allyCommon);
@@ -405,6 +422,11 @@ namespace HordeLab
             SU(UnitType.Eye, true, "Paralyzing Gaze", $"every {Aug.GazeEvery:0}s the next bolt paralyzes its target for {Aug.GazeStun:0}s.");
             SU(UnitType.Summoner, true, "Void Portal", $"every {Aug.PortalEvery:0}s summon an Aberration instead of Voidlings (up to {Aug.PortalMax} per leader each wave).");
             SU(UnitType.Screamer, false, "Resonance", "every sonic wave bounces to one more enemy group nearby.");
+            SU(UnitType.Grunt, false, "Bloodlust", $"deal {pct(Aug.GruntExecute - 1f)}% more damage to enemies below half HP.");
+            SU(UnitType.SpearThrower, false, "Heavy Spears", $"spears deal {pct(Aug.SpearDmg - 1f)}% more damage.");
+            SU(UnitType.BoarRider, false, "Trample", $"a full-speed charge stuns the target for {Aug.TrampleStun:0.#}s.");
+            SU(UnitType.Drummer, false, "Battle Rhythm", $"the drum reaches twice as far ({Aug.DrumRadiusAug:0} instead of {Aug.DrumRadius:0.#}).");
+            SU(UnitType.Troll, false, "Regeneration", $"regenerate {Aug.TrollRegenAug:0} HP per second instead of {Aug.TrollRegen:0}.");
 
             // ---- Số to + dòng ngắn trên thẻ lõi ----
             void V(int id, string big, string line) { a[id].big = big; a[id].line = line; }
@@ -476,6 +498,12 @@ namespace HordeLab
             VU(UnitType.Eye, $"{Aug.GazeStun:0}s", "Leader's gaze paralyzes");
             VU(UnitType.Summoner, $"x{Aug.PortalMax}", "Leader opens Aberration portals");
             VU(UnitType.Screamer, "x2", "Sonic wave bounces");
+            VU(UnitType.Grunt, $"+{pct(Aug.GruntExecute - 1f)}%", "Damage to wounded foes");
+            VU(UnitType.SpearThrower, $"+{pct(Aug.SpearDmg - 1f)}%", "Spear damage");
+            VU(UnitType.BoarRider, $"{Aug.TrampleStun:0.#}s", "Charge stuns");
+            VU(UnitType.Drummer, "x2", "Drum range");
+            VU(UnitType.Troll, $"{Aug.TrollRegenAug:0}/s", "Troll regeneration");
+            V(Aug.OrcSecret, $"{Units[UnitType.Warboss].stats.maxHp * Aug.AllyHp:0} HP", "The Warboss wants a fight");
             return a;
         }
 
@@ -543,6 +571,16 @@ namespace HordeLab
             u[UnitType.Summoner] = U("Void Altar", "Summoner", "Support (spawns minions)", S(24, 0, 6f, 10f, 2.6f, Mode.Summon, 0, 0, PKind.VoidGoo), new Res(8, 0, 0, 6), 15f, 5, 1f);
             s = S(36, 9, 3.0f, 7f, 2.4f, Mode.Blast, 0, 0, PKind.VoidGoo, 7f); s.splash = 3f;
             u[UnitType.Screamer] = U("Howling Pit", "Screamer", "Area damage (sonic wave)", s, new Res(9, 0, 0, 0), 16f, 7, 1f);
+            // ---------------- Orc ----------------
+            s = S(52, 8, 1.0f, 1.0f, 3.0f); s.splash = 1.2f;
+            u[UnitType.Grunt] = U("War Camp", "Orc Grunt", "Frontline (cleaves)", s, new Res(5, 6, 0, 0), 8f, 1, 5f);
+            u[UnitType.SpearThrower] = U("Spear Pit", "Spear Thrower", "Ranged (heavy spears)", S(22, 10, 2.0f, 18f, 2.8f, Mode.Shoot, 0, Proj.Javelin), new Res(5, 0, 5, 0), 9f, 1, 3f);
+            s = S(90, 10, 1.1f, 1.2f, 4.6f, Mode.Melee, UFlag.Big, 0, PKind.Blood, 11f); s.chargeBonus = 1.5f; s.knock = 1.0f;
+            u[UnitType.BoarRider] = U("Boar Pen", "Boar Rider", "Mobile (charge, knockback)", s, new Res(6, 7, 0, 3), 12f, 3, 1.5f);
+            u[UnitType.Drummer] = U("War Drum", "War Drummer", "Support (nearby allies attack faster)", S(30, 3, 1.5f, 1.0f, 2.8f), new Res(5, 0, 0, 6), 14f, 5, 1f);
+            s = S(160, 16, 1.8f, 1.3f, 2.2f, Mode.Melee, UFlag.Big, 0, PKind.Blood, 6f); s.splash = 1.6f; s.knock = 0.8f;
+            u[UnitType.Troll] = U("Troll Cave", "Troll", "Brute (regenerates, area smash)", s, new Res(8, 10, 0, 6), 16f, 7, 1f);
+
             u[UnitType.Voidling] = U("", "Voidling", "Spawned by the Summoner", S(10, 3, 0.8f, 1.0f, 3.6f, Mode.Melee, 0, 0, PKind.VoidGoo, 12f), default, 0f, 99, 0f);
             u[UnitType.Spiderling] = U("", "Spiderling", "Spawned by the Broodmother (venomous bite)", S(14, 4, 0.8f, 1.0f, 4.2f, Mode.Melee, 0, 0, PKind.VoidGoo, 14f), default, 0f, 99, 0f);
 
@@ -566,6 +604,8 @@ namespace HordeLab
             s = S(1600, 30, 0.55f, 1.4f, 5f, Mode.Melee, UFlag.Big | UFlag.Giant, 0, PKind.Blood, 12f); s.splash = 1.6f; s.knock = 0.4f;
             u[UnitType.Fenrir] = U("", "Fenrir", "The Berserker's wolf form: a terrifying howl, then frenzied fast attacks", s, default, 0f, 99, 0f);
             s = S(2000, 24, 1.4f, 1.4f, 2.6f, Mode.Melee, UFlag.Big | UFlag.Giant, 0, PKind.VoidGoo, 10f); s.splash = 1.6f; s.arrowResist = 0.2f;
+            s = S(2200, 34, 1.4f, 1.4f, 2.6f, Mode.Melee, UFlag.Big | UFlag.Giant, 0, PKind.Blood, 8f); s.splash = 2.2f; s.knock = 1f; s.arrowResist = 0.3f;
+            u[UnitType.Warboss] = U("", "The Warboss", "Orc boss. War Cry: nearby allies attack much faster and heal, nearby foes flee", s, default, 0f, 99, 0f);
             u[UnitType.Broodmother] = U("", "The Broodmother", "Void boss. Venomous bite. Every 10s she lays 4 spiderlings", s, default, 0f, 99, 0f);
 
             // Đặc trưng phe được nhân sẵn vào bảng chỉ số
@@ -621,9 +661,9 @@ namespace HordeLab
             for (int t = 0; t < UnitType.Buildable; t++)
             {
                 var u = Units[t];
-                b[B.Barracks + t] = new BuildingDef
+                b[B.BarracksOf(t)] = new BuildingDef
                 {
-                    id = B.Barracks + t, name = u.house, cat = Cat.Barracks, period = u.callTime, unit = t, faction = Faction.Of(t),
+                    id = B.BarracksOf(t), name = u.house, cat = Cat.Barracks, period = u.callTime, unit = t, faction = Faction.Of(t),
                     desc = $"Calls {u.name} squads. {u.role}."
                 };
             }

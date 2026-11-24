@@ -60,6 +60,13 @@ namespace HordeLab
                 "..aaaacccaaaa..", ".aaaaccdbcaaaa.", ".aaaacdddcaaaa.", ".aaaaccdccaaaa.", "..aaaacccaaaa..",
                 "....aaaaaaa....", "...............", "...............", "...............", "...............",
             }, Rgb(116, 62, 168), Rgb(240, 90, 240), Rgb(140, 240, 255), Rgb(40, 22, 66)),
+            // Orc: mặt Orc xanh, mắt đỏ, răng nanh
+            OutlinedIcon("EmblemOrc", new[]
+            {
+                "...............", "...............", "....aaaaaaa....", "...abbbbbbba...", "..abbbbbbbbba..",
+                "..abccbbbccba..", "..abbbbbbbbba..", "..abbbabbbbba..", "..abbbbbbbbba..", "..adbbbbbbbda..",
+                "..adaaaaaaada..", "...d.......d...", "...............", "...............", "...............",
+            }, Rgb(62, 104, 40), Rgb(112, 172, 70), Rgb(236, 60, 40), Rgb(242, 232, 204)),
         };
 
         static readonly string[] LockRows =

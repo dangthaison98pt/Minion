@@ -1,6 +1,6 @@
 # Fantasy World War — thủ thành bằng thẻ bài, vạn quân tự đánh
 
-Game làm theo [Docs/GDD.md](Docs/GDD.md): chọn 1 trong 5 phe, đặt công trình vào lưới thành bằng thẻ bài, rồi ngồi xem
+Game làm theo [Docs/GDD.md](Docs/GDD.md): chọn 1 trong 6 phe, đặt công trình vào lưới thành bằng thẻ bài, rồi ngồi xem
 hàng nghìn lính tự đánh qua 30 đợt. Kinh tế và chiến đấu chạy cùng lúc: nhà tài nguyên sinh Dân / Lương thực / Gỗ / Vàng,
 nhà lính tự gọi quân mỗi khi hồi xong **và** kho đủ tài nguyên.
 
@@ -72,9 +72,10 @@ Phần mô phỏng vẫn là lõi "vạn quân" cũ: **Job System + Burst + GPU 
 - **Lưới thành:** 3×3, mỗi nhà 1 ô, thẻ mở ô sát cạnh (hình dạng lưới do người chơi quyết), gộp 2 nhà cùng loại cùng sao, tối đa 4 sao.
 - **4 tài nguyên** và đủ **12 nhà tài nguyên** với cách sinh riêng (kề nhau, ô rìa, tăng dần theo thời gian trận, theo số Dân...).
 - **11 nhà buff** với 4 hình vùng buff (chữ thập, vòng quanh, ô bên dưới, cả hàng), cộng dồn có trần, lên sao buff mạnh hơn.
-- **5 phe × 5 nhà lính = 25 loại quân**, mỗi loại có cơ chế đúng vai trò: xung phong, hồi máu, đạn nổ lan, né đòn, làm chậm,
+- **6 phe × 5 nhà lính = 30 loại quân**, mỗi loại có cơ chế đúng vai trò: xung phong, hồi máu, đạn nổ lan, né đòn, làm chậm,
   vừa chạy vừa bắn, hất văng, đánh vòng ra sau lưng, tăng sức mạnh bầy, nổ khi chết, đi xuyên hàng, sinh quân con, sóng âm.
 - **Đặc trưng phe** (bảng "Các phe"), kể cả đợt trăng tròn của Người hoá thú và tiểu đội 4×4 của Tiên.
+- **Phe Orc** (thêm sau 5 phe GDD): máu +20%, quân đánh xa tầm ngắn hơn 25%. Orc Grunt (tiền tuyến bổ quét), Spear Thrower (ném giáo), Boar Rider (cưỡi lợn rừng xung phong, hất văng), War Drummer (quân ta trong vùng trống đánh nhanh x1,6), Troll (to, tự hồi 3 máu/s, đập lan). Boss / lõi bí mật: **The Warboss** — War Cry mỗi 12s: quân phe nó trong 8 ô đánh nhanh 5s + hồi 15% máu, địch gần hoảng sợ; lõi bí mật mở khi thắng 5 đợt liên tiếp. Mã nhà lính / lõi Orc nối cuối bảng (`B.BarracksOf`, `Aug.OrcUnitBase`, `Aug.OrcSecret`) để bản lưu cũ vẫn đúng.
 - **Đòn lan:** mỗi phe có quân đánh lan rẻ từ sớm để dọn quân con (The Void đẻ Voidling liên tục): Shield Swordsman chém quét (1,3), Treant đập lan (1,4), Axeman bổ quét (1,3), Bearfolk vả quét + hất văng (1,5), Druid phép lan 7 sát thương. Đòn lan vẫn giữ hất văng / khiên phản đòn lên mục tiêu chính.
 - **Độ khó:** chọn ở màn chọn phe (nhớ lần chọn cuối, mặc định Normal), cố định suốt lượt chơi và lưu cùng bản lưu. Easy: 60% quân địch, 75% sức mạnh, boss 60% máu, +5 tinh thể khởi đầu. Normal: 80% / 90% / 80% / +2. Hard: cân bằng gốc. Số liệu ở `Tuning.Diff*`. Bot: `-difficulty 0|1|2` (mặc định 2 = Hard).
 - **Thắng / thua:** máu thành theo đợt, 3 tim, 30 đợt, đợt 6/12/18/24/30 đánh dấu là đợt trùm.
@@ -216,7 +217,7 @@ Build/                           ← bản build (.gitignore)
 | File | Nội dung |
 |---|---|
 | `Runtime/Core/Config.cs` | Hằng số, mã phe / loại quân, struct `Unit` / `Arrow` / `Particle` — mỗi lính chỉ là 1 struct |
-| `Runtime/Core/GameData.cs` | `Tuning` (mọi số tạm), bảng 5 phe, 27 loại quân (kể cả Rồng), 49 lá thẻ / công trình, 24 lõi |
+| `Runtime/Core/GameData.cs` | `Tuning` (mọi số tạm), bảng 6 phe, 40 loại quân (kể cả quân con, rồng, boss), 54 lá thẻ / công trình, 75 lõi |
 | `Runtime/Gameplay/Game.cs` | Lượt chơi: menu, lưu / nạp (`SaveData`), pha, tim, đợt, phe thù địch, thẻ trên tay, cửa hàng (khoá ô), bán, phần thưởng, quân địch kéo đến, sandbox nền menu |
 | `Runtime/Gameplay/City.cs` | Lưới thành: đặt / gộp / mở ô, tính buff, sinh tài nguyên, nhà lính gọi quân |
 | `Runtime/UI/GameUi.cs` | Giao diện uGUI: menu chính, chọn phe, HUD, lưới thành, tay bài, cửa hàng, ô bán, phần thưởng, tooltip, kéo thả |

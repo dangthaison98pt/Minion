@@ -349,7 +349,8 @@ namespace HordeLab
             u.pack = pack;
             bool rooted = aug && u.type == UnitType.Treant && u.still >= Aug.RootAfter;
             float heal = u.regen + ((aura & 2) != 0 ? Fx.HealRate : 0f) + (rooted ? Aug.RootRegen : 0f)
-                       + (u.type == UnitType.Treant && counters[C.TreeTeam] == team + 1 ? Aug.TreeRegen : 0f);   // The World Tree còn sống
+                       + (u.type == UnitType.Treant && counters[C.TreeTeam] == team + 1 ? Aug.TreeRegen : 0f)    // The World Tree còn sống
+                       + (u.type == UnitType.Troll ? (aug ? Aug.TrollRegenAug : Aug.TrollRegen) : 0f);           // Troll tự hồi máu
             if (heal > 0f) u.hp = math.min(u.maxHp, u.hp + heal * dt);
             u.buffed = (aura & 4) != 0 ? 1 : 0;
 
@@ -655,7 +656,7 @@ namespace HordeLab
                             if (j >= n || j == i) continue;
                             Unit u = units[j];
                             if (u.team != b.team || u.hp <= 0f || math.lengthsq(u.pos - b.pos) > r2) continue;
-                            u.haste = 0.3f;
+                            u.haste = math.max(u.haste, 0.3f);
                             units[j] = u;
                         }
                     }
@@ -678,6 +679,34 @@ namespace HordeLab
                 Fx.Spray(particles, counters, ref rng, b.pos, 0.8f, 16, PKind.Blood, 3f, 6f);
                 counters[C.BossSkills]++;
             }
+            else if (t == UnitType.Warboss)
+            {
+                // War Cry: quân cùng phe quanh mình đánh nhanh + hồi máu, địch đứng gần hoảng sợ
+                if (b.skillT > 0f || Cc.NearestEnemy(units, cellStart, sortedIndex, n, b.pos, 0f, 6f, foe) < 0) return;
+                int cr = (int)math.ceil(Aug.WarCryRadius / Cfg.CellSize), cx = Cfg.CellX(b.pos.x), cy = Cfg.CellY(b.pos.y);
+                float r2 = Aug.WarCryRadius * Aug.WarCryRadius;
+                for (int y = math.max(cy - cr, 0); y <= math.min(cy + cr, Cfg.GridH - 1); y++)
+                    for (int x = math.max(cx - cr, 0); x <= math.min(cx + cr, Cfg.GridW - 1); x++)
+                    {
+                        int c = y * Cfg.GridW + x;
+                        for (int k = cellStart[c]; k < cellStart[c + 1]; k++)
+                        {
+                            int j = sortedIndex[k];
+                            if (j >= n) continue;
+                            Unit u = units[j];
+                            if (u.team != b.team || u.hp <= 0f || math.lengthsq(u.pos - b.pos) > r2) continue;
+                            u.haste = math.max(u.haste, Aug.WarCryHaste);
+                            u.hp = math.min(u.maxHp, u.hp + u.maxHp * Aug.WarCryHeal);
+                            units[j] = u;
+                        }
+                    }
+                counters[C.CcHits] += Cc.Area(units, cellStart, sortedIndex, n, b.pos, Aug.WarCryFearRadius, foe, CC.Fear, Aug.WarCryFear);
+                Fx.Ring(particles, counters, b.pos, Aug.WarCryRadius * 0.5f, 18, PKind.Dust);
+                Fx.Ring(particles, counters, b.pos, Aug.WarCryRadius, 28, PKind.Blood);
+                Fx.Spray(particles, counters, ref rng, b.pos, 0.6f, 10, PKind.Spark, 3f, 6f);
+                b = units[i]; b.skillT = Aug.WarCryEvery; units[i] = b;
+                counters[C.BossSkills]++;
+            }
             else if (t == UnitType.Broodmother)
             {
                 if (b.skillT > 0f || Cc.NearestEnemy(units, cellStart, sortedIndex, n, b.pos, 0f, Aug.BroodSight, foe) < 0) return;
@@ -698,6 +727,28 @@ namespace HordeLab
                 b = units[i]; b.skillT = Aug.BroodEvery; units[i] = b;
                 counters[C.BossSkills]++;
             }
+        }
+
+        /// <summary>War Drummer: quân cùng phe trong vùng trống đánh nhanh hơn (Haste). Có lõi Battle Rhythm thì vùng gấp đôi.</summary>
+        void Drum(int i, int n)
+        {
+            Unit d = units[i];
+            float r = Cc.Has(stats[d.type], d) ? Aug.DrumRadiusAug : Aug.DrumRadius, r2 = r * r;
+            int cr = (int)math.ceil(r / Cfg.CellSize), cx = Cfg.CellX(d.pos.x), cy = Cfg.CellY(d.pos.y);
+            for (int y = math.max(cy - cr, 0); y <= math.min(cy + cr, Cfg.GridH - 1); y++)
+                for (int x = math.max(cx - cr, 0); x <= math.min(cx + cr, Cfg.GridW - 1); x++)
+                {
+                    int c = y * Cfg.GridW + x;
+                    for (int k = cellStart[c]; k < cellStart[c + 1]; k++)
+                    {
+                        int j = sortedIndex[k];
+                        if (j >= n || j == i) continue;
+                        Unit u = units[j];
+                        if (u.team != d.team || u.hp <= 0f || math.lengthsq(u.pos - d.pos) > r2 || u.haste >= 0.3f) continue;
+                        u.haste = 0.3f;
+                        units[j] = u;
+                    }
+                }
         }
 
         /// <summary>Đòn chém của boss vừa trúng mục tiêu <paramref name="t"/>: hút máu (Berserker), sét lan (Thor), cắn độc (Broodmother).</summary>
@@ -731,6 +782,11 @@ namespace HordeLab
                 case UnitType.Fenrir:
                     Fx.Spray(particles, counters, ref rng, at, 0.4f, 10, PKind.Blood, 4f, 5f);
                     Fx.Spray(particles, counters, ref rng, at, 0.5f, 5, PKind.Dust, 3f, 3f);
+                    break;
+                case UnitType.Warboss:
+                    Fx.Ring(particles, counters, at, rr, 14, PKind.Blood);
+                    Fx.Spray(particles, counters, ref rng, at, 0.6f, 8, PKind.Dust, 3.5f, 4f);
+                    Fx.Spray(particles, counters, ref rng, at, 0.4f, 4, PKind.Spark, 3f, 5f);
                     break;
                 case UnitType.Broodmother:
                     Fx.Ring(particles, counters, at, rr, 10, PKind.VoidGoo);
@@ -871,6 +927,7 @@ namespace HordeLab
             for (int i = 0; i < n; i++)
             {
                 int gt = units[i].type;
+                if (gt == UnitType.Drummer && units[i].hp > 0f) { Drum(i, n); continue; }
                 if (gt < UnitType.Emperor || units[i].hp <= 0f) continue;
                 if (gt == UnitType.Emperor) Emperor(i, n, ref rng);
                 else Boss(i, n, ref rng);
@@ -903,6 +960,7 @@ namespace HordeLab
                         if (a.type == UnitType.Axeman) mult *= 2f - a.hp / math.max(a.maxHp, 1f);                         // Cuồng nộ
                         if (a.type == UnitType.Wolf) mult *= 1f + math.min(Aug.PackMax, Aug.PackBonus * a.pack);          // Bầy đàn
                         if (a.type == UnitType.Leopard && (v.faceLeft == 0 ? a.pos.x < v.pos.x : a.pos.x > v.pos.x)) mult *= Aug.Backstab;   // đánh sau lưng
+                        if (a.type == UnitType.Grunt && v.hp < 0.5f * v.maxHp) mult *= Aug.GruntExecute;          // Bloodlust
                     }
                     float dmg = sa.damage * mult * rng.NextFloat(0.75f, 1.25f);
                     bool breakthrough = augA && a.type == UnitType.Cavalry && a.charge > 0.8f;
@@ -991,6 +1049,7 @@ namespace HordeLab
                             Fx.Spray(particles, counters, ref rng, hit, 0.2f, 3, PKind.Dust, 3f, 3f);
                         }
                         if (a.type == UnitType.Spiderling) v.poison = Aug.PoisonTime;          // nhện con cắn độc
+                        if (augA && a.type == UnitType.BoarRider && a.charge > 0.8f && Cc.Apply(ref v, CC.Stun, Aug.TrampleStun, a.pos)) counters[C.CcHits]++;   // Trample
                         units[t] = v;
                         Fx.Spray(particles, counters, ref rng, hit, 0.5f, 2, sv.blood, 2.5f, 5f);
                         Fx.Spray(particles, counters, ref rng, hit, 0.6f, 1, PKind.Spark, 3f, 3f);

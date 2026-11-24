@@ -150,6 +150,8 @@ namespace HordeLab
         }
 
         static readonly Color32 Robe = Rgb(232, 224, 200), RobeDark = Rgb(186, 176, 150);
+        static readonly Color32 OrcSkin = Rgb(106, 160, 64), OrcSkinD = Rgb(70, 114, 44), OrcLeather = Rgb(112, 78, 48), OrcLeatherD = Rgb(76, 52, 32);
+        static readonly Color32 OrcIron = Rgb(78, 80, 90), OrcIronL = Rgb(128, 132, 144), OrcRed = Rgb(170, 44, 38), OrcRedD = Rgb(116, 30, 28), OrcEye = Rgb(236, 64, 40);
         static readonly Color32 ElfGreen = Rgb(60, 150, 96), ElfDark = Rgb(36, 100, 70), Blond = Rgb(240, 214, 120), BlondDark = Rgb(196, 160, 70);
         static readonly Color32 Leaf = Rgb(92, 160, 62), LeafDark = Rgb(54, 110, 48), LeafLight = Rgb(140, 198, 84), Bark = Rgb(112, 78, 50), BarkDark = Rgb(78, 52, 36);
         static readonly Color32 DwarfTunic = Rgb(170, 84, 40), DwarfDark = Rgb(118, 56, 30), Beard = Rgb(222, 120, 40), BeardGrey = Rgb(200, 196, 188);
@@ -201,6 +203,15 @@ namespace HordeLab
                 case UnitType.Eagle:
                     return new Look { leg = Beak, body = FeatherDark, bodyDark = FurBrownDark, belt = FeatherDark, top = Feather, back = Rgb(190, 188, 180), face = Feather, faceLow = Beak, hasEye = true, eye = Outline,
                                       weapon = WJavelin, w1 = Wood, w2 = Steel, extra = XWings, ex = FeatherDark };
+                case UnitType.Grunt:
+                    return new Look { leg = OrcLeatherD, body = OrcLeather, bodyDark = OrcLeatherD, belt = OrcIron, top = OrcSkinD, back = OrcSkinD, face = OrcSkin, faceLow = OrcSkinD,
+                                      hasEye = true, eye = OrcEye, weapon = WAxe, w1 = OrcIronL, w2 = Wood, extra = XEars, ex = OrcSkin };
+                case UnitType.SpearThrower:
+                    return new Look { leg = OrcLeatherD, body = OrcRed, bodyDark = OrcRedD, belt = OrcLeather, top = OrcSkinD, back = OrcSkinD, face = OrcSkin, faceLow = OrcSkinD,
+                                      hasEye = true, eye = OrcEye, weapon = WJavelin, w1 = Wood, w2 = OrcIronL, extra = XEars, ex = OrcSkin };
+                case UnitType.Drummer:
+                    return new Look { leg = OrcLeatherD, body = Rgb(140, 108, 74), bodyDark = Rgb(96, 72, 48), belt = Bone, top = OrcIron, back = OrcSkinD, face = OrcSkin, faceLow = OrcSkinD,
+                                      hasEye = true, eye = OrcEye, weapon = WStaff, w1 = Wood, w2 = Bone, shield = true, sh1 = Rgb(196, 160, 110), sh2 = OrcRed, extra = XHorns, ex = Bone };
                 case UnitType.Summoner:
                     return new Look { leg = Void3, body = Void2, bodyDark = Void3, belt = VoidGlow, top = Void2, back = Void3, face = Void3, faceLow = Void3, hasEye = true, eye = VoidGlow,
                                       weapon = WStaff, w1 = Void3, w2 = VoidGlow, extra = XPoint, ex = Void2 };
@@ -266,6 +277,9 @@ namespace HordeLab
                 case UnitType.Cannon: return DrawCannon(state, f);
                 case UnitType.Treant: return DrawTreant(state, f);
                 case UnitType.Bear: return DrawBear(state, f);
+                case UnitType.BoarRider: return DrawRider(3, state, f, true);
+                case UnitType.Troll: return DrawTroll(state, f);
+                case UnitType.Warboss: return DrawWarboss(state, f);
                 case UnitType.Aberration: return DrawAberration(state, f);
                 case UnitType.Shade: return DrawShade(state, f);
                 case UnitType.Eye: return DrawEye(state, f);
@@ -433,6 +447,7 @@ namespace HordeLab
             Color32 coat = Horse, coatLight = HorseLight, coatDark = HorseDark, mane = Mane, cloth = Cloth, clothDark = ClothDark;
             if (kind == 1) { coat = Rgb(186, 138, 84); coatLight = Rgb(214, 172, 116); coatDark = Rgb(226, 214, 190); mane = Rgb(150, 104, 62); cloth = ElfGreen; clothDark = ElfDark; }
             if (kind == 2) { coat = Rgb(196, 194, 186); coatLight = Rgb(226, 224, 216); coatDark = Rgb(140, 138, 134); mane = Rgb(150, 148, 144); cloth = DwarfTunic; clothDark = DwarfDark; }
+            if (kind == 3) { coat = Rgb(112, 80, 58); coatLight = Rgb(150, 112, 80); coatDark = Rgb(72, 50, 38); mane = Rgb(46, 34, 28); cloth = OrcRed; clothDark = OrcRedD; }
 
             var s = new Canvas(UnitCell, UnitCell);
             bool walk = state == 0;
@@ -440,7 +455,7 @@ namespace HordeLab
             int bob = walk && (f == 1 || f == 3) ? -1 : 0;   // nhún lên khi chân duỗi thẳng
 
             // --- chân (vẽ trước để thân đè lên) ---
-            Color32 legC = kind == 2 ? Rgb(120, 118, 114) : kind == 1 ? Rgb(150, 104, 62) : HorseDark;
+            Color32 legC = kind == 3 ? Rgb(60, 42, 32) : kind == 2 ? Rgb(120, 118, 114) : kind == 1 ? Rgb(150, 104, 62) : HorseDark;
             void Leg(int x0, int y0, int dx1, int dx2)
             {
                 s.Set(x0, y0, legC); s.Set(x0 + dx1, y0 + 1, legC); s.Set(x0 + dx2, y0 + 2, Hoof);
@@ -471,6 +486,11 @@ namespace HordeLab
             {
                 s.Set(13, by - 5, Bone); s.Set(13, by - 6, Bone); s.Set(14, by - 6, Bone); s.Set(12, by - 6, Bone); s.Set(14, by - 5, BoneDark);
             }
+            if (kind == 3)   // lợn rừng: bờm lông dựng dọc lưng + răng nanh
+            {
+                s.Set(5, by - 1, mane); s.Set(7, by - 1, mane); s.Set(9, by - 1, mane); s.Set(11, by - 2, mane);
+                s.Set(14, by - 1, White); s.Set(14, by - 2, White);
+            }
             if (kind == 2)   // sừng dê cong ra sau + râu dê
             {
                 s.Set(12, by - 5, BoneDark); s.Set(11, by - 5, Bone); s.Set(10, by - 4, Bone); s.Set(10, by - 3, BoneDark);
@@ -483,8 +503,8 @@ namespace HordeLab
 
             if (rider)
             {
-                Color32 tunic = kind == 1 ? ElfGreen : kind == 2 ? DwarfTunic : Tunic;
-                Color32 tunicDark = kind == 1 ? ElfDark : kind == 2 ? DwarfDark : TunicDark;
+                Color32 tunic = kind == 1 ? ElfGreen : kind == 2 ? DwarfTunic : kind == 3 ? OrcLeather : Tunic;
+                Color32 tunicDark = kind == 1 ? ElfDark : kind == 2 ? DwarfDark : kind == 3 ? OrcLeatherD : TunicDark;
                 int ry = by - 1;                                         // hông kỵ sĩ ngồi trên yên
                 s.Set(8, ry + 2, Pants); s.Set(8, ry + 3, Leather);      // chân + ủng thả xuống sườn thú
                 for (int y = ry - 2; y <= ry; y++) { s.Set(7, y, tunicDark); s.Set(8, y, tunic); }
@@ -538,6 +558,18 @@ namespace HordeLab
                 }
             }
 
+            if (rider && kind == 3)
+            {
+                for (int y = 0; y < s.H; y++)
+                    for (int x = 0; x < s.W; x++)
+                    {
+                        var c = s.Get(x, y);
+                        if (c.Equals(Skin)) s.Set(x, y, OrcSkin);
+                        else if (c.Equals(Beard)) s.Set(x, y, OrcSkinD);
+                    }
+                int ry2 = 8 + (walk && (f == 1 || f == 3) ? -1 : 0) - 1;
+                s.Set(7, ry2 - 4, OrcIron); s.Set(8, ry2 - 4, OrcIron); s.Set(6, ry2 - 5, Bone); s.Set(9, ry2 - 5, Bone);   // mũ sắt sừng
+            }
             return s;
         }
 
@@ -1136,6 +1168,104 @@ namespace HordeLab
             s.Set(3, 5, glow);
             Ellipse(s, 6.5f, 6f + up, 1.8f, 1.5f, (x, y) => car);
             s.Set(7, 5 + up, eye); s.Set(8, 6 + up, eye);
+            return s;
+        }
+
+
+        /// <summary>Troll 16x16: khổng lồ còng lưng da xám xanh, tay dài, nanh trắng, cầm dùi cui gỗ.</summary>
+        static Canvas DrawTroll(int state, int f)
+        {
+            var s = new Canvas(UnitCell, UnitCell);
+            Color32 tr = Rgb(112, 132, 108), trD = Rgb(74, 92, 74), trL = Rgb(154, 172, 146), club = Wood, clubD = BarkDark;
+            bool walk = state == 0;
+            int bob = walk && (f & 1) == 1 ? 1 : 0;
+            // chân
+            if (walk && (f & 1) == 1) { Box(s, 4, 12, 5, 13, trD); Box(s, 9, 12, 10, 13, trD); }
+            else { Box(s, 5, 12, 6, 13, trD); Box(s, 8, 12, 9, 13, trD); }
+            Box(s, 4, 11, 10, 11, OrcLeatherD);                                       // khố da
+            // thân còng
+            Box(s, 4, 5 + bob, 10, 10 + bob, tr);
+            Box(s, 4, 5 + bob, 5, 10 + bob, trD);
+            Box(s, 7, 7 + bob, 9, 9 + bob, trL);                                      // bụng
+            s.Set(6, 4 + bob, trD); s.Set(8, 4 + bob, trD);                             // u lưng
+            // đầu chúi thấp
+            Box(s, 9, 3 + bob, 12, 5 + bob, tr); s.Set(9, 2 + bob, trD);
+            s.Set(11, 4 + bob, OrcEye); s.Set(13, 4 + bob, trL); s.Set(12, 6 + bob, White);   // mắt, mũi, nanh
+            // tay sau
+            Box(s, 3, 6 + bob, 3, 11 + bob, trD);
+            // tay trước + dùi cui
+            if (walk) { Box(s, 11, 6 + bob, 12, 10 + bob, tr); Box(s, 12, 11 + bob, 13, 13, club); s.Set(13, 13, clubD); }
+            else if (f == 0) { Box(s, 11, 2, 12, 5, tr); Box(s, 12, 0, 14, 2, club); s.Set(14, 0, clubD); }                 // giơ dùi
+            else if (f == 1) { Box(s, 11, 3, 12, 6, tr); Box(s, 13, 1, 15, 3, club); }
+            else if (f == 2) { Box(s, 11, 6, 12, 8, tr); Box(s, 13, 6, 15, 8, club); s.Set(15, 8, clubD); }                 // đập ngang
+            else { Box(s, 11, 8, 12, 10, tr); Box(s, 13, 10, 15, 13, club); s.Set(15, 13, clubD); s.Set(14, 14, Rgb(150, 132, 104)); }   // đập xuống đất
+            return s;
+        }
+
+        /// <summary>The Warboss 32x32: thủ lĩnh Orc khổng lồ, giáp sắt đen gai nhọn, mũ sừng, nanh lớn, sơn chiến đỏ, áo choàng lông, dao phay khổng lồ.</summary>
+        static Canvas DrawWarboss(int state, int f)
+        {
+            var s = new Canvas(GiantPx, GiantPx);
+            Color32 skin = Rgb(108, 164, 66), skinD = Rgb(70, 116, 44), skinL = Rgb(146, 198, 94);
+            Color32 iron = Rgb(70, 72, 82), ironD = Rgb(42, 44, 52), ironL = Rgb(128, 132, 146), spike = Rgb(206, 210, 220);
+            Color32 fur = Rgb(96, 70, 48), furD = Rgb(64, 46, 32), furL = Rgb(138, 104, 72), red = Rgb(186, 40, 36), bone = Rgb(236, 226, 196), boneD = Rgb(176, 164, 136);
+            Color32 blade = Rgb(196, 202, 214), bladeD = Rgb(118, 124, 140), edge = Rgb(248, 250, 255), wood = Rgb(110, 74, 44), eye = Rgb(255, 70, 40);
+            bool attack = state == 1, stride = !attack && (f & 1) == 1;
+            int b = stride ? 1 : 0;
+
+            // áo choàng lông
+            FillPoly(s, V(8, 11, 14, 11, 13, 26, 7, 28, 5, 24, 6, 15), b, (x, y) => x <= 7 ? furD : ((x * 3 + y) % 5 == 0) ? furL : fur);
+            // chân: giáp sắt, ủng gai
+            int bl = stride ? 10 : 11, fl = stride ? 18 : 17;
+            Box(s, bl, 22 + b, bl + 2, 27, ironD); Box(s, bl - 1, 28, bl + 2, 29, iron); s.Set(bl - 1, 27, spike);
+            Box(s, fl, 22 + b, fl + 3, 27, iron); s.Set(fl, 23 + b, ironL); Box(s, fl, 28, fl + 4, 29, ironD); s.Set(fl + 4, 27, spike);
+            // thân giáp đen + thắt lưng sọ
+            Box(s, 9, 13 + b, 22, 21 + b, iron);
+            Box(s, 9, 13 + b, 11, 21 + b, ironD);
+            Box(s, 13, 14 + b, 20, 15 + b, ironL);
+            for (int x = 12; x <= 21; x += 3) s.Set(x, 17 + b, ironD);                  // đinh tán
+            Box(s, 9, 20 + b, 22, 21 + b, OrcLeatherD);
+            Box(s, 14, 19 + b, 17, 22 + b, bone); s.Set(15, 20 + b, Outline); s.Set(16, 20 + b, Outline); Line(s, 14, 22 + b, 17, 22 + b, boneD);   // khoá thắt lưng hình sọ
+            // vai giáp gai to
+            Ellipse(s, 9f, 12.5f + b, 3f, 2.5f, (x, y) => y <= 11 + b ? iron : ironD);
+            Ellipse(s, 22f, 12.5f + b, 3.2f, 2.6f, (x, y) => y <= 11 + b ? ironL : iron);
+            s.Set(7, 9 + b, spike); s.Set(9, 9 + b, spike); s.Set(21, 9 + b, spike); s.Set(23, 9 + b, spike); s.Set(24, 10 + b, spike);
+            // tay sau
+            Box(s, 7, 14 + b, 8, 19 + b, skinD); Line(s, 7, 16 + b, 8, 16 + b, red);
+            // đầu: hàm bạnh, nanh lớn, mắt đỏ, sơn chiến
+            Box(s, 13, 5 + b, 19, 11 + b, skin); Box(s, 13, 5 + b, 13, 11 + b, skinD); Line(s, 14, 5 + b, 18, 5 + b, skinL);
+            Box(s, 14, 10 + b, 20, 12 + b, skin); Line(s, 14, 12 + b, 20, 12 + b, skinD);              // hàm dưới bạnh
+            s.Set(17, 7 + b, eye); s.Set(18, 7 + b, eye); Line(s, 16, 6 + b, 19, 6 + b, Outline);       // mắt đỏ + mày cau
+            Line(s, 15, 8 + b, 18, 8 + b, red); s.Set(16, 9 + b, red);                                   // sơn chiến
+            s.Set(20, 8 + b, skin);                                                                       // mũi
+            s.Set(16, 11 + b, bone); s.Set(16, 10 + b, bone); s.Set(19, 11 + b, bone); s.Set(19, 10 + b, bone);   // nanh
+            // mũ sắt sừng
+            Box(s, 12, 2 + b, 19, 5 + b, iron); Line(s, 13, 2 + b, 18, 2 + b, ironL); Line(s, 12, 5 + b, 19, 5 + b, ironD);
+            Line(s, 12, 3 + b, 9, 0 + b, bone); s.Set(9, 1 + b, boneD);
+            Line(s, 19, 3 + b, 22, 0 + b, bone); s.Set(22, 1 + b, boneD);
+            s.Set(15, 1 + b, spike); s.Set(16, 1 + b, spike);
+
+            // tay trước + dao phay khổng lồ
+            if (!attack)
+            {
+                Thick(s, 22, 14 + b, 24, 18 + b, skin, skinD); Line(s, 22, 15 + b, 23, 16 + b, red);
+                Line(s, 25, 6 + b, 25, 20 + b, wood);
+                FillPoly(s, V(26, 2, 31, 2, 31, 14, 28, 15, 26, 12), b, (x, y) => x >= 30 ? edge : x >= 28 ? blade : bladeD);
+                s.Set(29, 4 + b, Outline);                                                                // lỗ trên lưỡi dao
+            }
+            else if (f < 2)
+            {
+                Thick(s, 22, 13, 20, 7, skin, skinD);
+                Line(s, 20, 6, 15, 2, wood);
+                FillPoly(s, V(14, 1 - f, 4, 0, 3, 5, 6, 7, 14, 4 - f), 0, (x, y) => y <= 1 ? edge : y <= 3 ? blade : bladeD);
+            }
+            else
+            {
+                Thick(s, 22, 13, 25, 16, skin, skinD);
+                Line(s, 25, 17, 28, 20, wood);
+                FillPoly(s, V(26, 19, 31, 19, 31, 29, 28, 29, 26, 25), 0, (x, y) => x >= 30 ? edge : x >= 28 ? blade : bladeD);
+                if (f == 3) { s.Set(24, 29, Rgb(150, 132, 104)); s.Set(22, 28, Rgb(150, 132, 104)); s.Set(31, 18, eye); }
+            }
             return s;
         }
 

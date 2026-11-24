@@ -399,6 +399,7 @@ namespace HordeLab
                 bool on = has(t);
                 st.augOn = on ? 1 : 0;
                 if (on && t == UnitType.Swordsman) st.arrowResist += Aug.ShieldWallResist;            // Tường khiên
+                if (on && t == UnitType.SpearThrower) st.damage *= Aug.SpearDmg;                       // Heavy Spears
                 if (on && t == UnitType.Shaman && fullMoon) st.flags |= UFlag.HealAura;              // Trăng máu
                 stats[t] = st;
             }

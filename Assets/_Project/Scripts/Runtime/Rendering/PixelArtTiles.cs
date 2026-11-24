@@ -445,7 +445,7 @@ namespace HordeLab
                     for (int y = 0; y < TilePx; y++) for (int x = 0; x < TilePx; x++) Shade(t, x, y, 0.8f);
                     return t;
             }
-            return DrawBarracksTile(id - B.Barracks);
+            return DrawBarracksTile(GameData.Buildings[id].unit);
         }
 
         static void Cow(Canvas t, int x, int y)
@@ -507,6 +507,19 @@ namespace HordeLab
                     t.Set(12, 2, Bone); t.Set(11, 3, Bone); t.Set(13, 3, Bone);
                     Box(t, 26, 4, 27, 14, Wood); Box(t, 25, 5, 28, 6, Cloth); Box(t, 25, 9, 28, 10, Bone); t.Set(26, 3, Bone); t.Set(27, 3, Bone);   // cột totem
                     t.Set(4, 20, Bone); t.Set(5, 21, Bone); t.Set(6, 20, BoneDark);
+                    break;
+                case Faction.Orc:
+                    // trại Orc: hàng rào cọc nhọn, lều da, cột cắm sọ, cờ đỏ
+                    t = Dirt(60 + unit);
+                    for (int x = 2; x < 24; x += 3)
+                    {
+                        Box(t, x, 4, x + 1, 13, Wood); Box(t, x, 4, x, 13, Leather);
+                        t.Set(x, 3, Wood); t.Set(x + 1, 2, Bone);
+                    }
+                    House(t, 6, 9, 13, 9, Rgb(132, 96, 60), Rgb(92, 64, 40), Rgb(118, 82, 50));
+                    Box(t, 11, 14, 13, 17, Outline);
+                    Box(t, 26, 5, 26, 15, Wood); t.Set(26, 3, Bone); t.Set(25, 4, Bone); t.Set(27, 4, Bone); t.Set(26, 4, Outline);   // sọ trên cột
+                    Flag(t, 24, 12, Rgb(176, 40, 36), 9);
                     break;
                 default:
                     t = Ground(Rgb(48, 40, 62), Rgb(36, 30, 50), Rgb(62, 50, 80), 60 + unit);

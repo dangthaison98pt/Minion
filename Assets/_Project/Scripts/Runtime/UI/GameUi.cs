@@ -631,10 +631,10 @@ namespace HordeLab
                 case Aug.FreeRoll: main = Crystal; badge = StatIcons[PixelArt.StatTime]; break;
                 case Aug.Bargain: main = Crystal; break;
                 case Aug.LandGrant: main = Tiles[B.Expand]; break;
-                case Aug.Recruit: main = Tiles[B.Barracks + g.faction * 5]; badge = StarFor(2); break;
+                case Aug.Recruit: main = Tiles[B.BarracksOf(g.faction * 5)]; badge = StarFor(2); break;
                 case Aug.Architect: main = Shapes[(int)Shape.Ring]; badge = StatIcons[PixelArt.StatBonus]; break;
                 case Aug.Dragon: main = UnitIconsTight[UnitType.Dragon]; break;
-                case Aug.Emperor: case Aug.WorldTreeAug: case Aug.ThorAug: case Aug.BerserkerAug: case Aug.BroodAug: main = UnitIconsTight[Aug.SecretUnit(d.id)]; break;
+                case Aug.Emperor: case Aug.WorldTreeAug: case Aug.ThorAug: case Aug.BerserkerAug: case Aug.BroodAug: case Aug.OrcSecret: main = UnitIconsTight[Aug.SecretUnit(d.id)]; break;
                 case Aug.Meteor: main = MeteorIcon; break;
                 case Aug.Ballista: main = BoltIcon; break;
                 case Aug.Mercenary: main = UnitIconsTight[UnitType.Axeman]; badge = Crystal; break;
@@ -658,6 +658,7 @@ namespace HordeLab
             Faction.Elf => "The forest has grown deep. The World Tree awakens.",
             Faction.Dwarf => "Your mines run deep. Thunder rumbles in the mountains.",
             Faction.Beast => "Three moons of victory. The Berserker answers the howl.",
+            Faction.Orc => "Five victories in a row. The Warboss smells a good fight.",
             _ => "So many have fallen. Something stirs in the dark.",
         };
 
@@ -703,7 +704,7 @@ namespace HordeLab
             diffNote.rectTransform.anchorMin = new Vector2(0f, 1f); diffNote.rectTransform.anchorMax = new Vector2(1f, 1f); diffNote.rectTransform.pivot = new Vector2(0.5f, 1f);
             diffNote.rectTransform.anchoredPosition = new Vector2(0f, -200f); diffNote.rectTransform.sizeDelta = new Vector2(0f, 24f);
 
-            const float w = 340f, gap = 16f, h = 670f;
+            const float w = 300f, gap = 12f, h = 670f;           // 6 phe vừa khung 1920
             float total = w * Faction.Count + gap * (Faction.Count - 1);
             for (int f = 0; f < Faction.Count; f++)
             {

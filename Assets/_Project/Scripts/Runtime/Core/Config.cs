@@ -56,11 +56,11 @@ namespace HordeLab
         public const int Length = Type0 + UnitType.Count;
     }
 
-    /// <summary>5 phe trong GDD. Mỗi phe 5 loại quân: loại = phe * 5 + vị trí.</summary>
+    /// <summary>6 phe (5 phe GDD + Orc). Mỗi phe 5 loại quân: loại = phe * 5 + vị trí.</summary>
     public static class Faction
     {
-        public const int Human = 0, Elf = 1, Dwarf = 2, Beast = 3, Void = 4;
-        public const int Count = 5;
+        public const int Human = 0, Elf = 1, Dwarf = 2, Beast = 3, Void = 4, Orc = 5;
+        public const int Count = 6;
         /// <summary>Phe của một loại quân; -1 = quân trung lập (Rồng của lõi Dragon's Pact).</summary>
         public static int Of(int unitType) => unitType == UnitType.Voidling || unitType == UnitType.Spiderling ? Void : unitType >= UnitType.FirstGiant ? -1 : unitType / 5;
     }
@@ -77,16 +77,18 @@ namespace HordeLab
         public const int Bear = 15, Wolf = 16, Leopard = 17, Shaman = 18, Eagle = 19;
         // The Void
         public const int Aberration = 20, Shade = 21, Eye = 22, Summoner = 23, Screamer = 24;
-        public const int Voidling = 25;      // quân con do Kẻ triệu hồi sinh ra, không có nhà lính
-        public const int Spiderling = 26;    // nhện con do boss Broodmother đẻ ra (phe Hư không)
-        public const int Dragon = 27;        // rồng của lõi Dragon's Pact, không có nhà lính, không thuộc phe nào
-        public const int Emperor = 28;       // Hoàng đế vàng: lõi bí mật The Golden Emperor (phe Người) + boss của phe Người
+        // Orc
+        public const int Grunt = 25, SpearThrower = 26, BoarRider = 27, Drummer = 28, Troll = 29;
+        public const int Voidling = 30;      // quân con do Kẻ triệu hồi sinh ra, không có nhà lính
+        public const int Spiderling = 31;    // nhện con do boss Broodmother đẻ ra (phe Hư không)
+        public const int Dragon = 32;        // rồng của lõi Dragon's Pact, không có nhà lính, không thuộc phe nào
+        public const int Emperor = 33;       // Hoàng đế vàng: lõi bí mật The Golden Emperor (phe Người) + boss của phe Người
         // Boss của đợt trùm, mỗi phe 1 con (Người dùng Hoàng đế vàng). Fenrir = dạng sói của Berserker khi máu dưới 25%
-        public const int WorldTree = 29, Thor = 30, Berserker = 31, Fenrir = 32, Broodmother = 33;
-        public const int Buildable = 25;
-        public const int Count = 34;
+        public const int WorldTree = 34, Thor = 35, Berserker = 36, Fenrir = 37, Broodmother = 38, Warboss = 39;
+        public const int Buildable = 30;
+        public const int Count = 40;
         /// <summary>Boss đi cùng đợt trùm của phe <paramref name="faction"/>.</summary>
-        public static int BossOf(int faction) => faction == 0 ? Emperor : faction == 1 ? WorldTree : faction == 2 ? Thor : faction == 3 ? Berserker : Broodmother;
+        public static int BossOf(int faction) => faction == 0 ? Emperor : faction == 1 ? WorldTree : faction == 2 ? Thor : faction == 3 ? Berserker : faction == 4 ? Broodmother : Warboss;
 
         // Quân khổng lồ (32x32) nằm ở CUỐI bảng, từ Dragon trở đi: mỗi con chiếm 8 hàng atlas 16px thay vì 2
         public const int FirstGiant = Dragon, GiantCount = Count - FirstGiant;
