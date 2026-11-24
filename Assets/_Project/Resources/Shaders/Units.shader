@@ -21,7 +21,7 @@ Shader "Horde/Units"
             #include "UnityCG.cginc"
             #include "HordeCommon.cginc"
 
-            StructuredBuffer<float4> _Units;   // xy = vị trí, z = ô trong atlas, w = cờ (1 = quay trái, 2 = nháy trắng, 4 = đang bị làm chậm)
+            StructuredBuffer<float4> _Units;   // xy = vị trí, z = ô trong atlas, w = cờ (1 = quay trái, 2 = nháy trắng, 4 = đang bị làm chậm, 8 = khổng lồ 2x2 ô)
             sampler2D _MainTex;
             float4 _Atlas;                     // x = số cột, y = số hàng, z = kích thước quad, w = PPU
 
@@ -38,7 +38,8 @@ Shader "Horde/Units"
                 float2 c = kCorners[vid];
                 uint flags = (uint)u.w;
 
-                float2 p = SnapToPixel(u.xy, _Atlas.w) + c * _Atlas.z;
+                float k = (flags & 8u) ? 2.0 : 1.0;        // khổng lồ: quad và vùng atlas to gấp đôi
+                float2 p = SnapToPixel(u.xy, _Atlas.w) + c * _Atlas.z * k;
 
                 float row = floor(u.z / _Atlas.x);
                 float col = u.z - row * _Atlas.x;
@@ -47,7 +48,7 @@ Shader "Horde/Units"
 
                 v2f o;
                 o.pos = mul(UNITY_MATRIX_VP, float4(p, DepthFromY(u.y), 1.0));
-                o.uv = float2((col + local.x) / _Atlas.x, 1.0 - (row + 1.0 - local.y) / _Atlas.y);
+                o.uv = float2((col + local.x * k) / _Atlas.x, 1.0 - (row + k * (1.0 - local.y)) / _Atlas.y);
                 o.fx = float2((flags & 2u) ? 1.0 : 0.0, (flags & 4u) ? 1.0 : 0.0);
                 return o;
             }

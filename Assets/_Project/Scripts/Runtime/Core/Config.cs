@@ -88,6 +88,7 @@ namespace HordeLab
         public const int Big = 8;        // sprite 16x16
         public const int HealAura = 16;  // hồi máu đồng đội đứng gần
         public const int PowerAura = 32; // tăng sát thương đồng đội đứng gần
+        public const int Giant = 64;     // sprite 32x32, chiếm 2x2 ô atlas (chỉ loại quân CUỐI bảng mới được dùng: xem PixelArt.UnitRows)
     }
 
     /// <summary>Hình dạng viên đạn (hàng trong texture đạn).</summary>

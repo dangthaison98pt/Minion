@@ -910,9 +910,14 @@ namespace HordeLab
             if (u.state == 0) frame = (int)(u.animT * stats[u.type].animFps) & 3;
             else frame = u.animT < 0.4f ? math.min(3, (int)(u.animT * 10f)) : 0;
 
-            int row = u.type * 2 + u.state;
             int flags = u.faceLeft | (u.flash > 0.25f ? 2 : 0) | (u.slow > 0f ? 4 : 0);
-            gpu[i] = new float4(u.pos, row * 4 + frame, flags);
+            if ((stats[u.type].flags & UFlag.Giant) != 0)
+            {
+                // quân khổng lồ 32x32: mỗi khung chiếm 2x2 ô, 2 khung / 2 hàng atlas, mỗi trạng thái 4 hàng
+                int grow = u.type * 2 + u.state * 4 + (frame >> 1) * 2;
+                gpu[i] = new float4(u.pos, grow * 4 + (frame & 1) * 2, flags | 8);
+            }
+            else gpu[i] = new float4(u.pos, (u.type * 2 + u.state) * 4 + frame, flags);
         }
     }
 

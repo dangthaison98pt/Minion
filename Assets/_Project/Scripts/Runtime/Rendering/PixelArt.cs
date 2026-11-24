@@ -12,7 +12,9 @@ namespace HordeLab
     public static partial class PixelArt
     {
         // Ô atlas 16x16: lính bộ 10x10 (12x12 tính cả viền) vẽ ở giữa ô, quân to dùng trọn 16x16. 4 khung hình x (26 loại x 2 trạng thái)
-        public const int UnitCell = 16, InfantryPx = 10, UnitCols = 4, UnitRows = UnitType.Count * 2;
+        // Quân khổng lồ (UFlag.Giant, hiện chỉ có Rồng, phải là loại CUỐI bảng): 32x32, 8 hàng atlas thay vì 2
+        public const int GiantPx = 32;
+        public const int UnitCell = 16, InfantryPx = 10, UnitCols = 4, UnitRows = UnitType.Count * 2 + 6;
         public const int StampPx = 20, StampCols = 8, StampRows = 3 + (UnitType.Count * 2 + StampCols - 1) / StampCols;
         public const int ProjW = 12, ProjH = 3;   // mỗi loại đạn 1 hàng 12x3 pixel
 
@@ -79,14 +81,15 @@ namespace HordeLab
         /// <summary>Bản xem cho người: mỗi hàng 1 loại quân, 4 khung đi + 4 khung đánh (atlas thật thì 2 hàng / loại).</summary>
         static Canvas UnitSheet()
         {
-            var sheet = new Canvas(UnitCell * 8, UnitCell * UnitType.Count);
+            var sheet = new Canvas(GiantPx * 8, UnitCell * UnitType.Count + GiantPx - UnitCell);
             for (int type = 0; type < UnitType.Count; type++)
                 for (int state = 0; state < 2; state++)
                     for (int f = 0; f < 4; f++)
                     {
                         var sprite = DrawUnit(type, state, f);
-                        int pad = (UnitCell - sprite.W) / 2;
-                        sheet.Blit(sprite, (state * 4 + f) * UnitCell + pad, type * UnitCell + pad);
+                        int cell = sprite.W > UnitCell ? GiantPx : UnitCell;          // quân khổng lồ: khung rộng 32
+                        int pad = (cell - sprite.W) / 2;
+                        sheet.Blit(sprite, (state * 4 + f) * cell + pad, type * UnitCell + pad);
                     }
             return sheet;
         }
@@ -117,6 +120,12 @@ namespace HordeLab
                     for (int f = 0; f < 4; f++)
                     {
                         var sprite = DrawUnit(type, state, f);
+                        if (sprite.W > UnitCell)
+                        {
+                            // khổng lồ 32x32: khung f nằm ở cột (f & 1) * 2, hàng type*2 + state*4 + (f >> 1)*2 (khớp PackUnitsJob)
+                            atlas.Blit(sprite, (f & 1) * GiantPx, (type * 2 + state * 4 + (f >> 1) * 2) * UnitCell);
+                            continue;
+                        }
                         int pad = (UnitCell - sprite.W) / 2;   // lính bộ 10x10 nằm giữa ô 16x16
                         atlas.Blit(sprite, f * UnitCell + pad, (type * 2 + state) * UnitCell + pad);
                     }
@@ -537,58 +546,135 @@ namespace HordeLab
             return s;
         }
 
-        /// <summary>Rồng đỏ 16x16 bay lơ lửng, đập cánh 4 khung. Đánh: khung 2-3 há miệng phun lửa. Chừa mép cho viền.</summary>
+        // ------------------------------------------------------------------
+        // Rồng 32x32 (quân khổng lồ). Hình học nhỏ: đa giác, elip, đường thẳng dày.
+        // ------------------------------------------------------------------
+        static bool InPoly(float x, float y, Vector2[] p)
+        {
+            bool inside = false;
+            for (int i = 0, j = p.Length - 1; i < p.Length; j = i++)
+                if ((p[i].y > y) != (p[j].y > y) && x < (p[j].x - p[i].x) * (y - p[i].y) / (p[j].y - p[i].y) + p[i].x)
+                    inside = !inside;
+            return inside;
+        }
+
+        /// <summary>Tô đa giác (toạ độ pixel, y xuống), dịch xuống <paramref name="dy"/>. <paramref name="shade"/> chọn màu theo (x, y).</summary>
+        static void FillPoly(Canvas s, Vector2[] pts, int dy, System.Func<int, int, Color32> shade)
+        {
+            float minX = float.MaxValue, minY = float.MaxValue, maxX = float.MinValue, maxY = float.MinValue;
+            foreach (var q in pts) { minX = Mathf.Min(minX, q.x); maxX = Mathf.Max(maxX, q.x); minY = Mathf.Min(minY, q.y); maxY = Mathf.Max(maxY, q.y); }
+            for (int y = Mathf.FloorToInt(minY); y <= Mathf.CeilToInt(maxY); y++)
+                for (int x = Mathf.FloorToInt(minX); x <= Mathf.CeilToInt(maxX); x++)
+                    if (InPoly(x + 0.5f, y + 0.5f, pts)) s.Set(x, y + dy, shade(x, y));
+        }
+
+        static void Line(Canvas s, int x0, int y0, int x1, int y1, Color32 c)
+        {
+            int dx = Mathf.Abs(x1 - x0), sx = x0 < x1 ? 1 : -1, dy = -Mathf.Abs(y1 - y0), sy = y0 < y1 ? 1 : -1, err = dx + dy;
+            while (true)
+            {
+                s.Set(x0, y0, c);
+                if (x0 == x1 && y0 == y1) break;
+                int e2 = 2 * err;
+                if (e2 >= dy) { err += dy; x0 += sx; }
+                if (e2 <= dx) { err += dx; y0 += sy; }
+            }
+        }
+
+        static Vector2[] V(params float[] xy)
+        {
+            var v = new Vector2[xy.Length / 2];
+            for (int i = 0; i < v.Length; i++) v[i] = new Vector2(xy[i * 2], xy[i * 2 + 1]);
+            return v;
+        }
+
+        /// <summary>
+        /// Rồng đỏ 32x32 bay lơ lửng, quay mặt sang phải. Đi = đập cánh 4 khung (lên / ngang / xuống / ngang).
+        /// Đánh = khung 0-1 ngửa đầu lấy hơi, khung 2-3 há miệng phun lửa. Chừa 1 pixel mép cho viền.
+        /// </summary>
         static Canvas DrawDragon(int state, int f)
         {
-            var s = new Canvas(UnitCell, UnitCell);
-            Color32 red = Rgb(200, 56, 44), dark = Rgb(124, 30, 34), light = Rgb(238, 108, 72), belly = Rgb(246, 196, 104);
-            Color32 wing = Rgb(150, 40, 48), wingLight = Rgb(196, 78, 70), fire = Rgb(255, 206, 70), fire2 = Rgb(255, 128, 34);
+            var s = new Canvas(GiantPx, GiantPx);
+            Color32 red = Rgb(196, 50, 44), dark = Rgb(122, 26, 36), deep = Rgb(88, 18, 30), light = Rgb(236, 98, 66), shine = Rgb(255, 150, 104);
+            Color32 belly = Rgb(248, 200, 112), bellyDark = Rgb(214, 150, 78);
+            Color32 memb = Rgb(150, 36, 52), membLight = Rgb(196, 70, 74), membFar = Rgb(104, 24, 40);
+            Color32 horn = Rgb(236, 226, 196), hornDark = Rgb(170, 156, 128), eye = Rgb(255, 228, 80), fire = Rgb(255, 214, 80), fire2 = Rgb(255, 132, 36), fire3 = Rgb(255, 246, 190);
             bool attack = state == 1;
-            int bob = f == 1 || f == 2 ? 1 : 0;            // lơ lửng: nhún theo nhịp cánh
-
-            // cánh xa (sau thân), chỉ thấy chóp
-            if (f == 0) { s.Set(9, 4 + bob, dark); s.Set(10, 3 + bob, dark); }
-            else if (f != 2) { s.Set(9, 6 + bob, dark); s.Set(10, 5 + bob, dark); }
-
-            // đuôi
-            s.Set(1, 6 + bob, dark); s.Set(1, 7 + bob, red); s.Set(2, 8 + bob, red); s.Set(3, 9 + bob, red); s.Set(4, 9 + bob, red);
-            // thân
-            for (int x = 6; x <= 9; x++) s.Set(x, 7 + bob, light);
-            for (int x = 4; x <= 10; x++) s.Set(x, 8 + bob, red);
-            for (int x = 4; x <= 11; x++) s.Set(x, 9 + bob, x <= 5 ? dark : red);
-            for (int x = 5; x <= 10; x++) s.Set(x, 10 + bob, belly);
-            // chân
-            s.Set(6, 11 + bob, dark); s.Set(9, 11 + bob, dark); s.Set(5, 12 + bob, dark); s.Set(10, 12 + bob, dark);
-            // cổ + đầu
-            s.Set(10, 7 + bob, red); s.Set(11, 6 + bob, red); s.Set(11, 7 + bob, light); s.Set(12, 5 + bob, red);
-            Box(s, 11, 3 + bob, 13, 5 + bob, red);
-            s.Set(11, 3 + bob, light); s.Set(12, 4 + bob, Gold);          // mắt
-            s.Set(11, 2 + bob, Bone); s.Set(10, 1 + bob, Bone);           // sừng
+            int wingPose = attack ? (f < 2 ? 0 : 2) : f;                     // đánh: giơ cánh lấy đà rồi đập xuống lúc phun
+            int b = wingPose == 2 ? -1 : wingPose == 0 ? 1 : 0;              // cánh đập xuống thì thân bốc lên
+            int hx = attack && f < 2 ? -1 : 0, hy = attack && f < 2 ? -1 : 0; // ngửa đầu lấy hơi
             bool open = attack && f >= 2;
+
+            // ---- cánh xa (sau thân, tối) ----
+            Vector2[] farWing = wingPose == 0 ? V(17, 14, 15, 3, 21, 6, 20, 13)
+                              : wingPose == 2 ? V(17, 15, 21, 22, 18, 24, 16, 18)
+                              : V(17, 14, 22, 9, 24, 11, 19, 16);
+            FillPoly(s, farWing, b, (x, y) => membFar);
+
+            // ---- đuôi: cong xuống rồi hất lên, chóp hình mũi giáo ----
+            int tw = wingPose == 1 ? 1 : wingPose == 3 ? -1 : 0;               // đuôi đung đưa
+            FillPoly(s, V(10, 17, 10, 22, 6, 23, 3, 22 + tw, 2, 20 + tw, 5, 21, 8, 19), b, (x, y) => y >= 22 ? dark : red);
+            FillPoly(s, V(1, 17 + tw, 4, 19 + tw, 2, 22 + tw, 1, 20 + tw), b, (x, y) => dark);   // chóp đuôi
+
+            // ---- chân sau + chân trước (co dưới bụng khi bay) ----
+            FillPoly(s, V(10, 21, 14, 21, 13, 26, 11, 27, 9, 25), b, (x, y) => y > 24 ? dark : red);
+            s.Set(10, 28 + b, horn); s.Set(12, 28 + b, horn); s.Set(11, 28 + b, hornDark);                      // vuốt sau
+            FillPoly(s, V(19, 21, 22, 21, 22, 24, 20, 26, 18, 24), b, (x, y) => y > 23 ? dark : red);
+            s.Set(20, 27 + b, horn); s.Set(21, 26 + b, horn);                                                   // vuốt trước
+
+            // ---- thân: elip, sáng ở lưng, bụng vàng có vạch ----
+            for (int y = 13; y <= 23; y++)
+                for (int x = 7; x <= 24; x++)
+                {
+                    float dx = (x + 0.5f - 15.5f) / 8.5f, dy = (y + 0.5f - 18f) / 5f;
+                    if (dx * dx + dy * dy > 1f) continue;
+                    Color32 c = y <= 14 ? light : y >= 21 ? ((x & 1) == 0 ? bellyDark : belly) : y >= 20 ? belly : red;
+                    if (y == 15 && x > 10 && x < 20) c = shine;
+                    if (x <= 9 && y < 21) c = dark;                                // hông sau tối
+                    s.Set(x, y + b, c);
+                }
+
+            // ---- gai lưng ----
+            foreach (int gx in new[] { 9, 12, 15, 18 }) { s.Set(gx, 12 + b, horn); s.Set(gx + 1, 13 + b, hornDark); }
+
+            // ---- cổ cong lên phải ----
+            FillPoly(s, V(19, 14, 22, 12, 24, 9 + hy, 27, 9 + hy, 26, 13 + hy, 24, 17, 22, 19), b, (x, y) => x >= 25 || y >= 16 ? belly : red);
+
+            // ---- đầu ----
+            int ox = hx, oy = hy + b;
+            FillPoly(s, V(23 + ox, 6, 28 + ox, 6, 30 + ox, 8, 30 + ox, 10, 27 + ox, 11, 23 + ox, 11, 22 + ox, 9), oy, (x, y) => y <= 6 ? light : red);   // sọ + mõm
+            s.Set(29 + ox, 8 + oy, dark);                                                           // lỗ mũi
+            s.Set(26 + ox, 8 + oy, eye); s.Set(25 + ox, 8 + oy, deep);                                // mắt
+            Line(s, 23 + ox, 6 + oy, 20 + ox, 3 + oy, horn); s.Set(21 + ox, 3 + oy, hornDark);       // sừng dài
+            Line(s, 25 + ox, 6 + oy, 23 + ox, 4 + oy, hornDark);                                    // sừng ngắn
+            s.Set(22 + ox, 10 + oy, dark); s.Set(22 + ox, 11 + oy, dark);                            // má
+
             if (open)
             {
-                s.Set(13, 5 + bob, default(Color32)); s.Set(12, 6 + bob, dark); s.Set(13, 6 + bob, dark);   // há miệng
-                s.Set(14, 4 + bob, fire); s.Set(14, 5 + bob, fire2); s.Set(14, 6 + bob, fire);
-                if (f == 3) { s.Set(14, 3 + bob, fire2); s.Set(14, 7 + bob, fire2); }
-            }
-            else s.Set(13, 5 + bob, dark);                                 // hàm
-
-            // cánh gần (trước thân): lên / ngang / xuống / ngang
-            if (f == 0)
-            {
-                s.Set(7, 6 + bob, wing); s.Set(8, 6 + bob, wing); s.Set(6, 5 + bob, wing); s.Set(7, 5 + bob, wingLight);
-                s.Set(5, 4 + bob, wing); s.Set(6, 4 + bob, wingLight); s.Set(4, 3 + bob, wing); s.Set(5, 3 + bob, wing); s.Set(3, 2 + bob, dark);
-            }
-            else if (f == 2)
-            {
-                s.Set(7, 8 + bob, wing); s.Set(6, 9 + bob, wing); s.Set(7, 9 + bob, wingLight); s.Set(5, 10 + bob, wing);
-                s.Set(6, 10 + bob, wing); s.Set(4, 11 + bob, dark);
+                // há miệng: hàm dưới hạ xuống, răng trắng, lửa phụt ra
+                for (int x = 25; x <= 30; x++) s.Set(x, 11 + oy, deep);
+                for (int x = 24; x <= 29; x++) s.Set(x, 12 + oy, x <= 25 ? red : dark);
+                s.Set(27, 10 + oy, fire3); s.Set(29, 10 + oy, fire3);                               // răng
+                s.Set(30, 11 + oy, fire); s.Set(30, 12 + oy, fire2);
+                if (f == 3) { s.Set(30, 10 + oy, fire2); s.Set(30, 13 + oy, fire); s.Set(29, 13 + oy, fire2); }
             }
             else
             {
-                for (int x = 3; x <= 8; x++) s.Set(x, 6 + bob, x == 3 ? dark : wing);
-                for (int x = 4; x <= 7; x++) s.Set(x, 7 + bob, wingLight);
+                for (int x = 23; x <= 29; x++) s.Set(x + ox, 11 + oy, x >= 27 ? dark : red);       // hàm khép
+                s.Set(28 + ox, 11 + oy, fire3);                                                          // nanh
             }
+
+            // ---- cánh gần (trước thân): xương cánh đỏ sẫm + màng có vân ----
+            Vector2[] wing; int[] bone;
+            switch (wingPose)
+            {
+                case 0: wing = V(16, 15, 12, 2, 8, 1, 2, 4, 5, 9, 9, 13, 13, 17); bone = new[] { 16, 15, 12, 2, 12, 2, 8, 1, 12, 2, 2, 4 }; break;      // lên
+                case 2: wing = V(16, 16, 12, 22, 9, 29, 6, 29, 5, 25, 8, 20, 12, 17); bone = new[] { 16, 16, 12, 22, 12, 22, 9, 29, 12, 22, 5, 25 }; break; // xuống
+                default: wing = V(16, 15, 9, 10, 1, 9, 2, 13, 6, 16, 11, 18); bone = new[] { 16, 15, 9, 10, 9, 10, 1, 9, 9, 10, 2, 13 }; break;            // ngang
+            }
+            FillPoly(s, wing, b, (x, y) => ((x + y) % 4 == 0) ? membLight : memb);
+            for (int i = 0; i + 3 < bone.Length; i += 4) Line(s, bone[i], bone[i + 1] + b, bone[i + 2], bone[i + 3] + b, dark);
+            s.Set(bone[2], bone[3] + b, horn);                                                       // móng ở khớp cánh
             return s;
         }
 
@@ -837,6 +923,7 @@ namespace HordeLab
             for (int t = 0; t < UnitType.Count; t++)                                       // từ hàng 3: xác (2 kiểu nằm / loại)
             {
                 var body = DrawUnit(t, 0, 0);
+                if (body.W > UnitCell) body = Half(body);                                  // xác quân khổng lồ: thu nhỏ cho vừa ô dấu in
                 Darken(body, 0.72f);
                 int pad = (S - body.W) / 2;
                 for (int v = 0; v < 2; v++)
@@ -848,6 +935,24 @@ namespace HordeLab
                 }
             }
             return a;
+        }
+
+        /// <summary>Thu nhỏ 1/2: mỗi ô 2x2 lấy 1 pixel (ưu tiên pixel có màu, không phải viền).</summary>
+        static Canvas Half(Canvas src)
+        {
+            var d = new Canvas(src.W / 2, src.H / 2);
+            for (int y = 0; y < d.H; y++)
+                for (int x = 0; x < d.W; x++)
+                {
+                    Color32 pick = default;
+                    for (int k = 0; k < 4 && (pick.a == 0 || pick.Equals(Outline)); k++)
+                    {
+                        var c = src.Get(x * 2 + (k & 1), y * 2 + (k >> 1));
+                        if (c.a > 0 && (pick.a == 0 || !c.Equals(Outline))) pick = c;
+                    }
+                    d.Set(x, y, pick);
+                }
+            return d;
         }
 
         static void Darken(Canvas c, float k)

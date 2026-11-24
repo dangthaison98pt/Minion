@@ -312,7 +312,7 @@ namespace HordeLab
 
             // ---------------- Trung lập ----------------
             // Rồng (lõi Dragon's Pact): bay qua hàng địch, phun lửa lan. Máu / sát thương còn nhân theo đợt (Game.SpawnDragon)
-            s = S(900, 24, 2.0f, 8f, 3.4f, Mode.Blast, UFlag.Big | UFlag.Ghost, 0, PKind.Fire, 8f); s.splash = 3.2f;
+            s = S(900, 24, 2.0f, 8f, 3.4f, Mode.Blast, UFlag.Big | UFlag.Giant | UFlag.Ghost, 0, PKind.Fire, 8f); s.splash = 3.2f;
             u[UnitType.Dragon] = U("", "Dragon", "Legendary ally (fire breath)", s, default, 0f, 99, 0f);
 
             // Đặc trưng phe được nhân sẵn vào bảng chỉ số

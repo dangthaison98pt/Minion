@@ -50,7 +50,10 @@ namespace HordeLab
                 Tiles[i] = Cell(tiles, i % PixelArt.TileCols, i / PixelArt.TileCols, PixelArt.TilePx, PixelArt.TilePx);
 
             UnitIcons = new Sprite[UnitType.Count];
-            for (int t = 0; t < UnitIcons.Length; t++) UnitIcons[t] = Cell(unitAtlas, 0, t * 2, PixelArt.UnitCell, PixelArt.UnitCell);   // khung đi đầu tiên
+            for (int t = 0; t < UnitIcons.Length; t++)                                                           // khung đi đầu tiên
+                UnitIcons[t] = (GameData.Units[t].stats.flags & UFlag.Giant) != 0
+                    ? Cell(unitAtlas, 0, t, PixelArt.GiantPx, PixelArt.GiantPx)        // hàng t*2 (ô 16) = hàng t (ô 32)
+                    : Cell(unitAtlas, 0, t * 2, PixelArt.UnitCell, PixelArt.UnitCell);
 
             Shapes = new Sprite[5];
             for (int s = 1; s < Shapes.Length; s++) Shapes[s] = Whole(ShapeTexture((Shape)s));

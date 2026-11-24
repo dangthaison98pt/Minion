@@ -169,8 +169,10 @@ Build/                           ← bản build (.gitignore)
 - **Chỉnh số:** `Tuning` và các hàm `BuildUnits` / `BuildBuildings` trong `GameData.cs`.
 - **Thêm cơ chế cho quân:** thêm trường vào `UnitStats` (Config.cs) rồi dùng trong `ThinkMoveJob` / `ResolveJob` (SimJobs.cs).
 - **Thêm nhà buff:** thêm mã vào `B`, 1 dòng trong `BuildBuildings`, 1 `case` trong `City.Recompute`.
-- **Thay hình:** thay các hàm `Draw*` trong `PixelArt.cs`. Atlas lính: ô 16×16, 4 cột (khung hình) × 54 hàng
+- **Thay hình:** thay các hàm `Draw*` trong `PixelArt.cs`. Atlas lính: ô 16×16, 4 cột (khung hình) × 60 hàng
   (`loại * 2 + trạng thái`, 0 = đi, 1 = đánh), quay mặt sang phải; lính bộ vẽ 10×10 ở giữa ô.
+  Quân khổng lồ (`UFlag.Giant`, hiện chỉ có Rồng, phải là loại cuối bảng) vẽ 32×32, mỗi khung chiếm 2×2 ô, 8 hàng atlas;
+  shader nhận cờ 8 trong `_Units.w` để vẽ quad to gấp đôi.
   Không tự gọi `AddOutline`: `DrawUnit` tự thêm viền (lính bộ được chừa sẵn 1 pixel mỗi bên). Quân to 16×16 phải
   **chừa trống hàng / cột sát mép** cho viền, không thì chỗ đó bị hở viền.
 - **Thay tranh công trình:** mỗi công trình là 1 `case` trong `DrawTile` (PixelArtTiles.cs), vẽ trên ô 32×32.
