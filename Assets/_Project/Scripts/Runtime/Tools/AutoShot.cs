@@ -188,6 +188,17 @@ namespace HordeLab
             Shot("00_menu.png");
             yield return Frames(3);
             if (!Headless) { game.ui.OpenSettings(); yield return Frames(4); Shot("00c_settings.png"); yield return Frames(2); game.ui.CloseSettings(); yield return Frames(2); }
+            // -toggletest: bấm Fullscreen 2 lần lúc đang chạy (cửa sổ → toàn màn → cửa sổ), chụp sau mỗi lần
+            if (!Headless && System.Array.IndexOf(System.Environment.GetCommandLineArgs(), "-toggletest") >= 0)
+            {
+                for (int k = 0; k < 2; k++)
+                {
+                    Settings.ToggleFullscreen();
+                    yield return new WaitForSecondsRealtime(1.5f);
+                    Debug.Log($"[toggle {k}] screen {Screen.width}x{Screen.height} mode {Screen.fullScreenMode} frame {ScreenFrame.W}x{ScreenFrame.H}+{ScreenFrame.Y0}");
+                    Shot($"00d_toggle_{k}.png");
+                }
+            }
             if (!Headless)
             {
                 // chuyển cảnh mượt: chụp giữa lúc tối dần, rồi chờ xong và kiểm tra đã sang màn chọn phe
