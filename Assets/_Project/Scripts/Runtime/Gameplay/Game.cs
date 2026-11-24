@@ -858,7 +858,13 @@ namespace HordeLab
             }
         }
 
-        public void CycleSpeed() => battle.speed = battle.speed >= 4 ? 1 : battle.speed * 2;
+        /// <summary>Đổi tốc độ trận (x1 → x2 → x4). Nhớ luôn vào Settings: các đợt sau vào trận với đúng tốc độ này.</summary>
+        public void CycleSpeed()
+        {
+            battle.speed = battle.speed >= 4 ? 1 : battle.speed * 2;
+            Settings.BattleSpeed = battle.speed;
+            Settings.Save();
+        }
 
         // ------------------------------------------------------------------
         // Sandbox: giữ quanh mức sandboxUnits lính, mỗi bên trộn nhiều phe, để đo hiệu năng
