@@ -12,6 +12,7 @@ namespace HordeLab
         public bool waiting;         // nhà lính đã hồi xong nhưng kho chưa đủ tài nguyên
         public float lastYield;      // sản lượng lần gần nhất (để hiện lên giao diện)
         public float pulse;          // nháy sáng khi vừa sinh tài nguyên / gọi quân
+        public int trade = -1;       // Market: tài nguyên đổi Vàng sang (ResId), -1 = chưa chọn (bảng chọn hiện ra)
 
         // Hệ số sau khi tính buff + kề nhau + đặc trưng phe (City.Recompute)
         public float speed = 1f, amount = 1f, flat, costMul = 1f, dmg = 1f, hp = 1f, regen, grow = 1f;
@@ -267,7 +268,9 @@ namespace HordeLab
             r == ResId.Gold && Has(Aug.GoldRush) || r == ResId.Pop && Has(Aug.BabyBoom) ? 1f + Aug.ResBonus : 1f) * (Has(Aug.GoldenAge) ? Aug.GoldenAgeMul : 1f);
 
         /// <summary>Sản lượng mỗi chu kỳ của một nhà tài nguyên, đã tính buff và lõi.</summary>
-        public float Yield(Building b) => YieldBase(b) * (b.Def.res >= 0 ? ResMul(b.Def.res) : 1f);
+        public float Yield(Building b) => YieldBase(b) * (b.def == B.Market ? (b.trade >= 0 ? ResMul(b.trade) : 1f) : b.Def.res >= 0 ? ResMul(b.Def.res) : 1f);
+        /// <summary>Vàng Market trả mỗi chu kỳ.</summary>
+        public float MarketCost(Building b) => Tuning.MarketTrade * Tuning.StarYield[b.stars - 1];
 
         float YieldBase(Building b)
         {
@@ -278,7 +281,7 @@ namespace HordeLab
                 case B.Barn: return d.amount * star * b.amount * (b.doubled ? 2f : 1f);
                 case B.HunterLodge: return d.amount * star * b.amount * b.edges;
                 case B.Nursery: return Mathf.Min(10f, d.amount + battleTime / 20f * b.grow) * star;
-                case B.Market: return (b.around + b.flat) * star;
+                case B.Market: return (Tuning.MarketTrade + b.flat) * star;
                 case B.TownHall: return res.pop * d.amount * star;
                 default: return d.period > 0f ? d.amount * star * b.amount : 0f;
             }
@@ -338,6 +341,21 @@ namespace HordeLab
                         onCall(b);
                     }
                     else b.waiting = true;
+                }
+                else if (b.def == B.Market)
+                {
+                    // đổi Vàng: chưa chọn tài nguyên hoặc kho thiếu Vàng thì đứng chờ
+                    b.timer = Mathf.Min(d.period, b.timer + dt * b.speed);
+                    if (b.timer < d.period) continue;
+                    float gold = MarketCost(b);
+                    if (b.trade < 0 || res.gold < gold) { b.waiting = true; continue; }
+                    res.gold -= gold;
+                    b.waiting = false;
+                    b.timer = 0f;
+                    float y = Yield(b);
+                    res[b.trade] += y;
+                    b.lastYield = y;
+                    b.pulse = 1f;
                 }
                 else if (d.period > 0f)
                 {

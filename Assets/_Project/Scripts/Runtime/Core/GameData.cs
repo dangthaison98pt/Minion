@@ -28,6 +28,7 @@ namespace HordeLab
         public const int RollCost = 1;
         public const float EventChance = 0.25f;         // xác suất có sự kiện đổi phe thù địch sau mỗi đợt
         public const int StartCrystals = 5;
+        public const float MarketTrade = 5f;            // Market: mỗi chu kỳ đổi 5 Vàng lấy 5 tài nguyên đã chọn (x số sao)
         // ---- Độ khó (chọn ở màn chọn phe): Easy / Normal / Hard. Hard = cân bằng gốc ----
         public static readonly string[] DiffName = { "Easy", "Normal", "Hard" };
         public static readonly float[] DiffSquads = { 0.6f, 0.8f, 1f };      // số tiểu đội địch
@@ -640,7 +641,8 @@ namespace HordeLab
             b[B.Sawmill] = new BuildingDef { id = B.Sawmill, name = "Sawmill", cat = Cat.Wood, shape = Shape.Ring, desc = "Produces no Wood itself. Lumber Camps around it work 50% faster." };
             Eco(B.Nursery, "Tree Nursery", Cat.Wood, ResId.Wood, 3f, 0.5f, "Yields very little at first, then grows as the battle goes on.");
             Eco(B.GoldMine, "Gold Mine", Cat.Gold, ResId.Gold, 10f, 12f, "Slow cycle, big yield.");
-            Eco(B.Market, "Market", Cat.Gold, ResId.Gold, 5f, 1f, "Each cycle: 1 Gold per building around it (8 tiles).");
+            Eco(B.Market, "Market", Cat.Gold, ResId.Gold, 5f, Tuning.MarketTrade,
+                $"Trades Gold for the resource you pick when you place it: each cycle {Tuning.MarketTrade:0} Gold for {Tuning.MarketTrade:0} Food, Wood or Pop. Pick it up and place it again to switch.");
             Eco(B.TownHall, "Town Hall", Cat.Gold, ResId.Gold, 5f, 0.05f, "Each cycle: Gold equal to 5% of your current Pop.");
             Eco(B.Cabin, "Cabin", Cat.Pop, ResId.Pop, 4f, 3f, "Cheap, small yield.");
             Eco(B.Residential, "Residential Block", Cat.Pop, ResId.Pop, 4f, 8f, "Big yield. Noisy: adjacent buildings work 20% slower.");
@@ -650,7 +652,7 @@ namespace HordeLab
             Buff(B.Well, "Well", Cat.BuffEco, Shape.Ring, "All Food buildings yield +15%.");
             Buff(B.RangerHut, "Ranger Hut", Cat.BuffEco, Shape.Below, "The Tree Nursery grows twice as fast.");
             Buff(B.Mint, "Mint", Cat.BuffEco, Shape.Cross, "Gold Mines cycle 40% faster.");
-            Buff(B.TradeRoad, "Trade Road", Cat.BuffEco, Shape.Row, "Each Market in the row earns 3 extra Gold per cycle.");
+            Buff(B.TradeRoad, "Trade Road", Cat.BuffEco, Shape.Row, "Each Market in the row trades for 3 more per cycle (same Gold).");
             Buff(B.Plaza, "Plaza", Cat.BuffEco, Shape.Ring, "Houses around it produce Pop 25% faster.");
             Buff(B.Forge, "Forge", Cat.BuffMil, Shape.Below, "Troops from the building below deal +60% damage.");
             Buff(B.TrainingGround, "Training Ground", Cat.BuffMil, Shape.Cross, "Adjacent troop buildings call 25% faster.");

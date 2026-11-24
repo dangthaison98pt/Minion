@@ -111,6 +111,7 @@ namespace HordeLab
         {
             public RectTransform rt, barRt, barFill;
             public Image tile, strip, starBg, shape, frame, tint, bar;
+            public Image tradeBg, tradeIcon;  // Market: icon tài nguyên đang đổi, góc trên-phải (đối xứng với hàng sao)
             public TextMeshProUGUI name;
             public Image[] stars = new Image[Tuning.MaxStars];
             public Image burst;           // hiệu ứng gộp lên sao: ngôi sao to bật lên giữa ô
@@ -209,6 +210,7 @@ namespace HordeLab
             BuildFactionScreen();
             BuildMenu();
             BuildPause();
+            BuildMarketPick();
             BuildSettings();
         }
 
@@ -757,6 +759,39 @@ namespace HordeLab
             return t;
         }
 
+        // ------------------------------------------------------------------
+        // Market: vừa đặt xuống thì hiện bảng chọn tài nguyên đổi Vàng sang
+        // ------------------------------------------------------------------
+        RectTransform marketPick;
+
+        void BuildMarketPick()
+        {
+            marketPick = Panel(root, true, "Market pick").rectTransform;
+            Txt(marketPick, "Market: trade Gold for", 22f, TextAlignmentOptions.Center, true).At(0f, 16f, 460f, 32f);
+            int[] opts = { ResId.Food, ResId.Wood, ResId.Pop };
+            for (int k = 0; k < opts.Length; k++)
+            {
+                int r = opts[k];
+                var btn = Btn(marketPick, "", () => { var pm = g.PendingMarket; if (pm.HasValue) g.SetMarketTrade(pm.Value, r); }, 20f);
+                btn.At(20f + k * 144f, 58f, 132f, 64f);
+                Img(btn.transform, ResIcons[r], Color.white).At(12f, 12f, 35f, 40f);
+                btn.Label().Set(ResId.Name[r]);
+                btn.Label().rectTransform.Fill(52f, 0f, 6f, 0f);
+                btn.Label().alignment = TextAlignmentOptions.MidlineLeft;
+            }
+            Txt(marketPick, "Pick it up and place it again to switch.", 14f, TextAlignmentOptions.Center, false, false, Grey).At(0f, 128f, 460f, 22f);
+            marketPick.gameObject.SetActive(false);
+        }
+
+        void RefreshMarketPick(bool modal)
+        {
+            bool show = (g.phase == Phase.Prep || g.phase == Phase.Battle) && !modal && g.PendingMarket.HasValue;
+            marketPick.Show(show);
+            if (!show) return;
+            marketPick.At(Mathf.Round(PanelW + (VW - PanelW - 460f) * 0.5f), TopH + 24f, 460f, 160f);
+            marketPick.SetAsLastSibling();
+        }
+
         void BuildMenu()
         {
             menu = Node("Main menu", root);
@@ -931,6 +966,7 @@ namespace HordeLab
                 else { dragCard = pressCard = selectedCard = -1; dragFromCell = false; }
             }
             RefreshVeilAndModals();
+            RefreshMarketPick(modal);
             RefreshGhost();
             RefreshTooltip((modal && !(g.phase == Phase.Augment && !PauseOpen)) || !InWorld);   // màn chọn lõi vẫn hiện tooltip (mô tả đầy đủ)
             RefreshPerf();
@@ -1217,6 +1253,9 @@ namespace HordeLab
             v.name.Fill();
             v.starBg = Img(v.rt, White, Dark);
             for (int i = 0; i < v.stars.Length; i++) v.stars[i] = Img(v.starBg.transform, Star, Color.white);
+            v.tradeBg = Img(v.rt, White, Dark);
+            v.tradeIcon = Img(v.tradeBg.transform, null, Color.white);
+            v.tradeIcon.preserveAspect = true;
             v.shape = Img(v.rt, null, Color.white);
             v.bar = Img(v.rt, White, new Color(0f, 0f, 0f, 0.7f));
             v.barRt = v.bar.rectTransform;
@@ -1251,7 +1290,7 @@ namespace HordeLab
             {
                 v.tile.sprite = Tiles[open ? PixelArt.TileEmpty : PixelArt.TileCandidate];
                 v.tile.color = Color.white;
-                v.strip.Show(false); v.starBg.Show(false); v.shape.Show(false); v.bar.Show(false);
+                v.strip.Show(false); v.starBg.Show(false); v.shape.Show(false); v.bar.Show(false); v.tradeBg.Show(false);
                 if (!open && dragDef == B.Expand)
                 {
                     v.tint.color = new Color(0.3f, 0.9f, 0.4f, over ? 0.45f : 0.16f);
@@ -1276,6 +1315,16 @@ namespace HordeLab
             }
 
             float st = large ? 14f : labelled ? 11f : 8f;
+            // Market: tài nguyên đang đổi Vàng sang, góc trên-phải (chưa chọn thì dấu ?)
+            bool market = b.def == B.Market;
+            v.tradeBg.Show(market);
+            if (market)
+            {
+                float tw = st + 5f, th = st + 3f;
+                v.tradeBg.At(cell - tw, 0f, tw, th);
+                v.tradeIcon.Show(b.trade >= 0);
+                if (b.trade >= 0) { v.tradeIcon.sprite = ResIcons[b.trade]; v.tradeIcon.At(2.5f, 1.5f, st, st); }
+            }
             v.starBg.Show(true);
             v.starBg.At(0f, 0f, 4f + b.stars * (st - 1f), st + 3f);
             float pop = merging && mt < 0.5f ? 1f + 0.7f * Mathf.Sin(mt / 0.5f * Mathf.PI) : 1f;   // hàng sao nảy lên
@@ -1696,6 +1745,15 @@ namespace HordeLab
                 }
                 if (u.stats.minRange > 0f) ex.Append($"<color=#aaaaaa>Cannot hit targets closer than {u.stats.minRange:0.#}</color>\n");
             }
+            else if (def == B.Market)
+            {
+                // Market: trả Vàng, nhận tài nguyên đã chọn
+                float per = b != null ? d.period / b.speed : d.period;
+                chipsOut.Add(new TipChip(StatIcons[PixelArt.StatTime], W($"{per:0.#}s")));
+                chipsOut.Add(new TipChip(ResIcons[ResId.Gold], $"<color=#ff8f8f>-{(b != null ? city.MarketCost(b) : Tuning.MarketTrade):0.#}</color>"));
+                if (b != null && b.trade >= 0) chipsOut.Add(new TipChip(ResIcons[b.trade], $"<color=#9fe07a>+{city.Yield(b):0.#}</color>"));
+                else if (b != null) ex.Append("<color=#ffd84a>Pick a resource to trade for</color>\n");
+            }
             else if (d.period > 0f)
             {
                 float per = b != null ? d.period / b.speed : d.period;
@@ -1753,6 +1811,8 @@ namespace HordeLab
                 }
                 else if (def != B.Market && def != B.TownHall && def != B.HunterLodge)
                     sb.Append($"\nEvery {d.period:0.#}s: <color=#9fe07a>+{d.amount:0.#} {ResId.Name[d.res]}</color>\n");
+                if (b != null && def == B.Market)
+                    sb.Append(b.trade >= 0 ? $"Trading Gold for <color=#9fe07a>{ResId.Name[b.trade]}</color>.\n" : "<color=#ffd84a>Pick a resource to trade for.</color>\n");
             }
             if (d.shape != Shape.None) sb.Append("\nBuff area: ").Append(ShapeName(d.shape)).Append('\n');
             if (b == null && cardStars > 1) sb.Append($"\n<color=#ffd84a>{cardStars}-star card: built with {cardStars} stars.</color>");

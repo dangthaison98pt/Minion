@@ -142,6 +142,7 @@ namespace HordeLab
 
         bool augShot, ownedShot, augRollTested;
         int cardChecks, cardFails;
+        float marketGold0 = -1f, marketWood0;
         static readonly bool allAugs = System.Array.IndexOf(System.Environment.GetCommandLineArgs(), "-allaugs") >= 0;
 
         /// <summary>Kiểm tra lõi (chạy cùng -savetest): bật tạm từng lõi, so số liệu trước / sau, rồi gỡ ra.</summary>
@@ -333,6 +334,23 @@ namespace HordeLab
                         for (int a = Aug.Dragon; a <= Aug.LastStand; a++) game.Augments.Add(a);   // thử cả 5 lõi huyền thoại ngay đợt 1
                     // -secret (cũ: -emperor): có sẵn lõi bí mật của phe; -secretpick (cũ: -emperorpick): coi như vừa mở khoá
                     var cl = System.Environment.GetCommandLineArgs();
+                    if (System.Array.IndexOf(cl, "-market") >= 0 && !Headless)
+                    {
+                        // thử Market: đặt 1 Market vào ô trống → bảng chọn hiện ra → chọn Gỗ
+                        Vector2Int? empty = null;
+                        foreach (var kv in game.city.cells) if (kv.Value == null) { empty = kv.Key; break; }
+                        if (empty.HasValue)
+                        {
+                            game.AddCard(B.Market);
+                            bool placed = game.PlayCard(game.hand.Count - 1, empty.Value);
+                            yield return Frames(6); Shot("03m_chon_market.png"); yield return Frames(2);
+                            bool pending = game.PendingMarket.HasValue;
+                            game.SetMarketTrade(empty.Value, ResId.Wood);
+                            game.city.res = new Res(game.city.res.pop, game.city.res.food, game.city.res.wood, game.city.res.gold + 100f);
+                            marketGold0 = game.city.res.gold; marketWood0 = game.city.res.wood;
+                            log.AppendLine($"MARKET TEST: đặt={placed}, hiện bảng chọn={pending}, đã chọn={game.city.Get(empty.Value)?.trade == ResId.Wood}");
+                        }
+                    }
                     if (System.Array.IndexOf(cl, "-laststand") >= 0 && !game.Has(Aug.LastStand)) game.Augments.Add(Aug.LastStand);   // thử riêng Last Stand
                     if (System.Array.IndexOf(cl, "-prismatic") >= 0)                                 // thử 8 lõi Prismatic thêm
                     {
@@ -450,6 +468,10 @@ namespace HordeLab
                     log.AppendLine($"    chuyên quân: kỹ năng trưởng đạo {battle.Counter(C.LeaderSkill)}, khống chế trúng {battle.Counter(C.CcHits)}, hồi sinh {battle.Counter(C.Revives)}, " +
                                    $"phân bào {battle.Counter(C.Splits)}, tên xuyên trúng thêm {battle.Counter(C.PierceHits)}, phản đòn / nảy {battle.Counter(C.Counters)}");
                 if (gapN > 0) log.AppendLine($"    rồng: chân lính khác gần nhất {gapMin:0.00}, trung bình {gapSum / gapN:0.00} (tổng bán kính rồng + lính bộ = {Cfg.RadiusGiant + Cfg.RadiusSmall:0.00})");
+                if (marketGold0 >= 0f)
+                    foreach (var kv in game.city.cells)
+                        if (kv.Value != null && kv.Value.def == B.Market)
+                            log.AppendLine($"    market: đổi sang {(kv.Value.trade >= 0 ? ResId.Name[kv.Value.trade] : "-")}, lần đổi gần nhất +{kv.Value.lastYield:0.#}, đang chờ={kv.Value.waiting}");
                 if (game.Augments.Exists(a => GameData.Augments[a].cat == AugCat.Legendary))
                     if (game.Has(Aug.Legion)) log.AppendLine($"    prismatic: giáo thánh {game.lancesFired}, đứng dậy {battle.Counter(C.Revives)}, thành tối đa {game.MaxCastleHp}, lãi tối đa +{Tuning.InterestMax + game.InterestExtra}");
                     log.AppendLine($"    huyền thoại: rồng gọi {game.dragonsCalled}, thiên thạch {game.meteorsFired}, nỏ {game.boltsFired}, lính thuê {game.mercSquads} đội, last stand {game.lastStands}");

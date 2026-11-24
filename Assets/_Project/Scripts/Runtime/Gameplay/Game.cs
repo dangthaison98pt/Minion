@@ -26,7 +26,8 @@ namespace HordeLab
         public bool lastWon;
         public int lastWave, lastCrystals, lastInterest, lastWinBonus;
         public float pop, food, wood, gold;
-        public int[] cellX, cellY, cellDef, cellStars;   // cellDef = -1: ô đã mở nhưng còn trống
+        public int[] cellX, cellY, cellDef, cellStars;
+        public int[] cellTrade;                          // Market: tài nguyên đã chọn để đổi Vàng   // cellDef = -1: ô đã mở nhưng còn trống
     }
 
     /// <summary>
@@ -55,7 +56,7 @@ namespace HordeLab
         public readonly List<int> hand = new List<int>();        // mã công trình của từng thẻ trên tay
         public readonly List<int> handStars = new List<int>();   // số sao của từng thẻ, cùng chỉ số với hand
         public int HandStars(int i) => i >= 0 && i < handStars.Count ? handStars[i] : 1;
-        void AddCard(int def, int stars = 1) { hand.Add(def); handStars.Add(stars); }
+        public void AddCard(int def, int stars = 1) { hand.Add(def); handStars.Add(stars); }
         void RemoveCard(int i) { hand.RemoveAt(i); handStars.RemoveAt(i); }
         void ClearHand() { hand.Clear(); handStars.Clear(); }
         public readonly int[] shop = new int[Tuning.ShopSlots];          // -1 = đã bán
@@ -194,12 +195,13 @@ namespace HordeLab
                 flawless = flawless, emperorUnlocked = emperorUnlocked, emperorPending = emperorPending, secretCount = secretCount
             };
             int n = city.cells.Count, k = 0;
-            d.cellX = new int[n]; d.cellY = new int[n]; d.cellDef = new int[n]; d.cellStars = new int[n];
+            d.cellX = new int[n]; d.cellY = new int[n]; d.cellDef = new int[n]; d.cellStars = new int[n]; d.cellTrade = new int[n];
             foreach (var kv in city.cells)
             {
                 d.cellX[k] = kv.Key.x; d.cellY[k] = kv.Key.y;
                 d.cellDef[k] = kv.Value != null ? kv.Value.def : -1;
                 d.cellStars[k] = kv.Value != null ? kv.Value.stars : 0;
+                d.cellTrade[k] = kv.Value != null ? kv.Value.trade : -1;
                 k++;
             }
             try { System.IO.File.WriteAllText(SavePath, JsonUtility.ToJson(d)); }
@@ -243,7 +245,8 @@ namespace HordeLab
             city.cells.Clear();
             for (int i = 0; i < d.cellX.Length; i++)
                 city.cells[new Vector2Int(d.cellX[i], d.cellY[i])] =
-                    d.cellDef[i] >= 0 && d.cellDef[i] < B.Count && d.cellDef[i] != B.Expand ? new Building { def = d.cellDef[i], stars = Mathf.Clamp(d.cellStars[i], 1, Tuning.MaxStars) } : null;
+                    d.cellDef[i] >= 0 && d.cellDef[i] < B.Count && d.cellDef[i] != B.Expand ? new Building { def = d.cellDef[i], stars = Mathf.Clamp(d.cellStars[i], 1, Tuning.MaxStars),
+                                     trade = d.cellTrade != null && i < d.cellTrade.Length ? d.cellTrade[i] : -1 } : null;
             city.res = new Res(d.pop, d.food, d.wood, d.gold);
             if (d.augments != null) foreach (int a in d.augments) if (a >= 0 && a < Aug.Count && !city.augments.Contains(a)) city.augments.Add(a);
             bool augPending = d.phase == (int)Phase.Augment && d.augChoices != null && d.augChoices.Length == augChoices.Length;
@@ -1080,6 +1083,25 @@ namespace HordeLab
             return EnemySquadCount() * side * side;
         }
 
+        /// <summary>Market vừa đặt xuống, chưa chọn tài nguyên để đổi (giao diện hiện bảng chọn); null nếu không có.</summary>
+        public Vector2Int? PendingMarket
+        {
+            get
+            {
+                foreach (var kv in city.cells) if (kv.Value != null && kv.Value.def == B.Market && kv.Value.trade < 0) return kv.Key;
+                return null;
+            }
+        }
+
+        /// <summary>Chọn tài nguyên Market ở ô <paramref name="p"/> sẽ đổi Vàng sang (Lương / Gỗ / Dân).</summary>
+        public void SetMarketTrade(Vector2Int p, int res)
+        {
+            var b = city.Get(p);
+            if (b == null || b.def != B.Market || res == ResId.Gold) return;
+            b.trade = res;
+            SaveRun();
+        }
+
         void BotPlaceHand()
         {
             for (int i = hand.Count - 1; i >= 0; i--)
@@ -1099,6 +1121,7 @@ namespace HordeLab
                 }
                 if (target != null) PlayCard(i, target.Value);
             }
+            for (var pm = PendingMarket; pm.HasValue; pm = PendingMarket) SetMarketTrade(pm.Value, ResId.Food);   // bot: Market đổi Vàng lấy Lương
         }
     }
 }
