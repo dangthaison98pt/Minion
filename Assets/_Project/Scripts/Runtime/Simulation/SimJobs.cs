@@ -164,6 +164,7 @@ namespace HordeLab
                                        | ((f & UFlag.HealAura) != 0 ? 2 : 0)
                                        | ((f & UFlag.PowerAura) != 0 ? 4 : 0)
                                        | ((f & UFlag.Ghost) != 0 ? 8 : 0)
+                                       | ((f & UFlag.Giant) != 0 ? 64 : (f & UFlag.Big) != 0 ? 32 : 0)   // cỡ thân
                                        | (u.team == 1 && u.pos.x > Cfg.HalfW ? 16 : 0));
             }
         }
@@ -176,7 +177,7 @@ namespace HordeLab
     [BurstCompile(CompileSynchronously = true)]
     struct ThinkMoveJob : IJobParallelFor
     {
-        const float SepRadius = 0.85f;
+        static float RadiusOfInfo(int info) => (info & 64) != 0 ? Cfg.RadiusGiant : (info & 32) != 0 ? Cfg.RadiusBig : Cfg.RadiusSmall;
         const float SepStrength = 7f;
         const int SightCells = 28;   // 56 đơn vị
         const int EnemySightCells = 3;
@@ -208,8 +209,9 @@ namespace HordeLab
             // --- Quét 3x3 ô quanh mình: đẩy nhau ra cho khỏi chồng + tìm địch sát bên + xem có đứng trong vùng buff không ---
             float2 sep = 0f;
             float bestD2 = float.MaxValue;
-            int bestIdx = -1;
+            int bestIdx = -1, bestInfo = 0;
             float2 bestPos = 0f;
+            float myR = s.radius, myR2 = myR * myR;
             int visited = 0;
             int aura = 0;
             for (int y = math.max(cy - 1, 0); y <= math.min(cy + 1, Cfg.GridH - 1); y++)
@@ -227,7 +229,9 @@ namespace HordeLab
                         bool enemy = (info & 1) != team;
                         float2 d = u.pos - sortedPos[k];
                         float d2 = math.lengthsq(d);
-                        if (d2 < SepRadius * SepRadius && !(enemy && (ghost || (info & 8) != 0)))
+                        float otherR = RadiusOfInfo(info);
+                        float sepR = myR + otherR;
+                        if (d2 < sepR * sepR && !(enemy && (ghost || (info & 8) != 0)))
                         {
                             if (d2 < 1e-6f)
                             {
@@ -235,7 +239,10 @@ namespace HordeLab
                                 d2 = 1e-4f;
                             }
                             float dist = math.sqrt(d2);
-                            sep += d / dist * (SepRadius - dist);
+                            // to đẩy nhỏ: phần bị đẩy chia theo "khối lượng" ~ bán kính²; 2 lính bằng nhau thì như cũ (hệ số 1)
+                            // to đẩy nhỏ: phần bị đẩy chia theo "khối lượng" ~ bán kính²; 2 lính bằng nhau thì như cũ (hệ số 1).
+                            // Tính đều cho mọi cặp (không rẽ nhánh) — đo thử bản có rẽ nhánh còn chậm hơn.
+                            sep += d / dist * (sepR - dist) * (2f * otherR * otherR / (myR2 + otherR * otherR));
                         }
                         if (enemy)
                         {
@@ -243,6 +250,7 @@ namespace HordeLab
                             {
                                 bestD2 = d2;
                                 bestIdx = j;
+                                bestInfo = info;
                                 bestPos = sortedPos[k];
                             }
                         }
@@ -317,7 +325,7 @@ namespace HordeLab
                     }
                 }
             }
-            else if (team == 1 && u.pos.x <= Cfg.WallX + s.range + 0.5f)
+            else if (team == 1 && u.pos.x <= Cfg.WallX + s.range + 0.5f + (myR - Cfg.RadiusSmall))
             {
                 // Cận chiến đã áp sát tường: đứng đánh tường, mỗi đòn trừ 1 máu thành (không lao qua tự sát nữa).
                 // Đã tới tường thì không quay ra đuổi lính nữa → quân ta không thể câu giờ mãi bằng cách ra lính liên tục.
@@ -359,7 +367,8 @@ namespace HordeLab
                     float dist = math.sqrt(bestD2);
                     float2 to = bestPos - u.pos;
                     float2 dir = to / math.max(dist, 1e-4f);
-                    if (dist <= s.range)
+                    float reach = s.range + (myR - Cfg.RadiusSmall) + (RadiusOfInfo(bestInfo) - Cfg.RadiusSmall);   // tầm tính tới mép thân 2 bên
+                    if (dist <= reach)
                     {
                         attacking = true;
                         desired = dir * 0.15f;
@@ -565,7 +574,7 @@ namespace HordeLab
                         if (sa.blood == PKind.Fire)
                         {
                             // lửa rồng: cột lửa từ miệng tới đích + biển lửa ở đích
-                            float2 mouth = a.pos + new float2(a.faceLeft != 0 ? -0.6f : 0.6f, 0.3f);
+                            float2 mouth = a.pos + new float2(a.faceLeft != 0 ? -1.4f : 1.4f, 1.9f);   // miệng rồng 32x32, tính từ chân
                             for (int k = 1; k <= 4; k++) Fx.Flames(particles, counters, ref rng, math.lerp(mouth, sh.xy, k / 4f), 0.3f + 0.15f * k, 3, PKind.Fire, 0.5f);
                             Fx.Flames(particles, counters, ref rng, sh.xy, sa.splash * 0.6f, 16, PKind.Fire, 0.9f);
                             Fx.Flames(particles, counters, ref rng, sh.xy, sa.splash * 0.6f, 5, PKind.Smoke, 1.8f);
@@ -604,7 +613,7 @@ namespace HordeLab
                             case Proj.Javelin: speed = 19f; arcK = 0.3f; arc0 = 1.5f; scatter = 1f; break;
                             case Proj.NatureOrb: case Proj.VoidOrb: case Proj.LightOrb: speed = 15f; arcK = 0.05f; arc0 = 0.8f; scatter = 0.8f; break;
                         }
-                        float2 from = a.pos + new float2(a.faceLeft != 0 ? -0.3f : 0.3f, 0.2f);
+                        float2 from = a.pos + new float2(a.faceLeft != 0 ? -0.3f : 0.3f, sa.liftPx / (float)Cfg.PPU);   // từ giữa thân, không phải từ chân
                         float2 to = atWall ? sh.xy + new float2(0f, rng.NextFloat(-0.8f, 0.8f)) : sh.xy + rng.NextFloat2Direction() * rng.NextFloat(0f, scatter);
                         float dist = math.max(math.distance(from, to), 1f);
                         arrows[count] = new Arrow
@@ -740,7 +749,7 @@ namespace HordeLab
         int FindVictim(float2 p, int enemyTeam, int unitCount)
         {
             int cx = Cfg.CellX(p.x), cy = Cfg.CellY(p.y);
-            float best = HitRadius * HitRadius;
+            float best = 1f;                                   // điểm = (khoảng cách / tầm trúng)²; < 1 là trúng
             int bi = -1;
             for (int y = math.max(cy - 1, 0); y <= math.min(cy + 1, Cfg.GridH - 1); y++)
             {
@@ -754,8 +763,9 @@ namespace HordeLab
                         if (j >= unitCount) continue;
                         Unit u = units[j];
                         if (u.team != enemyTeam || u.hp <= 0f) continue;
-                        float d2 = math.lengthsq(u.pos - p);
-                        if (d2 < best) { best = d2; bi = j; }
+                        float r = HitRadius + stats[u.type].radius - Cfg.RadiusSmall;   // thân to thì dễ trúng hơn
+                        float score = math.lengthsq(u.pos - p) / (r * r);
+                        if (score < best) { best = score; bi = j; }
                     }
                 }
             }
@@ -910,7 +920,8 @@ namespace HordeLab
             if (u.state == 0) frame = (int)(u.animT * stats[u.type].animFps) & 3;
             else frame = u.animT < 0.4f ? math.min(3, (int)(u.animT * 10f)) : 0;
 
-            int flags = u.faceLeft | (u.flash > 0.25f ? 2 : 0) | (u.slow > 0f ? 4 : 0);
+            // bit 4.. = số pixel nâng hình lên để chân chạm đúng vị trí
+            int flags = u.faceLeft | (u.flash > 0.25f ? 2 : 0) | (u.slow > 0f ? 4 : 0) | (stats[u.type].liftPx << 4);
             if ((stats[u.type].flags & UFlag.Giant) != 0)
             {
                 // quân khổng lồ 32x32: mỗi khung chiếm 2x2 ô, 2 khung / 2 hàng atlas, mỗi trạng thái 4 hàng

@@ -229,6 +229,28 @@ namespace HordeLab
             return s;
         }
 
+        /// <summary>
+        /// Shader vẽ hình căn giữa quad; vị trí của lính lại là chỗ chân. Trả về số pixel phải nâng hình lên:
+        /// khoảng từ tâm quad xuống hàng pixel thấp nhất (thường là viền dưới chân) của các khung đi.
+        /// </summary>
+        public static int FootLiftPx(int type)
+        {
+            int lowest = -1, cell = UnitCell, pad = 0;
+            for (int f = 0; f < 4; f++)
+            {
+                var s = DrawUnit(type, 0, f);
+                cell = s.W > UnitCell ? GiantPx : UnitCell;
+                pad = (cell - s.W) / 2;
+                for (int y = s.H - 1; y > lowest; y--)
+                {
+                    bool any = false;
+                    for (int x = 0; x < s.W && !any; x++) any = s.Get(x, y).a > 0;
+                    if (any) { lowest = y; break; }
+                }
+            }
+            return lowest < 0 ? 0 : Mathf.Max(0, pad + lowest - cell / 2);
+        }
+
         /// <summary>Lính bộ (không phải quân to 16x16)?</summary>
         public static bool IsInfantry(Canvas sprite) => sprite.W < UnitCell;
 

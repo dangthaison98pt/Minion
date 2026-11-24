@@ -239,7 +239,7 @@ namespace HordeLab
             A(Aug.LandGrant, AugCat.Utility, "Land Grant", $"Gain {Aug.LandGrantCards} Expand Land cards now.");
             A(Aug.Recruit, AugCat.Utility, "Veteran Recruits", "Gain a random 2-star troop building of your faction now.");
             A(Aug.Architect, AugCat.Utility, "Master Architect", $"Buff buildings are {pct(Aug.ArchitectBuff)}% stronger.");
-            A(Aug.Dragon, AugCat.Legendary, "Dragon's Pact", $"A dragon fights for you every wave: it flies over the enemy line and breathes fire. If it falls, it returns {Aug.DragonRespawn:0}s later.");
+            A(Aug.Dragon, AugCat.Legendary, "Dragon's Pact", $"A dragon fights for you every wave: it stomps into the enemy line, shoves troops aside and breathes fire. If it falls, it returns {Aug.DragonRespawn:0}s later.");
             A(Aug.Meteor, AugCat.Legendary, "Meteor Shower", $"Every {Aug.MeteorEvery:0}s a meteor crashes into the enemy horde, burning everything around it.");
             A(Aug.Ballista, AugCat.Legendary, "Ballista Towers", "Your walls fire heavy bolts at the closest enemy, about once a second.");
             A(Aug.Mercenary, AugCat.Legendary, "Mercenary Camp", $"Every {Aug.MercEvery:0}s a squad of {Aug.MercSide * Aug.MercSide} mercenaries from a random other faction joins you.");
@@ -312,7 +312,7 @@ namespace HordeLab
 
             // ---------------- Trung lập ----------------
             // Rồng (lõi Dragon's Pact): bay qua hàng địch, phun lửa lan. Máu / sát thương còn nhân theo đợt (Game.SpawnDragon)
-            s = S(900, 24, 2.0f, 8f, 3.4f, Mode.Blast, UFlag.Big | UFlag.Giant | UFlag.Ghost, 0, PKind.Fire, 8f); s.splash = 3.2f;
+            s = S(900, 24, 2.0f, 8f, 3.4f, Mode.Blast, UFlag.Big | UFlag.Giant, 0, PKind.Fire, 8f); s.splash = 3.2f;   // đi bộ: chiếm chỗ, chặn đường
             u[UnitType.Dragon] = U("", "Dragon", "Legendary ally (fire breath)", s, default, 0f, 99, 0f);
 
             // Đặc trưng phe được nhân sẵn vào bảng chỉ số
@@ -324,6 +324,7 @@ namespace HordeLab
                 u[t].stats.damage *= f.dmgMul;
                 u[t].stats.speed *= f.speedMul * Tuning.SpeedScale;
                 if (u[t].stats.mode != Mode.Melee) u[t].stats.range *= f.rangeMul * Tuning.RangeScale;
+                u[t].stats.radius = Cfg.RadiusOf(u[t].stats.flags);
             }
             return u;
         }

@@ -21,7 +21,7 @@ Shader "Horde/Units"
             #include "UnityCG.cginc"
             #include "HordeCommon.cginc"
 
-            StructuredBuffer<float4> _Units;   // xy = vị trí, z = ô trong atlas, w = cờ (1 = quay trái, 2 = nháy trắng, 4 = đang bị làm chậm, 8 = khổng lồ 2x2 ô)
+            StructuredBuffer<float4> _Units;   // xy = vị trí, z = ô trong atlas, w = cờ (1 = quay trái, 2 = nháy trắng, 4 = đang bị làm chậm, 8 = khổng lồ 2x2 ô, bit 4.. = số pixel nâng hình)
             sampler2D _MainTex;
             float4 _Atlas;                     // x = số cột, y = số hàng, z = kích thước quad, w = PPU
 
@@ -39,7 +39,8 @@ Shader "Horde/Units"
                 uint flags = (uint)u.w;
 
                 float k = (flags & 8u) ? 2.0 : 1.0;        // khổng lồ: quad và vùng atlas to gấp đôi
-                float2 p = SnapToPixel(u.xy, _Atlas.w) + c * _Atlas.z * k;
+                float lift = (float)(flags >> 4) / _Atlas.w; // vị trí là chân: nâng hình lên cho chân chạm đúng chỗ
+                float2 p = SnapToPixel(u.xy, _Atlas.w) + c * _Atlas.z * k + float2(0.0, lift);
 
                 float row = floor(u.z / _Atlas.x);
                 float col = u.z - row * _Atlas.x;

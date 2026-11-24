@@ -129,7 +129,12 @@ namespace HordeLab
             var p = Allocator.Persistent;
             units = new NativeArray<Unit>(Cfg.MaxUnits, p);
             stats = new NativeArray<UnitStats>(UnitType.Count, p);
-            for (int t = 0; t < UnitType.Count; t++) stats[t] = GameData.Units[t].stats;
+            for (int t = 0; t < UnitType.Count; t++)
+            {
+                var st = GameData.Units[t].stats;
+                st.liftPx = PixelArt.FootLiftPx(t);      // đo từ sprite (kể cả PNG hoạ sĩ vẽ) để chân chạm đất đúng vị trí
+                stats[t] = st;
+            }
 
             arrows = new NativeArray<Arrow>(Cfg.MaxArrows, p);
             particles = new NativeArray<Particle>(Cfg.MaxParticles, p);
@@ -311,11 +316,26 @@ namespace HordeLab
             return seen > 0;
         }
 
+        /// <summary>Công cụ kiểm tra: khoảng cách chân gần nhất từ 1 lính loại <paramref name="type"/> tới lính bất kỳ khác; -1 nếu không có.</summary>
+        public float ClosestTo(int type)
+        {
+            simHandle.Complete();
+            int n = counters[C.Units];
+            float best = float.MaxValue;
+            for (int i = 0; i < n; i++)
+            {
+                if (units[i].type != type) continue;
+                for (int j = 0; j < n; j++)
+                    if (j != i) best = math.min(best, math.distance(units[i].pos, units[j].pos));
+            }
+            return best == float.MaxValue ? -1f : best;
+        }
+
         /// <summary>Gọi 1 tiểu đội side x side lính xếp hàng quanh <paramref name="center"/>. Trả về số lính.</summary>
         public int SpawnSquad(int type, int team, float2 center, int side, float hpMul = 1f, float dmgMul = 1f, float regen = 0f)
         {
             simHandle.Complete();
-            float gap = (stats[type].flags & UFlag.Big) != 0 ? 1.3f : 0.9f;
+            float gap = math.max(0.9f, stats[type].radius * 1.9f);   // xếp hàng theo cỡ thân
             float half = (side - 1) * 0.5f;
             center.y = math.clamp(center.y, -Cfg.HalfH + 1f + half * gap, Cfg.HalfH - 1f - half * gap);
             for (int r = 0; r < side; r++)

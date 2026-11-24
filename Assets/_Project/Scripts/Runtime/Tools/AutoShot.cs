@@ -282,8 +282,16 @@ namespace HordeLab
 
                 float shotAt = Time.time + 22f;
                 bool shot = played > 0;
+                float sampleAt = 0f, gapMin = float.MaxValue, gapSum = 0f; int gapN = 0;
                 while (game.phase == Phase.Battle)
                 {
+                    // Rồng có mặt: đo khoảng cách chân gần nhất tới lính khác (kiểm tra đẩy nhau theo cỡ thân)
+                    if (game.Has(Aug.Dragon) && game.waveTime >= sampleAt)
+                    {
+                        sampleAt = game.waveTime + 1f;
+                        float d = battle.ClosestTo(UnitType.Dragon);
+                        if (d >= 0f) { gapMin = Mathf.Min(gapMin, d); gapSum += d; gapN++; }
+                    }
                     if (!shot && Time.time >= shotAt)
                     {
                         Shot("04_tran_danh.png");
@@ -306,6 +314,7 @@ namespace HordeLab
                 }
                 played++;
                 var r = game.city.res;
+                if (gapN > 0) log.AppendLine($"    rồng: chân lính khác gần nhất {gapMin:0.00}, trung bình {gapSum / gapN:0.00} (tổng bán kính rồng + lính bộ = {Cfg.RadiusGiant + Cfg.RadiusSmall:0.00})");
                 if (game.Augments.Exists(a => GameData.Augments[a].cat == AugCat.Legendary))
                     log.AppendLine($"    huyền thoại: rồng gọi {game.dragonsCalled}, thiên thạch {game.meteorsFired}, nỏ {game.boltsFired}, lính thuê {game.mercSquads} đội, last stand {game.lastStands}");
                 log.AppendLine($"    → {(game.lastWon ? "THẮNG" : "THUA")} sau {game.waveTime:0}s | thành {game.castleHp}/{game.MaxCastleHp} | diệt {battle.Counter(C.Dead1)} / mất {battle.Counter(C.Dead0)} | " +

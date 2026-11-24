@@ -30,6 +30,12 @@ namespace HordeLab
         public const float EnemySpawnX = HalfW + 4f;      // quân địch xuất hiện NGOÀI mép phải rồi đi bộ vào màn hình
         public const float HoldX = WallX + 22f;                 // quân ta không thấy địch thì dừng ở đây giữ trận tuyến
 
+        // Bán kính thân (đơn vị thế giới), đo từ chân: lính bộ / quân to 16x16 / quân khổng lồ 32x32.
+        // Hai lính đẩy nhau khi chân gần hơn tổng bán kính; quân to đẩy quân nhỏ mạnh hơn bị đẩy lại.
+        public const float RadiusSmall = 0.425f, RadiusBig = 0.7f, RadiusGiant = 1.4f;
+        public static float RadiusOf(int flags) =>
+            (flags & UFlag.Giant) != 0 ? RadiusGiant : (flags & UFlag.Big) != 0 ? RadiusBig : RadiusSmall;
+
         public static int CellX(float x) => math.clamp((int)math.floor((x + HalfW) / CellSize), 0, GridW - 1);
         public static int CellY(float y) => math.clamp((int)math.floor((y + HalfH) / CellSize), 0, GridH - 1);
     }
@@ -123,9 +129,11 @@ namespace HordeLab
         public float chargeBonus;    // kỵ binh: đòn xung phong mạnh gấp (1 + chargeBonus) lần khi đầy đà
         public float explodeDmg, explodeRadius;   // nổ khi chết
         public float animFps;
+        public float radius;         // bán kính thân, đo từ chân (Cfg.RadiusOf)
+        public int liftPx;           // vẽ hình cao hơn vị trí bao nhiêu pixel để chân chạm đúng vị trí (Battle đo từ sprite)
     }
 
-    /// <summary>Một người lính chỉ là struct này, không có GameObject nào cả.</summary>
+    /// <summary>Một người lính chỉ là struct này, không có GameObject nào cả. <c>pos</c> là chỗ CHÂN chạm đất.</summary>
     public struct Unit
     {
         public float2 pos;

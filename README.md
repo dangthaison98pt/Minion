@@ -86,7 +86,7 @@ class `Aug` và `GameData.BuildAugments()` trong [`GameData.cs`](Assets/_Project
 | Tiện ích | Land Grant | Nhận ngay 2 thẻ Mở rộng đất |
 | Tiện ích | Veteran Recruits | Nhận ngay 1 nhà lính 2 sao ngẫu nhiên của phe mình |
 | Tiện ích | Master Architect | Nhà buff mạnh hơn 40% |
-| Huyền thoại | Dragon's Pact | Mỗi đợt có 1 con rồng (loại quân `UnitType.Dragon`) bay qua hàng địch phun lửa lan; chết thì 30 giây sau quay lại |
+| Huyền thoại | Dragon's Pact | Mỗi đợt có 1 con rồng khổng lồ (loại quân `UnitType.Dragon`) đi bộ chặn đường, đẩy lính dạt ra, phun lửa lan; chết thì 30 giây sau quay lại |
 | Huyền thoại | Meteor Shower | Mỗi 6 giây 1 thiên thạch rơi vào 1 tên địch ngẫu nhiên, sát thương lan + biển lửa |
 | Huyền thoại | Ballista Towers | Tường thành bắn nỏ vào tên địch gần tường nhất (tầm 40), khoảng 1 phát / giây |
 | Huyền thoại | Mercenary Camp | Mỗi 20 giây 1 đội 4×4 lính thuê ngẫu nhiên của phe khác tới giúp |
@@ -221,6 +221,10 @@ Build\HordeLab.exe -batchmode -bench ketqua.txt -stress 20000
 
 ## Các mẹo hiệu năng
 - **Không GameObject cho lính.** `NativeArray<Unit>` + `IJobParallelFor` + `[BurstCompile]`.
+- **Vị trí lính = chỗ chân chạm đất.** Shader nâng hình lên `liftPx` pixel (Battle tự đo từ hàng pixel thấp nhất của sprite, kể cả PNG tự vẽ),
+  nên đẩy nhau, đánh nhau và thứ tự che nhau đều tính ở chân.
+- **Bán kính thân theo cỡ quân** (`Cfg.RadiusSmall / RadiusBig / RadiusGiant` = 0,425 / 0,7 / 1,4): hai lính đẩy nhau khi chân gần hơn tổng bán kính,
+  quân to đẩy quân nhỏ mạnh hơn bị đẩy lại; cận chiến chém tới mép thân, đạn trúng trong thân.
 - **Lưới không gian 2×2** (counting sort) → tìm địch / đẩy nhau / vùng hồi máu chỉ xét 9 ô quanh mình.
 - **Chia việc theo frame:** mỗi lính chỉ quét tìm mục tiêu xa 1 lần / 8 frame.
 - **1 lệnh vẽ cho mọi lính:** `Graphics.RenderPrimitives` + shader đọc vị trí từ buffer. Animation chọn khung trong atlas.
