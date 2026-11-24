@@ -721,8 +721,10 @@ namespace HordeLab
                         }
                         else
                         {
-                            v.hp -= a.damage * rng.NextFloat(0.8f, 1.2f);
+                            float resist = Proj.Piercing(a.kind) ? sv.arrowResist : 0f;
+                            v.hp -= a.damage * (1f - resist) * rng.NextFloat(0.8f, 1.2f);
                             v.flash = 1f;
+                            if (resist > 0f) Fx.Spray(particles, counters, ref rng, v.pos, 0.6f, 2, PKind.Spark, 3f, 3f);   // tên dội ra khỏi vảy
                             if (a.slow > 0f) v.slow = math.max(v.slow, a.slow);
                             units[victim] = v;
                             Fx.Spray(particles, counters, ref rng, v.pos, 0.5f, 3, sv.blood, 2f, 6f);

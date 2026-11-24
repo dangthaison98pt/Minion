@@ -102,6 +102,8 @@ namespace HordeLab
     {
         public const int Arrow = 0, ElfArrow = 1, Bolt = 2, Rock = 3, Cannonball = 4, Javelin = 5, NatureOrb = 6, VoidOrb = 7, LightOrb = 8;
         public const int Count = 9;
+        /// <summary>Đạn xuyên (tên, tên tiên, nỏ, lao) — bị arrowResist giảm sát thương.</summary>
+        public static bool Piercing(int kind) => kind <= Bolt || kind == Javelin;
     }
 
     public static class PKind
@@ -130,6 +132,7 @@ namespace HordeLab
         public float explodeDmg, explodeRadius;   // nổ khi chết
         public float animFps;
         public float radius;         // bán kính thân, đo từ chân (Cfg.RadiusOf)
+        public float arrowResist;    // giảm sát thương từ tên / nỏ / lao (0..1), ví dụ vảy rồng
         public int liftPx;           // vẽ hình cao hơn vị trí bao nhiêu pixel để chân chạm đúng vị trí (Battle đo từ sprite)
     }
 
