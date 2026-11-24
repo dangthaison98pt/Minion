@@ -28,20 +28,41 @@ namespace HordeLab
         /// </summary>
         public static int MaxResIndexFor(bool fullscreen)
         {
-            int w = Display.main.systemWidth, h = Display.main.systemHeight - (fullscreen ? 0 : 100), best = 0;
+            var n = Native;
+            int w = n.x, h = n.y - (fullscreen ? 0 : 100), best = 0;
             for (int i = 0; i < Sizes.Length; i++) if (Sizes[i].x <= w && Sizes[i].y <= h) best = i;
             return best;
         }
-        public static int MaxResIndex => MaxResIndexFor(Fullscreen);
+        public static int MaxResIndex => MaxResIndexFor(false);
 
-        public static Vector2Int Size => Sizes[ResIndex];
+        /// <summary>Cỡ gốc của màn hình đang chứa cửa sổ game (máy nhiều màn hình thì không nhất thiết là màn chính).</summary>
+        public static Vector2Int Native
+        {
+            get
+            {
+                var d = Screen.mainWindowDisplayInfo;
+                return d.width > 0 ? new Vector2Int(d.width, d.height) : new Vector2Int(Display.main.systemWidth, Display.main.systemHeight);
+            }
+        }
 
-        public static void ApplyResolution() =>
-            Screen.SetResolution(Size.x, Size.y, Fullscreen ? FullScreenMode.FullScreenWindow : FullScreenMode.Windowed);
+        /// <summary>
+        /// Cỡ đang dùng. Toàn màn hình luôn chạy đúng cỡ gốc của màn hình — chạy cỡ nhỏ hơn thì Windows kéo giãn ảnh ra làm chữ mờ.
+        /// Cỡ chọn trong Settings chỉ dùng cho chế độ cửa sổ.
+        /// </summary>
+        public static Vector2Int Size => Fullscreen ? Native : Sizes[ResIndex];
 
-        /// <summary>Đổi sang cỡ kế tiếp (vòng lại cỡ nhỏ nhất).</summary>
+        public static void ApplyResolution() => Apply(Fullscreen);
+
+        static void Apply(bool full)
+        {
+            var s = full ? Native : Sizes[ResIndex];
+            Screen.SetResolution(s.x, s.y, full ? FullScreenMode.FullScreenWindow : FullScreenMode.Windowed);
+        }
+
+        /// <summary>Đổi sang cỡ cửa sổ kế tiếp (vòng lại cỡ nhỏ nhất). Toàn màn hình thì không đổi được.</summary>
         public static void CycleResolution()
         {
+            if (Fullscreen) return;
             ResIndex = ResIndex >= MaxResIndex ? 0 : ResIndex + 1;
             ApplyResolution();
         }
@@ -84,10 +105,9 @@ namespace HordeLab
 
         public static void ToggleFullscreen()
         {
-            // giữ cỡ đã chọn, chỉ đổi giữa toàn màn hình / cửa sổ; ra cửa sổ thì hạ cỡ nếu cỡ đó không vừa cửa sổ
-            bool toFull = !Fullscreen;
-            ResIndex = Mathf.Min(ResIndex, MaxResIndexFor(toFull));
-            Screen.SetResolution(Size.x, Size.y, toFull ? FullScreenMode.FullScreenWindow : FullScreenMode.Windowed);
+            // toàn màn hình: cỡ gốc; ra cửa sổ: cỡ đã chọn (hạ xuống nếu không vừa)
+            ResIndex = Mathf.Min(ResIndex, MaxResIndex);
+            Apply(!Fullscreen);
         }
     }
 }

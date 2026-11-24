@@ -768,6 +768,8 @@ namespace HordeLab
         {
             if (!SettingsOpen) return;
             string On(bool b) => b ? "<color=#9fe07a>On</color>" : "<color=#aaaaaa>Off</color>";
+            // toàn màn hình luôn chạy cỡ gốc của màn hình (không chọn được); cửa sổ thì chọn cỡ
+            setBtns[0].SetOn(!Settings.Fullscreen);
             setBtns[0].Label().Set($"{Settings.Size.x} x {Settings.Size.y}");
             setBtns[1].Label().Set(On(Settings.Fullscreen));
             setBtns[2].Label().Set(On(Settings.VSync));

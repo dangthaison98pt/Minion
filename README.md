@@ -5,8 +5,9 @@ hàng nghìn lính tự đánh qua 30 đợt. Kinh tế và chiến đấu chạ
 nhà lính tự gọi quân mỗi khi hồi xong **và** kho đủ tài nguyên.
 
 Chiến trường 96×50,4 đơn vị (960×504 pixel), mặc định phóng x2: ở 1080p vừa khít vùng dưới thanh trên cùng, không chỗ nào bị giao diện che.
-Cỡ màn cố định 16:9, chọn trong **Settings → Resolution** (1280×720, 1600×900, 1920×1080, 2560×1440, 3840×2160 — chỉ cho chọn cỡ vừa
-màn hình máy; chế độ cửa sổ chừa chỗ cho thanh tiêu đề). Cửa sổ **không kéo giãn được**. Lần đầu chạy chọn cỡ lớn nhất vừa màn.
+**Toàn màn hình** luôn chạy đúng cỡ gốc của màn hình đang chứa game (không kéo giãn ảnh nên chữ không mờ).
+**Chế độ cửa sổ** chọn cỡ cố định 16:9 trong **Settings → Resolution** (1280×720, 1600×900, 1920×1080, 2560×1440, 3840×2160 — chỉ tới
+cỡ vừa màn, chừa chỗ thanh tiêu đề); cửa sổ **không kéo giãn được**.
 1080p và 4K phóng đúng x2 / x4 (sắc nét nhất); các cỡ còn lại phóng lẻ (720p x1,33, 900p x1,67, 1440p x2,67).
 Phần mô phỏng vẫn là lõi "vạn quân" cũ: **Job System + Burst + GPU instancing**, không dùng ECS, mỗi lính là 1 struct.
 
