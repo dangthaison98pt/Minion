@@ -198,7 +198,18 @@ namespace HordeLab
         // Mỗi phe 1 lõi bí mật gọi boss của phe mình đánh cho người chơi. Mã = Emperor + phe (giữ nguyên mã cũ của Emperor cho bản lưu)
         public const int Emperor = UnitBase + UnitType.Buildable;                 // Người: The Golden Emperor
         public const int WorldTreeAug = Emperor + 1, ThorAug = Emperor + 2, BerserkerAug = Emperor + 3, BroodAug = Emperor + 4;
-        public const int Count = Emperor + Faction.Count;
+        // Prismatic thêm (mã nối sau lõi bí mật để bản lưu cũ vẫn đúng)
+        public const int Legion = Emperor + Faction.Count, TitanBlood = Legion + 1, WarDrums = Legion + 2, Undying = Legion + 3,
+                         SkyLances = Legion + 4, GoldenAge = Legion + 5, IronFortress = Legion + 6, DragonHoard = Legion + 7;
+        public const int Count = DragonHoard + 1;
+        public const int LegionSquads = 2;
+        public const float TitanHp = 0.6f, TitanDmg = 0.3f;
+        public const float WarDrumsSpeed = 1.4f;                    // đánh nhanh x1.4 (hồi đòn chia 1.4)
+        public const float UndyingChance = 0.3f;
+        public const float LanceEvery = 1.5f, LanceDamage = 60f, LanceSplash = 2f; public const int LanceCount = 3;
+        public const float GoldenAgeMul = 2f;
+        public const int FortressHp = 500; public const float FortressThorns = 15f;
+        public const int HoardCrystals = 30, HoardInterest = 5;
         public static int SecretOf(int faction) => Emperor + faction;
         public static bool IsSecret(int a) => a >= Emperor && a < Emperor + Faction.Count;
         public static int SecretUnit(int a) => UnitType.BossOf(a - Emperor);
@@ -324,6 +335,16 @@ namespace HordeLab
             A(Aug.LastStand, AugCat.Legendary, "Last Stand",
               $"Once per wave, when the castle would fall it is fully restored and a holy blast runs along the walls: every enemy within {Aug.LastStandRange:0} " +
               $"is hurled back, stunned for {Aug.LastStandStun:0}s and takes {Aug.LastStandDamage:0} damage.");
+            // ---- Prismatic thêm ----
+            A(Aug.Legion, AugCat.Legendary, "Legion", $"Every troop building calls {Aug.LegionSquads} squads each time instead of 1, for the same cost.");
+            A(Aug.TitanBlood, AugCat.Legendary, "Titan Blood", $"All your troops have {pct(Aug.TitanHp)}% more HP and deal {pct(Aug.TitanDmg)}% more damage.");
+            A(Aug.WarDrums, AugCat.Legendary, "War Drums", $"All your troops attack {pct(Aug.WarDrumsSpeed - 1f)}% faster.");
+            A(Aug.Undying, AugCat.Legendary, "Undying Legion", $"Each of your fallen troops has a {pct(Aug.UndyingChance)}% chance to rise again at half HP (once each).");
+            A(Aug.SkyLances, AugCat.Legendary, "Sky Lances", $"Every {Aug.LanceEvery:0.#}s, {Aug.LanceCount} holy lances fall from the sky onto the enemy, {Aug.LanceDamage:0} damage each with a blast.");
+            A(Aug.GoldenAge, AugCat.Legendary, "Golden Age", $"All your resource buildings produce {pct(Aug.GoldenAgeMul - 1f)}% more.");
+            A(Aug.IronFortress, AugCat.Legendary, "Iron Fortress", $"The castle has +{Aug.FortressHp} HP and its walls are spiked: every enemy blow on the wall hurts the attacker for {Aug.FortressThorns:0} damage.");
+            A(Aug.DragonHoard, AugCat.Legendary, "Dragon Hoard", $"Gain {Aug.HoardCrystals} Energy Crystals now. Max interest +{Aug.HoardInterest}.");
+
             // ---- Lõi bí mật: mỗi phe gọi boss của phe mình đánh cho người chơi ----
             string allyCommon = $" Takes {pct(Aug.AllyArmor)}% less damage from arrows, bolts and javelins and cannot be stunned, rooted or feared. " +
                                 $"Grows stronger each wave. Rises again once per wave at {pct(Aug.AllyRevive)}% HP; if it falls again, it returns next wave.";
@@ -407,6 +428,14 @@ namespace HordeLab
             V(Aug.Mercenary, $"x{Aug.MercSide * Aug.MercSide}", $"Mercenaries every {Aug.MercEvery:0}s");
             V(Aug.LastStand, "100%", "Castle rises again, blasts the horde");
             V(Aug.Emperor, $"{Units[UnitType.Emperor].stats.maxHp * Aug.AllyHp:0} HP", "The Emperor marches to war");
+            V(Aug.Legion, $"x{Aug.LegionSquads}", "Squads per troop call");
+            V(Aug.TitanBlood, $"+{pct(Aug.TitanHp)}%", "Troop HP, +30% damage");
+            V(Aug.WarDrums, $"+{pct(Aug.WarDrumsSpeed - 1f)}%", "Troop attack speed");
+            V(Aug.Undying, $"{pct(Aug.UndyingChance)}%", "Fallen troops rise again");
+            V(Aug.SkyLances, $"x{Aug.LanceCount}", $"Holy lances every {Aug.LanceEvery:0.#}s");
+            V(Aug.GoldenAge, $"x{Aug.GoldenAgeMul:0}", "All resource production");
+            V(Aug.IronFortress, $"+{Aug.FortressHp}", "Castle HP, spiked walls");
+            V(Aug.DragonHoard, $"+{Aug.HoardCrystals}", "Crystals now, interest +5");
             V(Aug.WorldTreeAug, $"{Units[UnitType.WorldTree].stats.maxHp * Aug.AllyHp:0} HP", "The World Tree awakens");
             V(Aug.ThorAug, $"{Units[UnitType.Thor].stats.maxHp * Aug.AllyHp:0} HP", "Thunder fights for you");
             V(Aug.BerserkerAug, $"{Units[UnitType.Berserker].stats.maxHp * Aug.AllyHp:0} HP", "The Berserker joins the hunt");

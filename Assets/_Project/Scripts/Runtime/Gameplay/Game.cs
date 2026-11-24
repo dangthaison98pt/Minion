@@ -67,7 +67,8 @@ namespace HordeLab
         int rollsThisPrep;               // số lần roll trong lần chuẩn bị này (Lucky Dice: lần đầu miễn phí)
 
         // ---- Lõi huyền thoại trong trận ----
-        float dragonT, meteorT, ballistaT, mercT, emperorT;
+        float dragonT, meteorT, ballistaT, mercT, emperorT, lanceT;
+        public int lancesFired;
         bool emperorCalled;              // Hoàng đế đã ra trận trong đợt này (chết thì chờ đợt sau)
         float bossT;                     // đợt trùm: còn bao lâu boss vào trận (< 0 = đã vào / không có)
         public float bossHpMul = Tuning.BossHp;  // công cụ kiểm tra có thể hạ máu boss
@@ -542,7 +543,10 @@ namespace HordeLab
                 enemyWeights.Add(GameData.Units[t].waveWeight);
             }
 
-            battle.ApplyUnitAugments(t => Has(Aug.ForUnit(t)), IsFullMoon(wave));
+            battle.ApplyUnitAugments(t => Has(Aug.ForUnit(t)), IsFullMoon(wave), faction, Has(Aug.WarDrums) ? Aug.WarDrumsSpeed : 1f);
+            battle.undying = Has(Aug.Undying);
+            battle.wallThorns = Has(Aug.IronFortress) ? Aug.FortressThorns * Tuning.EnemyPower(wave) : 0f;
+            lanceT = 2f; lancesFired = 0;
             battle.speed = Settings.BattleSpeed;           // tốc độ mặc định khi vào trận (Settings)
             battle.simulate = true;
             battle.paused = false;
@@ -595,8 +599,8 @@ namespace HordeLab
             for (int k = 0; k < city.Squads(b); k++)
             {
                 var pos = new float2(Cfg.PlayerSpawnX + rng.NextFloat(0f, 5f), rng.NextFloat(-Cfg.HalfH + 5f, Cfg.HalfH - 5f));
-                battle.SpawnSquad(type, 0, pos, side, b.hp * moon * (Has(Aug.IronSkin) ? 1f + Aug.IronSkinHp : 1f),
-                                  b.dmg * moon * (Has(Aug.Sharpened) ? 1f + Aug.SharpenedDmg : 1f),
+                battle.SpawnSquad(type, 0, pos, side, b.hp * moon * (Has(Aug.IronSkin) ? 1f + Aug.IronSkinHp : 1f) * (Has(Aug.TitanBlood) ? 1f + Aug.TitanHp : 1f),
+                                  b.dmg * moon * (Has(Aug.Sharpened) ? 1f + Aug.SharpenedDmg : 1f) * (Has(Aug.TitanBlood) ? 1f + Aug.TitanDmg : 1f),
                                   b.regen + (Has(Aug.Medics) ? Aug.MedicsRegen : 0f), leader);   // chỉ có trưởng đạo khi có lõi kỹ năng trưởng đạo
             }
         }
@@ -635,7 +639,7 @@ namespace HordeLab
             if (wave >= Tuning.Waves) { phase = Phase.Won; DeleteSave(); return; }
 
             // Thua một đợt (còn tim) vẫn sang đợt sau và vẫn nhận đủ phần thưởng
-            lastInterest = Tuning.Interest(crystals, Has(Aug.RichGetRicher) ? Aug.RichExtraCap : 0);   // lãi tính trên số đang giữ, trước khi cộng thưởng
+            lastInterest = Tuning.Interest(crystals, InterestExtra);   // lãi tính trên số đang giữ, trước khi cộng thưởng
             lastCrystals = Tuning.CrystalReward;
             lastWinBonus = won ? Tuning.WinBonus : 0;
             crystals += lastCrystals + lastWinBonus + lastInterest;
@@ -660,7 +664,9 @@ namespace HordeLab
             return a >= 0 && Has(a) && GameData.Augments[a].leaderSkill;
         }
 
-        public int MaxCastleHp => Tuning.CastleHp + (Has(Aug.Walls) ? Aug.WallsHp : 0);
+        public int MaxCastleHp => Tuning.CastleHp + (Has(Aug.Walls) ? Aug.WallsHp : 0) + (Has(Aug.IronFortress) ? Aug.FortressHp : 0);
+        /// <summary>Lãi tối đa cộng thêm từ lõi (Rich Get Richer, Dragon Hoard).</summary>
+        public int InterestExtra => (Has(Aug.RichGetRicher) ? Aug.RichExtraCap : 0) + (Has(Aug.DragonHoard) ? Aug.HoardInterest : 0);
 
         /// <summary>Công cụ kiểm tra: thiên thạch kế tiếp rơi ngay bước sau.</summary>
         public void FireMeteorNow() => meteorT = 0f;
@@ -694,6 +700,18 @@ namespace HordeLab
                 battle.FireProjectile(0, target + new float2(-6f, 14f), target, Aug.MeteorDamage * power, Aug.MeteorSplash, Proj.Meteor, 12f, 0.5f);
                 meteorsFired++;
                 meteorT = Aug.MeteorEvery;
+            }
+
+            // Sky Lances: giáo thánh rơi chéo từ trời xuống vài tên địch ngẫu nhiên
+            if (Has(Aug.SkyLances) && (lanceT -= dt) <= 0f)
+            {
+                lanceT = Aug.LanceEvery;
+                for (int k = 0; k < Aug.LanceCount; k++)
+                    if (battle.PickEnemy(0, false, out var lt))
+                    {
+                        battle.FireProjectile(0, lt + new float2(-3f, 16f), lt, Aug.LanceDamage * power, Aug.LanceSplash, Proj.LightOrb, 22f, 0.2f);
+                        lancesFired++;
+                    }
             }
 
             if (Has(Aug.Ballista) && (ballistaT -= dt) <= 0f)
@@ -817,6 +835,7 @@ namespace HordeLab
             {
                 case Aug.Treasury: crystals += Aug.TreasuryCrystals; break;
                 case Aug.RichGetRicher: crystals += Aug.RichCrystals; break;
+                case Aug.DragonHoard: crystals += Aug.HoardCrystals; break;
                 case Aug.LandGrant: for (int k = 0; k < Aug.LandGrantCards; k++) AddCard(B.Expand); break;
                 case Aug.Recruit: AddCard(B.Barracks + faction * 5 + rnd.Next(5), 2); break;
             }

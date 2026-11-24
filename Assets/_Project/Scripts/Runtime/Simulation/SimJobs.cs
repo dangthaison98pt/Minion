@@ -861,6 +861,7 @@ namespace HordeLab
         public uint seed;
         public int summonCount;
         public float dt;
+        public float wallThorns;
 
         public void Execute()
         {
@@ -882,6 +883,7 @@ namespace HordeLab
                     // Đánh tường: mỗi đòn đúng 1 máu thành, bất kể con gì đánh
                     Unit a = units[i];
                     counters[C.Breach] = counters[C.Breach] + 1;
+                    if (wallThorns > 0f) { a.hp -= wallThorns; a.flash = 1f; units[i] = a; }   // Iron Fortress: tường gai
                     float2 wallHit = new float2(Cfg.WallX, a.pos.y + 0.3f);
                     Fx.Spray(particles, counters, ref rng, wallHit, 0.6f, 3, PKind.Dust, 2.5f, 4f);
                     Fx.Spray(particles, counters, ref rng, wallHit, 0.8f, 1, PKind.Spark, 3f, 3f);
@@ -1421,6 +1423,7 @@ namespace HordeLab
         public NativeArray<float4> stamps;
         public NativeArray<int> counters;
         public uint seed;
+        public bool undying;
 
         /// <summary>Tu sĩ trưởng đạo (lõi Hồi sinh) còn lượt gần <paramref name="p"/>; -1 nếu không có. Tra bằng lưới không gian.</summary>
         int FindMonk(float2 p, int unitCount)
@@ -1469,6 +1472,16 @@ namespace HordeLab
                                                                      h = 0.2f + k * 0.18f, vh = rng.NextFloat(4f, 9f), maxLife = 1.8f, kind = (k & 1) == 0 ? PKind.Holy : fx });
                     Fx.Ring(particles, counters, u.pos, 3f, 20, fx);
                     Fx.Ring(particles, counters, u.pos, 5.5f, 28, PKind.Holy);
+                    counters[C.Revives]++;
+                    continue;
+                }
+
+                // Undying Legion: lính ta chết có cơ hội tự đứng dậy với nửa máu (mỗi lính 1 lần)
+                if (undying && u.team == 0 && u.revived == 0 && u.type < UnitType.Buildable && rng.NextFloat() < Aug.UndyingChance)
+                {
+                    u.hp = u.maxHp * 0.5f; u.revived = 1; u.flash = 1f; u.cc = 0f; u.burn = 0f; u.poison = 0f;
+                    units[i] = u;
+                    Fx.Spray(particles, counters, ref rng, u.pos, 0.3f, 6, PKind.Holy, 1.5f, 5f);
                     counters[C.Revives]++;
                     continue;
                 }

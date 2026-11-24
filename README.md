@@ -80,7 +80,7 @@ Phần mô phỏng vẫn là lõi "vạn quân" cũ: **Job System + Burst + GPU 
 - **Phần thưởng:** chọn 1 trong 3 thẻ + Tinh thể năng lượng; cửa hàng có roll. Chỉ ra thẻ phe mình và thẻ dùng chung.
 
 ## Lõi (Augment)
-**Bậc lõi (như TFT):** mỗi lõi thuộc 1 bậc — **Silver** (cộng tài nguyên / tiện ích nhỏ: Harvest, Timber, Gold Rush, Baby Boom, Lucky Dice, Bargain Hunter, Scouts, Supply Lines, Drill Sergeant, Stone Walls), **Gold** (lõi mạnh + mọi lõi chuyên quân), **Prismatic** (5 lõi huyền thoại + lõi bí mật). Mỗi lần chọn lõi quay ra 1 bậc theo xác suất (`Tuning.AugTierOdds`, Silver/Gold/Prismatic: lần 1 50/45/5, lần 2 35/50/15, lần 3 20/55/25, lần 4 10/55/35, lần 5 5/50/45); cả 3 ô và lượt đổi ô đều cùng bậc. Bậc không còn đủ 3 lõi thì lùi sang bậc gần nhất. Vừa mở khoá lõi bí mật thì lần chọn đó chắc chắn là Prismatic. Thẻ có viền màu theo bậc (Prismatic: cầu vồng).
+**Bậc lõi (như TFT):** mỗi lõi thuộc 1 bậc — **Silver** (cộng tài nguyên / tiện ích nhỏ: Harvest, Timber, Gold Rush, Baby Boom, Lucky Dice, Bargain Hunter, Scouts, Supply Lines, Drill Sergeant, Stone Walls), **Gold** (lõi mạnh + mọi lõi chuyên quân), **Prismatic** (13 lõi huyền thoại + lõi bí mật). Mỗi lần chọn lõi quay ra 1 bậc theo xác suất (`Tuning.AugTierOdds`, Silver/Gold/Prismatic: lần 1 50/45/5, lần 2 35/50/15, lần 3 20/55/25, lần 4 10/55/35, lần 5 5/50/45); cả 3 ô và lượt đổi ô đều cùng bậc. Bậc không còn đủ 3 lõi thì lùi sang bậc gần nhất. Vừa mở khoá lõi bí mật thì lần chọn đó chắc chắn là Prismatic. Thẻ có viền màu theo bậc (Prismatic: cầu vồng), chỉ 1 icon to (không có icon nhỏ ở góc; lính bộ được cắt sát hình cho to).
 
 Chọn 1 trong 3 lõi ngẫu nhiên (không trùng lõi đã có) sau các đợt `Tuning.AugmentWaves` = 1, 6, 12, 18, 24 (đợt 1 + mỗi đợt trùm; đợt 30 là đợt cuối), tổng cộng 5 lõi. Danh sách + số liệu ở
 class `Aug` và `GameData.BuildAugments()` trong [`GameData.cs`](Assets/_Project/Scripts/Runtime/Core/GameData.cs); hiệu ứng tìm `Aug.<tên>` trong `City.cs` / `Game.cs`.
@@ -107,6 +107,14 @@ class `Aug` và `GameData.BuildAugments()` trong [`GameData.cs`](Assets/_Project
 | Huyền thoại | Ballista Towers | Tường thành bắn mũi nỏ to (đạn `Proj.BigBolt`, đuôi lông đỏ) vào tên địch gần tường nhất (tầm 40), khoảng 3 phát / giây, 45 sát thương, nổ lan nhỏ |
 | Huyền thoại | Mercenary Camp | Mỗi 12 giây 1 đội 5×5 lính thuê tinh nhuệ (mạnh hơn 50%) ngẫu nhiên của phe khác tới giúp |
 | Huyền thoại | Last Stand | Mỗi đợt, lần đầu thành sắp vỡ: **hồi đầy máu** + sóng thánh dọc tường hất văng mọi địch trong 12 ô, choáng 3s, 80 sát thương (nhân theo đợt) |
+| Prismatic | Legion | Mỗi lần nhà lính gọi quân ra 2 đạo thay vì 1, cùng giá |
+| Prismatic | Titan Blood | Toàn bộ quân mình +60% máu, +30% sát thương |
+| Prismatic | War Drums | Quân phe mình đánh nhanh hơn 40% |
+| Prismatic | Undying Legion | Lính ta chết có 30% cơ hội đứng dậy với nửa máu (mỗi con 1 lần) |
+| Prismatic | Sky Lances | Mỗi 1,5s, 3 ngọn giáo thánh rơi từ trời xuống địch ngẫu nhiên, 60 sát thương, nổ bán kính 2 |
+| Prismatic | Golden Age | Mọi nhà tài nguyên sản xuất gấp đôi |
+| Prismatic | Iron Fortress | Thành +500 máu, địch đập tường mất 15 máu mỗi đòn (nhân theo đợt) |
+| Prismatic | Dragon Hoard | Nhận ngay 30 tinh thể, lãi tối đa +5 |
 | Bí mật (mỗi phe 1 lõi) | Boss của phe mình đánh cho mình | Không bao giờ ra theo kiểu thường; đạt điều kiện ẩn thì lần chọn lõi kế tiếp chắc chắn có (ô giữa, kèm câu báo riêng). Human: **The Golden Emperor** — giữ thành không mất máu 5 đợt liên tiếp. Elf: **The World Tree** — có 4 nhà Gỗ trên lưới. Dwarf: **Thor** — có 4 nhà Vàng. Beastfolk: **The Berserker** — thắng 3 đợt trăng tròn. Void: **The Broodmother** — diệt tổng cộng 1500 quân địch. Bản phe mình mạnh hơn bản boss gốc: máu x2,8, sát thương x1,6, vùng chém +0,8, giảm 75% sát thương tên, miễn khống chế, hồi sinh 1 lần/đợt với 50% máu (chết lần 2 thì chờ đợt sau). Chiêu giống bản boss (xem dòng Trùm). Bot: `-secret` (có sẵn lõi bí mật của phe, cần `-savetest`), `-secretpick` (coi như vừa mở khoá) |
 
 Sức mạnh rồng, thiên thạch, nỏ và lính thuê nhân theo `Tuning.EnemyPower(đợt)` để không bị tụt hậu về cuối game.

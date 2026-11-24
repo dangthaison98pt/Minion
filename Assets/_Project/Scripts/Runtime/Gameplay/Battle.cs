@@ -386,12 +386,16 @@ namespace HordeLab
         /// Bật lõi chuyên quân cho những loại quân người chơi có lõi (đầu mỗi đợt). Chỉ quân phe người chơi mới có lõi,
         /// mà phe người chơi không bao giờ là phe địch / lính thuê, nên chỉnh chỉ số theo loại quân là an toàn.
         /// </summary>
-        public void ApplyUnitAugments(System.Func<int, bool> has, bool fullMoon)
+        [System.NonSerialized] public bool undying;        // lõi Undying Legion: lính ta chết có cơ hội đứng dậy
+        [System.NonSerialized] public float wallThorns;    // lõi Iron Fortress: địch đập tường mất máu mỗi đòn
+
+        public void ApplyUnitAugments(System.Func<int, bool> has, bool fullMoon, int playerFaction = -1, float troopSpeed = 1f)
         {
             simHandle.Complete();
             for (int t = 0; t < UnitType.Count; t++)
             {
                 var st = baseStats[t];
+                if (troopSpeed != 1f && playerFaction >= 0 && Faction.Of(t) == playerFaction) st.cooldown /= troopSpeed;   // War Drums
                 bool on = has(t);
                 st.augOn = on ? 1 : 0;
                 if (on && t == UnitType.Swordsman) st.arrowResist += Aug.ShieldWallResist;            // Tường khiên
@@ -473,7 +477,7 @@ namespace HordeLab
             h = new ResolveJob
             {
                 units = units, stats = stats, attackTarget = attackTarget, shots = shots, cellStart = cellStart, sortedIndex = sortedIndex,
-                arrows = arrows, particles = particles, counters = counters, seed = rng.NextUInt() | 1u, summonCount = GameData.SummonCount, dt = dt
+                arrows = arrows, particles = particles, counters = counters, seed = rng.NextUInt() | 1u, summonCount = GameData.SummonCount, dt = dt, wallThorns = wallThorns
             }.Schedule(h);
             h = Mark(2, h);
 
@@ -494,7 +498,7 @@ namespace HordeLab
             h = new DeathJob
             {
                 units = units, stats = stats, cellStart = cellStart, sortedIndex = sortedIndex,
-                particles = particles, stamps = stamps, counters = counters, seed = rng.NextUInt() | 1u
+                particles = particles, stamps = stamps, counters = counters, seed = rng.NextUInt() | 1u, undying = undying
             }.Schedule(h);
             h = Mark(7, h);
 

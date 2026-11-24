@@ -22,7 +22,8 @@ namespace HordeLab
         public static Sprite[] Stars;
         public static Sprite StarFor(int stars) => Stars[Mathf.Clamp(stars, 1, Stars.Length) - 1];
         public static Sprite[] ResIcons, Tiles, UnitIcons, Shapes, StatIcons;
-        public static Sprite MeteorIcon, BoltIcon;     // lấy từ texture đạn, dùng cho thẻ lõi
+        public static Sprite MeteorIcon, BoltIcon;
+        public static Sprite[] UnitIconsTight;          // như UnitIcons nhưng lính bộ cắt sát hình (icon to trên thẻ lõi)     // lấy từ texture đạn, dùng cho thẻ lõi
         public static Sprite[] Emblems;                // biểu tượng phe (thay cho tên phe trên giao diện)
 
         public static void Load(Texture2D unitAtlas)
@@ -66,6 +67,16 @@ namespace HordeLab
                 UnitIcons[t] = (GameData.Units[t].stats.flags & UFlag.Giant) != 0
                     ? Cell(unitAtlas, 0, UnitType.GiantRow(t) / 2, PixelArt.GiantPx, PixelArt.GiantPx)   // hàng ô 16 → hàng ô 32
                     : Cell(unitAtlas, 0, t * 2, PixelArt.UnitCell, PixelArt.UnitCell);
+            // icon to cho thẻ lõi: lính bộ cắt sát hình 12x12 (bỏ khoảng trống quanh) để hiện to bằng quân to
+            UnitIconsTight = new Sprite[UnitType.Count];
+            for (int t = 0; t < UnitIconsTight.Length; t++)
+            {
+                bool infantry = (GameData.Units[t].stats.flags & (UFlag.Big | UFlag.Giant)) == 0;
+                int pad = (PixelArt.UnitCell - PixelArt.InfantryPx - 2) / 2, sz = PixelArt.InfantryPx + 2, row = t * 2;
+                UnitIconsTight[t] = infantry
+                    ? Sprite.Create(unitAtlas, new Rect(pad, unitAtlas.height - (row + 1) * PixelArt.UnitCell + pad, sz, sz), new Vector2(0.5f, 0.5f), 100f)
+                    : UnitIcons[t];
+            }
 
             Shapes = new Sprite[5];
             for (int s = 1; s < Shapes.Length; s++) Shapes[s] = Whole(ShapeTexture((Shape)s));

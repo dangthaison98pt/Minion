@@ -263,8 +263,8 @@ namespace HordeLab
         // ------------------------------------------------------------------
         /// <summary>Hệ số tài nguyên từ lõi (Bountiful Harvest, Timber Boom, Gold Rush, Baby Boom).</summary>
         public float ResMul(int r) =>
-            r == ResId.Food && Has(Aug.Harvest) || r == ResId.Wood && Has(Aug.Timber) ||
-            r == ResId.Gold && Has(Aug.GoldRush) || r == ResId.Pop && Has(Aug.BabyBoom) ? 1f + Aug.ResBonus : 1f;
+            (r == ResId.Food && Has(Aug.Harvest) || r == ResId.Wood && Has(Aug.Timber) ||
+            r == ResId.Gold && Has(Aug.GoldRush) || r == ResId.Pop && Has(Aug.BabyBoom) ? 1f + Aug.ResBonus : 1f) * (Has(Aug.GoldenAge) ? Aug.GoldenAgeMul : 1f);
 
         /// <summary>Sản lượng mỗi chu kỳ của một nhà tài nguyên, đã tính buff và lõi.</summary>
         public float Yield(Building b) => YieldBase(b) * (b.Def.res >= 0 ? ResMul(b.Def.res) : 1f);
@@ -285,7 +285,7 @@ namespace HordeLab
         }
 
         /// <summary>Mỗi lần gọi luôn đúng 1 tiểu đội, bất kể nhà mấy sao.</summary>
-        public int Squads(Building b) => 1;
+        public int Squads(Building b) => Has(Aug.Legion) ? Aug.LegionSquads : 1;
 
         /// <summary>Hệ số máu + sát thương của lính theo số sao của nhà lính.</summary>
         public float TroopPower(Building b) => Tuning.StarTroopPower[b.stars - 1];

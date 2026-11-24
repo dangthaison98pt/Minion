@@ -333,6 +333,12 @@ namespace HordeLab
                     // -secret (cũ: -emperor): có sẵn lõi bí mật của phe; -secretpick (cũ: -emperorpick): coi như vừa mở khoá
                     var cl = System.Environment.GetCommandLineArgs();
                     if (System.Array.IndexOf(cl, "-laststand") >= 0 && !game.Has(Aug.LastStand)) game.Augments.Add(Aug.LastStand);   // thử riêng Last Stand
+                    if (System.Array.IndexOf(cl, "-prismatic") >= 0)                                 // thử 8 lõi Prismatic thêm
+                    {
+                        for (int a = Aug.Legion; a <= Aug.DragonHoard; a++) if (!game.Has(a)) game.Augments.Add(a);
+                        game.crystals += Aug.HoardCrystals;
+                        game.city.Recompute();
+                    }
                     if (System.Array.IndexOf(cl, "-secret") >= 0 || System.Array.IndexOf(cl, "-emperor") >= 0) game.Augments.Add(game.SecretAug);
                     if (System.Array.IndexOf(cl, "-secretpick") >= 0 || System.Array.IndexOf(cl, "-emperorpick") >= 0) game.emperorUnlocked = game.emperorPending = true;
                     game.crystals = 50;                    // giữ 50 Tinh thể qua đợt 1 → hết đợt phải được lãi tối đa +5
@@ -432,6 +438,7 @@ namespace HordeLab
                                    $"phân bào {battle.Counter(C.Splits)}, tên xuyên trúng thêm {battle.Counter(C.PierceHits)}, phản đòn / nảy {battle.Counter(C.Counters)}");
                 if (gapN > 0) log.AppendLine($"    rồng: chân lính khác gần nhất {gapMin:0.00}, trung bình {gapSum / gapN:0.00} (tổng bán kính rồng + lính bộ = {Cfg.RadiusGiant + Cfg.RadiusSmall:0.00})");
                 if (game.Augments.Exists(a => GameData.Augments[a].cat == AugCat.Legendary))
+                    if (game.Has(Aug.Legion)) log.AppendLine($"    prismatic: giáo thánh {game.lancesFired}, đứng dậy {battle.Counter(C.Revives)}, thành tối đa {game.MaxCastleHp}, lãi tối đa +{Tuning.InterestMax + game.InterestExtra}");
                     log.AppendLine($"    huyền thoại: rồng gọi {game.dragonsCalled}, thiên thạch {game.meteorsFired}, nỏ {game.boltsFired}, lính thuê {game.mercSquads} đội, last stand {game.lastStands}");
                     if (game.Has(game.SecretAug))
                     {

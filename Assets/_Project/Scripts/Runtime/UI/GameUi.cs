@@ -599,7 +599,7 @@ namespace HordeLab
             badge = null;
             if (d.unit >= 0)
             {
-                main = UnitIcons[d.unit];
+                main = UnitIconsTight[d.unit];
                 switch (d.unit)
                 {
                     case UnitType.Swordsman: case UnitType.ForestArcher: case UnitType.Archer: badge = StatIcons[PixelArt.StatRange]; break;
@@ -607,7 +607,7 @@ namespace HordeLab
                     case UnitType.Catapult: case UnitType.Cannon: case UnitType.Eagle: case UnitType.Screamer: badge = StatIcons[PixelArt.StatSplash]; break;
                     case UnitType.Druid: case UnitType.GoatRider: case UnitType.Bear: case UnitType.Eye: badge = StatIcons[PixelArt.StatTime]; break;
                     case UnitType.DeerRider: badge = StatIcons[PixelArt.StatSpeed]; break;
-                    case UnitType.Aberration: case UnitType.Summoner: badge = UnitIcons[UnitType.Voidling]; break;
+                    case UnitType.Aberration: case UnitType.Summoner: badge = UnitIconsTight[UnitType.Voidling]; break;
                     default: badge = StatIcons[PixelArt.StatDamage]; break;
                 }
                 return;
@@ -633,12 +633,20 @@ namespace HordeLab
                 case Aug.LandGrant: main = Tiles[B.Expand]; break;
                 case Aug.Recruit: main = Tiles[B.Barracks + g.faction * 5]; badge = StarFor(2); break;
                 case Aug.Architect: main = Shapes[(int)Shape.Ring]; badge = StatIcons[PixelArt.StatBonus]; break;
-                case Aug.Dragon: main = UnitIcons[UnitType.Dragon]; break;
-                case Aug.Emperor: case Aug.WorldTreeAug: case Aug.ThorAug: case Aug.BerserkerAug: case Aug.BroodAug: main = UnitIcons[Aug.SecretUnit(d.id)]; break;
+                case Aug.Dragon: main = UnitIconsTight[UnitType.Dragon]; break;
+                case Aug.Emperor: case Aug.WorldTreeAug: case Aug.ThorAug: case Aug.BerserkerAug: case Aug.BroodAug: main = UnitIconsTight[Aug.SecretUnit(d.id)]; break;
                 case Aug.Meteor: main = MeteorIcon; break;
                 case Aug.Ballista: main = BoltIcon; break;
-                case Aug.Mercenary: main = UnitIcons[UnitType.Axeman]; badge = Crystal; break;
-                case Aug.LastStand: main = Heart; badge = StarFor(4); break;
+                case Aug.Mercenary: main = UnitIconsTight[UnitType.Axeman]; badge = Crystal; break;
+                case Aug.LastStand: main = Heart; break;
+                case Aug.Legion: main = UnitIconsTight[g.faction * 5]; break;
+                case Aug.TitanBlood: main = StatIcons[PixelArt.StatDamage]; break;
+                case Aug.WarDrums: main = StatIcons[PixelArt.StatTime]; break;
+                case Aug.Undying: main = UnitIconsTight[UnitType.Monk]; break;
+                case Aug.SkyLances: main = StatIcons[PixelArt.StatSplash]; break;
+                case Aug.GoldenAge: main = ResIcons[ResId.Gold]; break;
+                case Aug.IronFortress: main = Tiles[PixelArt.TileCandidate]; break;
+                case Aug.DragonHoard: main = Crystal; break;
                 default: main = Star; break;
             }
         }
@@ -820,7 +828,7 @@ namespace HordeLab
         // ==================================================================
         bool Over(RectTransform rt) => rt.gameObject.activeInHierarchy && RectTransformUtility.RectangleContainsScreenPoint(rt, mouse, null);
         bool InWorld => g.phase == Phase.Prep || g.phase == Phase.Battle || g.phase == Phase.Reward || g.phase == Phase.Augment || g.phase == Phase.Lost || g.phase == Phase.Won;
-        int InterestExtra => g.Has(Aug.RichGetRicher) ? Aug.RichExtraCap : 0;
+        int InterestExtra => g.InterestExtra;
         static float Smooth(float t) => t * t * (3f - 2f * t);
 
         void LateUpdate()
@@ -1503,8 +1511,7 @@ namespace HordeLab
                     augCards[i].Set($"<color={TierHex[(int)d.tier]}><b>{TierName[(int)d.tier]}</b></color> <color=#888888>·</color> <color={AugHex[(int)d.cat]}>{AugCatName[(int)d.cat]}{(d.leaderSkill ? " · Leader" : "")}</color>");
                     AugSprites(d, out var main, out var badge);
                     augIcon[i].sprite = main;
-                    augBadge[i].Show(badge != null);
-                    augBadge[i].sprite = badge;
+                    augBadge[i].Show(false);                                                  // chỉ dùng icon to, không có icon nhỏ ở góc
                     augBig[i].Set($"<color={AugHex[(int)d.cat]}>{d.big}</color>");
                     augName[i].Set(d.name);
                     augLine[i].Set(d.line);
