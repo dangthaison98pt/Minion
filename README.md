@@ -112,7 +112,7 @@ màn chọn lõi nghiêng hẳn về lõi chuyên quân (70%), 2 ô sau 25%. Mã
 | Người | Tu sĩ | 👑 Resurrection | Lính ta chết gần trưởng đạo: 25% đứng dậy với nửa máu |
 | Người | Máy bắn đá | Fire Shot | Đá gây bỏng 4 giây |
 | Tiên | Người cây | Take Root | Đứng yên 3 giây: không bị hất, hồi 1 máu/giây, đòn đánh làm chậm |
-| Tiên | Cung thủ rừng | Piercing Arrows | Tên xuyên, trúng thêm tối đa 2 con phía sau (70% sát thương) |
+| Tiên | Cung thủ rừng | Piercing Arrows | Tên xuyên, trúng thêm 1 con phía sau (tổng tối đa 2 con, phát xuyên 70% sát thương) |
 | Tiên | Vũ kiếm sư | Blade Dance | Né được thì phản 1 nhát quét |
 | Tiên | Pháp sư tự nhiên | 👑 Entangling Vines | Mỗi 6 giây phép kế tiếp trói chân 1,5 giây |
 | Tiên | Kỵ sĩ hươu | Running Fire | Chạy vòng thì bắn nhanh gấp đôi (tốc bắn gốc đã giảm 1,5 → 2,2 giây) |

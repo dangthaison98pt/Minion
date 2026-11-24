@@ -189,7 +189,7 @@ namespace HordeLab
         public const float ReviveRadius = 4f, ReviveChance = 0.25f; public const int ReviveMax = 10;
         public const float FireBurn = 4f;
         public const float RootAfter = 3f, RootRegen = 1f, RootSlow = 1.5f;
-        public const float PierceLength = 2.5f; public const int PierceExtra = 2;
+        public const float PierceLength = 2.5f; public const int PierceExtra = 1;   // tên xuyên: tổng cộng trúng tối đa 2 con
         public const float CounterRadius = 1.2f;
         public const float VineEvery = 6f, VineTime = 1.5f;
         public const float KiteFireRate = 2f;
@@ -291,7 +291,7 @@ namespace HordeLab
             SU(UnitType.Monk, true, "Resurrection", $"allies who die nearby have a {pct(Aug.ReviveChance)}% chance to rise again at half HP (once each, up to {Aug.ReviveMax} per leader).");
             SU(UnitType.Catapult, false, "Fire Shot", $"rocks set enemies on fire for {Aug.FireBurn:0}s (burning does not stack).");
             SU(UnitType.Treant, false, "Take Root", $"after standing still for {Aug.RootAfter:0}s: cannot be knocked back, regenerates {Aug.RootRegen:0} HP/s and its blows slow enemies.");
-            SU(UnitType.ForestArcher, false, "Piercing Arrows", $"arrows go through and hit up to {Aug.PierceExtra} more enemies behind the target.");
+            SU(UnitType.ForestArcher, false, "Piercing Arrows", $"arrows go through and hit {Aug.PierceExtra} more enemy behind the target (2 in total).");
             SU(UnitType.BladeDancer, false, "Blade Dance", "every dodge is answered with a sweeping counter-attack.");
             SU(UnitType.Druid, true, "Entangling Vines", $"every {Aug.VineEvery:0}s the next spell roots enemies in place for {Aug.VineTime:0.#}s.");
             SU(UnitType.DeerRider, false, "Running Fire", $"shoot {Aug.KiteFireRate:0}x faster while riding around the enemy.");
