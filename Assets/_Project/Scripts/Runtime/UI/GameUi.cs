@@ -570,7 +570,7 @@ namespace HordeLab
                     for (int s = 0; s < c.stars.Length; s++)
                     {
                         c.stars[s].Show(s < cs);
-                        if (s < cs) c.stars[s].At(2f + s * (st - 1f), 1f, st, st);
+                        if (s < cs) { c.stars[s].At(2f + s * (st - 1f), 1f, st, st); c.stars[s].sprite = StarFor(cs); }
                     }
                     c.group.alpha = dragCard == i ? 0.3f : 1f;
                     bool over = !modal && Over(c.rt);
@@ -759,7 +759,7 @@ namespace HordeLab
             for (int i = 0; i < v.stars.Length; i++)
             {
                 v.stars[i].Show(i < b.stars);
-                if (i < b.stars) v.stars[i].At(2f + i * (st - 1f), 1f, st, st);
+                if (i < b.stars) { v.stars[i].At(2f + i * (st - 1f), 1f, st, st); v.stars[i].sprite = StarFor(b.stars); }
             }
 
             bool shape = d.shape != Shape.None && labelled;
@@ -981,7 +981,7 @@ namespace HordeLab
                 tipSub.At(pad, pad + 24f, w - 2f * pad, 20f);
                 tipSub.Set(sub);
                 tipLine.At(pad, pad + 46f, w - 2f * pad, 1f);
-                for (int i = 0; i < stars; i++) tipStars[i].At(w - pad - (stars - i) * 16f, pad + 3f, 16f, 16f);
+                for (int i = 0; i < stars; i++) { tipStars[i].At(w - pad - (stars - i) * 16f, pad + 3f, 16f, 16f); tipStars[i].sprite = StarFor(stars); }
             }
             tipBody.At(pad, pad + headH - 2f, w - 2f * pad, bodyH + 4f);
 

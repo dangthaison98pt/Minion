@@ -987,16 +987,31 @@ namespace HordeLab
             "...#...",
         }, Rgb(226, 52, 64), Rgb(255, 170, 170), Rgb(150, 26, 44));
 
-        public static Texture2D StarIcon() => Icon("Star", new[]
+        /// <summary>
+        /// Ngôi sao theo hạng của công trình: 1 sao = đồng, 2 = bạc, 3 = vàng, 4 = bạch kim xanh.
+        /// a = màu chính, b = chấm sáng, c = bóng tối.
+        /// </summary>
+        public static Texture2D StarIcon(int stars)
         {
-            "...#...",
-            "..#a#..",
-            "###a###",
-            "#aaaaa#",
-            ".#aca#.",
-            "#ac#ca#",
-            "##...##",
-        }, Rgb(255, 214, 64), Rgb(255, 240, 160), Rgb(214, 150, 30));
+            Color32 a, b, c;
+            switch (stars)
+            {
+                case 1: a = Rgb(214, 132, 62); b = Rgb(246, 196, 140); c = Rgb(146, 82, 38); break;     // đồng
+                case 2: a = Rgb(204, 212, 224); b = Rgb(250, 252, 255); c = Rgb(128, 138, 156); break;  // bạc
+                case 3: a = Rgb(255, 214, 64); b = Rgb(255, 240, 160); c = Rgb(214, 150, 30); break;    // vàng
+                default: a = Rgb(124, 222, 255); b = Rgb(228, 252, 255); c = Rgb(58, 138, 214); break;  // bạch kim xanh
+            }
+            return Icon("Star" + stars, new[]
+            {
+                "...#...",
+                "..#b#..",
+                "###a###",
+                "#abaaa#",
+                ".#aca#.",
+                "#ac#ca#",
+                "##...##",
+            }, a, b, c);
+        }
 
         public static Texture2D CrystalIcon() => Icon("Crystal", new[]
         {

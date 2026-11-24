@@ -27,6 +27,7 @@ Phần mô phỏng vẫn là lõi "vạn quân" cũ: **Job System + Burst + GPU 
    - Kéo thẻ từ tay thả vào ô trống của lưới thành để xây (lưới bắt đầu 3×3). Hoặc bấm chọn thẻ rồi bấm vào ô.
    - Lăn chuột trên lưới để đổi cỡ ô, giữ chuột phải / giữa để kéo lưới.
    - Kéo thẻ lên nhà cùng loại, cùng sao để **gộp** (tối đa 4 sao). Kéo công trình sang ô khác để gộp hoặc đổi chỗ.
+   - Màu sao theo hạng: 1 sao **đồng**, 2 sao **bạc**, 3 sao **vàng**, 4 sao **bạch kim xanh** (trên lưới, thẻ và tooltip).
    - **Thẻ trên tay có số sao** (góc trên trái thẻ). Thẻ mua / thưởng là 1 sao; nhà kéo về tay giữ nguyên số sao,
      đặt xuống lại vẫn đủ sao. Thẻ n sao gộp được với nhà cùng loại n sao.
    - **Kéo** thẻ lên công trình **không gộp được** để **đổi**: thẻ lên ô, nhà cũ về tay đúng chỗ thẻ, giữ nguyên số sao

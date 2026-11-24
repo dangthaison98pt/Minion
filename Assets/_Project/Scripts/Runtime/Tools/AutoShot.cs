@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Collections;
 using System.IO;
 using System.Text;
@@ -186,6 +187,16 @@ namespace HordeLab
                 if (played == 0 && saveTest)
                 {
                     SwapTest();
+                    if (!Headless)
+                    {
+                        // Chụp 4 hạng sao (đồng / bạc / vàng / bạch kim) trên lưới: tạm nâng 4 nhà lên 1..4 sao rồi trả lại
+                        var tiers = new List<Building>();
+                        foreach (var kv in game.city.cells) if (kv.Value != null && tiers.Count < Tuning.MaxStars) tiers.Add(kv.Value);
+                        for (int k = 0; k < tiers.Count; k++) tiers[k].stars = k + 1;
+                        yield return Frames(5); Shot("03d_hang_sao.png"); yield return Frames(3);
+                        foreach (var t in tiers) t.stars = 1;
+                        game.city.Recompute();
+                    }
                     // Cầm 1 thẻ 2 sao trên tay để thử lưu cả số sao của thẻ
                     Vector2Int held = default; bool holding = false;
                     foreach (var kv in game.city.cells)

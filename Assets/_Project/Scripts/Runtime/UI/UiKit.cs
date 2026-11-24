@@ -18,6 +18,9 @@ namespace HordeLab
 
         public static Sprite Panel9, Card9, Btn0, Btn1, Btn2, White, Frame9;
         public static Sprite Heart, Star, Crystal;
+        /// <summary>Sao theo hạng: [0] đồng (1 sao), [1] bạc, [2] vàng, [3] bạch kim xanh (4 sao).</summary>
+        public static Sprite[] Stars;
+        public static Sprite StarFor(int stars) => Stars[Mathf.Clamp(stars, 1, Stars.Length) - 1];
         public static Sprite[] ResIcons, Tiles, UnitIcons, Shapes;
 
         public static void Load(Texture2D unitAtlas)
@@ -32,7 +35,9 @@ namespace HordeLab
             White = Whole(Texture2D.whiteTexture);
             Frame9 = Nine(FrameTexture(), 3);
             Heart = Whole(PixelArt.HeartIcon());
-            Star = Whole(PixelArt.StarIcon());
+            Stars = new Sprite[Tuning.MaxStars];
+            for (int i = 0; i < Stars.Length; i++) Stars[i] = Whole(PixelArt.StarIcon(i + 1));
+            Star = Stars[2];
             Crystal = Whole(PixelArt.CrystalIcon());
 
             var res = PixelArt.ResourceIcons();
