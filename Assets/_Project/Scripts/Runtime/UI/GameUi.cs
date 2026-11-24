@@ -115,7 +115,7 @@ namespace HordeLab
         class ShopView
         {
             public RectTransform rt;
-            public Image bg, tile, lockFrame, lockIcon, catStrip, priceIcon;
+            public Image bg, tile, lockFrame, lockIcon, catStrip, footStrip, priceIcon;
             public TextMeshProUGUI name, cat, price;
             public Button buy, lockBtn;
             public CanvasGroup look;           // làm mờ khi không đủ Tinh thể
@@ -339,6 +339,25 @@ namespace HordeLab
         /// Cửa hàng kiểu TFT: cột trái 2 nút to (mua đất, đổi lại) chỉ có icon + giá; 4 thẻ hình lớn, bấm vào thẻ là mua,
         /// tên dưới trái, giá dưới phải, ổ khoá ở góc; ô đã bán để trống. Tab SHOP nằm trên cửa hàng để thu gọn / mở.
         /// </summary>
+        const float DockInset = 20f;          // lùi nội dung cửa hàng vào trong viền gỗ (viền dày ~12)
+        static readonly Color CardDark = new Color(0.16f, 0.13f, 0.14f), CardHover = new Color(0.24f, 0.2f, 0.2f);
+
+        /// <summary>Nút nền tối giống thẻ cửa hàng (sáng lên khi rê chuột).</summary>
+        Button DarkBtn(Transform parent, System.Action onClick, string name)
+        {
+            var img = Img(parent, White, Color.white, false, true, name);
+            var b = img.gameObject.AddComponent<Button>();
+            b.targetGraphic = img;
+            b.transition = Selectable.Transition.ColorTint;
+            b.colors = new ColorBlock { normalColor = CardDark, highlightedColor = CardHover, pressedColor = new Color(0.1f, 0.08f, 0.09f),
+                                        selectedColor = CardDark, disabledColor = CardDark, colorMultiplier = 1f, fadeDuration = 0.05f };
+            b.navigation = new Navigation { mode = Navigation.Mode.None };
+            b.onClick.AddListener(() => onClick());
+            img.gameObject.AddComponent<CanvasGroup>();                 // SetOn làm mờ qua CanvasGroup
+            Frame(img.transform, new Color(0.5f, 0.38f, 0.26f, 0.9f)).Fill();
+            return b;
+        }
+
         void BuildDock()
         {
             var panel = Panel(hud, false, "Shop dock");
@@ -356,15 +375,16 @@ namespace HordeLab
             shopCrystals = Txt(tab, "", 19f, TextAlignmentOptions.MidlineLeft, true, false, new Color(0.56f, 0.91f, 1f)).At(134f, 0f, 50f, 38f);
 
             // mua đất (như "Mua XP" của TFT): icon ô đất + giá
-            landBtn = Btn(dock, "", () => g.BuyLand(), 15f, "Buy land").At(14f, 14f, 200f, 70f);
-            landIcon = Img(landBtn.transform, null, Color.white).At(10f, 7f, 56f, 56f);
-            landCrystal = Img(landBtn.transform, Crystal, Color.white).At(124f, 22f, 26f, 26f);
-            landCost = Txt(landBtn.transform, "", 24f, TextAlignmentOptions.MidlineLeft, true).At(154f, 0f, 40f, 70f);
+            const float bh = (DockH - DockInset * 2f - 8f) * 0.5f;      // 2 nút cao bằng nhau, nằm trọn trong viền
+            landBtn = DarkBtn(dock, () => g.BuyLand(), "Buy land").At(DockInset, DockInset, 200f, bh);
+            landIcon = Img(landBtn.transform, null, Color.white).At(10f, (bh - 48f) * 0.5f, 48f, 48f);
+            landCrystal = Img(landBtn.transform, Crystal, Color.white).At(124f, (bh - 26f) * 0.5f, 26f, 26f);
+            landCost = Txt(landBtn.transform, "", 24f, TextAlignmentOptions.MidlineLeft, true).At(154f, 0f, 40f, bh);
             // đổi lại: icon roll + giá
-            rollBtn = Btn(dock, "", () => g.PayRoll(), 17f, "Reroll").At(14f, 92f, 200f, 70f);
-            rollIcon = Img(rollBtn.transform, StatIcons[PixelArt.StatReroll], Color.white).At(16f, 11f, 48f, 48f);
-            rollCrystal = Img(rollBtn.transform, Crystal, Color.white).At(124f, 22f, 26f, 26f);
-            rollCost = Txt(rollBtn.transform, "", 24f, TextAlignmentOptions.MidlineLeft, true).At(154f, 0f, 40f, 70f);
+            rollBtn = DarkBtn(dock, () => g.PayRoll(), "Reroll").At(DockInset, DockInset + bh + 8f, 200f, bh);
+            rollIcon = Img(rollBtn.transform, StatIcons[PixelArt.StatReroll], Color.white).At(12f, (bh - 44f) * 0.5f, 44f, 44f);
+            rollCrystal = Img(rollBtn.transform, Crystal, Color.white).At(124f, (bh - 26f) * 0.5f, 26f, 26f);
+            rollCost = Txt(rollBtn.transform, "", 24f, TextAlignmentOptions.MidlineLeft, true).At(154f, 0f, 40f, bh);
 
             for (int i = 0; i < shopSlots.Length; i++)
             {
@@ -383,7 +403,8 @@ namespace HordeLab
                 v.look.blocksRaycasts = false;
                 v.tile = Img(v.content.transform, null, Color.white);
                 v.tile.preserveAspect = true;
-                v.catStrip = Img(v.content.transform, White, new Color(0f, 0f, 0f, 0f));
+                v.footStrip = Img(v.content.transform, White, new Color(0f, 0f, 0f, 0.4f));
+                v.catStrip = Img(v.content.transform, White, new Color(0f, 0f, 0f, 0.4f));
                 v.cat = Txt(v.catStrip.transform, "", 13f, TextAlignmentOptions.MidlineLeft, false, false, new Color(0.85f, 0.85f, 0.85f));
                 v.cat.Fill(6f, 0f, 6f, 0f);
                 v.name = Txt(v.content.transform, "", 16f, TextAlignmentOptions.MidlineLeft, true, false, Gold);
@@ -1070,15 +1091,15 @@ namespace HordeLab
             dock.Show(open);
 
             // tab SHOP ngay trên mép cửa hàng (thu gọn thì nằm sát đáy)
-            tab.anchoredPosition = new Vector2(PanelW + 52f, 10f + (open ? DockH - 4f : 0f));
+            tab.anchoredPosition = new Vector2(PanelW + 52f, 10f + (open ? DockH + 2f : 0f));   // nằm hẳn phía trên viền, không đè
             tab.sizeDelta = new Vector2(190f, 38f);
             shopBtn.Label().Set(open ? "SHOP  -" : "SHOP  +");
             shopCrystals.Set(g.crystals.ToString());
 
             // nút Wave: góc dưới phải (trong cột phải của cửa hàng khi mở)
-            float rightCol = prep && open ? 276f : 0f;
-            sb.anchoredPosition = new Vector2(-24f, open ? 24f : 14f);
-            sb.sizeDelta = new Vector2(246f, open ? 148f : 56f);
+            float rightCol = prep && open ? 252f : 0f;
+            sb.anchoredPosition = new Vector2(-10f - DockInset, open ? 10f + DockInset : 14f);       // trong viền phải của cửa hàng
+            sb.sizeDelta = new Vector2(240f, open ? DockH - DockInset * 2f : 56f);
             startBtn.Label().Set($"Wave {g.wave}");
             if (prep && !modal && Over(sb))
             {
@@ -1098,13 +1119,13 @@ namespace HordeLab
             rollBtn.SetOn(g.CanRoll);
 
             // 4 thẻ
-            float w = dock.rect.width, h = DockH - 28f;
-            const float left = 228f, gap = 10f;
-            float slotW = Mathf.Floor((w - left - rightCol - 14f - gap * (shopSlots.Length - 1)) / shopSlots.Length);
+            float w = dock.rect.width, h = DockH - DockInset * 2f;
+            const float left = DockInset + 200f + 12f, gap = 10f;
+            float slotW = Mathf.Floor((w - left - rightCol - DockInset - gap * (shopSlots.Length - 1)) / shopSlots.Length);
             for (int i = 0; i < shopSlots.Length; i++)
             {
                 var v = shopSlots[i];
-                v.rt.At(left + i * (slotW + gap), 14f, slotW, h);
+                v.rt.At(left + i * (slotW + gap), DockInset, slotW, h);
                 int card = g.shop[i];
                 bool has = card >= 0;
                 v.content.SetActive(has);
@@ -1118,7 +1139,9 @@ namespace HordeLab
                 v.tile.sprite = Tiles[card];
                 // 3 vùng riêng, không đè nhau: hàng trên (loại + ổ khoá) · hình x2 căn giữa · hàng dưới (tên + giá)
                 const float headH = 28f, footH = 34f;
-                v.catStrip.At(6f, 6f, slotW - 44f, headH - 6f);
+                v.catStrip.At(0f, 0f, slotW, headH);                       // dải tối trên (ổ khoá vẽ đè lên, không bị che)
+                v.footStrip.At(0f, h - footH, slotW, footH);               // dải tối dưới
+                v.cat.rectTransform.Fill(8f, 0f, 40f, 0f);
                 v.cat.Set(d.cat == Cat.Barracks ? GameData.Units[d.unit].name : GameData.CatName[(int)d.cat]);
                 v.lockIcon.rectTransform.At(slotW - 32f, 5f, 26f, 26f);
                 v.lockIcon.sprite = StatIcons[g.shopLocked[i] ? PixelArt.StatLockOn : PixelArt.StatLock];   // bạc = chưa khoá, vàng = đã khoá
