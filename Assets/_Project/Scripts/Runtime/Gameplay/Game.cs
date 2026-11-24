@@ -72,6 +72,11 @@ namespace HordeLab
         public bool IsFullMoon(int w) => w % Tuning.FullMoonEvery == 0;
         public int EnemiesAlive => battle.Counter(C.Team1);
         public int AlliesAlive => battle.Counter(C.Team0);
+        int EnemySquadSize { get { int side = GameData.Factions[attacker].squadSide; return side * side; } }
+        /// <summary>Tổng quân địch cả đợt (tính trước, không chờ quân kéo đến).</summary>
+        public int EnemiesTotal => squadsTotal * EnemySquadSize;
+        /// <summary>Địch còn lại: đang trên sân + các tiểu đội chưa kéo đến (quân con của Kẻ triệu hồi cũng tính).</summary>
+        public int EnemiesRemaining => EnemiesAlive + squadsLeft * EnemySquadSize;
 
         // Bấm Play ở scene trống cũng chạy được
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
@@ -315,11 +320,46 @@ namespace HordeLab
         {
             if (phase != Phase.Prep || index < 0 || index >= hand.Count) return false;
             int card = hand[index];
+            if (CanReplace(card, p)) return Replace(index, p);
             bool ok = card == B.Expand ? city.Expand(p)
                     : city.CanPlace(p) ? city.Place(p, card)
                     : city.MergeCard(p, card);
             if (ok) { hand.RemoveAt(index); SaveRun(); }
             return ok;
+        }
+
+        /// <summary>
+        /// Thả thẻ lên một công trình mà không gộp được (khác loại, hoặc cùng loại nhưng khác sao) thì thay thế:
+        /// nhà cũ 1 sao quay về tay, nhà cũ nhiều sao (không tách ra được) thì bán lấy Tinh thể.
+        /// </summary>
+        public bool CanReplace(int card, Vector2Int p)
+        {
+            var b = city.Get(p);
+            if (phase != Phase.Prep || card == B.Expand || b == null || b.def == card) return false;
+            return !(Tuning.MergeFromHand && city.CanMerge(p, card, 1));
+        }
+
+        bool Replace(int index, Vector2Int p)
+        {
+            int card = hand[index];
+            var old = city.Remove(p);
+            city.Place(p, card);
+            hand.RemoveAt(index);
+            if (old.stars == 1) hand.Insert(Mathf.Min(index, hand.Count), old.def);   // nhà cũ về đúng chỗ thẻ vừa dùng
+            else crystals += SellValue(old.stars);
+            SaveRun();
+            return true;
+        }
+
+        /// <summary>Câu báo trước khi thả thẻ đè lên công trình ở ô <paramref name="p"/>; null nếu không phải thay thế.</summary>
+        public string ReplaceHint(int card, Vector2Int p)
+        {
+            if (!CanReplace(card, p)) return null;
+            var old = city.Get(p);
+            string name = $"{old.Def.name}{(old.stars > 1 ? $" ({old.stars}-star)" : "")}";
+            return $"<b>Replace {name}</b> with {GameData.Buildings[card].name}\n" +
+                   (old.stars == 1 ? $"{old.Def.name} goes back to your hand."
+                                   : $"<color=#ffd84a>{name} cannot go back to your hand: it is sold for <color=#8fe8ff>{SellValue(old.stars)}</color> crystal(s).</color>");
         }
 
         /// <summary>Tinh thể nhận được khi bán: nhà n sao là 2^(n-1) nhà gộp lại nên được ngần ấy lần.</summary>

@@ -79,6 +79,7 @@ namespace HordeLab
         int infoDef = -1;
         Building infoBuilding;
         string tipText;
+        string replaceTip;   // báo trước khi thả thẻ đè lên công trình (hiện cả lúc đang kéo)
 
         class CellView
         {
@@ -190,7 +191,7 @@ namespace HordeLab
             castleFill.offsetMin = castleFill.offsetMax = Vector2.zero;
             castleText = Txt(castleBar, "", 15f, TextAlignmentOptions.Center, true);
             castleText.Fill();
-            enemiesText = Txt(rt, "", 22f, TextAlignmentOptions.MidlineLeft, true).At(876f, pad, 220f, h);
+            enemiesText = Txt(rt, "", 20f, TextAlignmentOptions.MidlineLeft, true).At(876f, pad, 140f, h);   // 2 dòng: nút tốc độ nằm ngay bên phải
 
             // bên phải: Menu, Tinh thể, 4 tài nguyên, nút tốc độ / tạm dừng
             float r = pad + 12f;
@@ -475,7 +476,7 @@ namespace HordeLab
             hud.Show(InWorld);
             if (phase == Phase.Menu) RefreshMenu();
 
-            infoDef = -1; infoBuilding = null; tipText = null; hoverCellValid = false;
+            infoDef = -1; infoBuilding = null; tipText = null; replaceTip = null; hoverCellValid = false;
             bool modal = PauseOpen || phase == Phase.Reward || phase == Phase.Lost || phase == Phase.Won;
 
             if (InWorld)
@@ -515,7 +516,7 @@ namespace HordeLab
             {
                 castleFill.anchorMax = new Vector2(Mathf.Clamp01(g.castleHp / (float)Tuning.CastleHp), 1f);
                 castleText.Set($"Castle {g.castleHp}/{Tuning.CastleHp}");
-                enemiesText.Set($"Enemies <color=#ff8f8f>{g.EnemiesAlive:N0}</color>");
+                enemiesText.Set($"<size=13><color=#aaaaaa>Enemies left</color></size>\n<color=#ff8f8f>{g.EnemiesRemaining:N0}</color>/{g.EnemiesTotal:N0}");
                 speedBtn.Label().Set($"x{battle.speed}");
                 pauseBtn.Label().Set(battle.paused ? ">" : "II");
             }
@@ -599,8 +600,8 @@ namespace HordeLab
             {
                 int t = (int)g.waveTime;
                 battleInfo.Set(g.phase != Phase.Battle ? hostile :
-                    $"{hostile}\n\nYour troops: <color=#8fb8ff>{g.AlliesAlive:N0}</color>    Enemies: <color=#ff8f8f>{g.EnemiesAlive:N0}</color>" +
-                    (g.squadsLeft > 0 ? $"  <color=#aaaaaa>(+{g.squadsLeft} squads still coming)</color>" : "") +
+                    $"{hostile}\n\nYour troops: <color=#8fb8ff>{g.AlliesAlive:N0}</color>    Enemies left: <color=#ff8f8f>{g.EnemiesRemaining:N0}</color>/{g.EnemiesTotal:N0}" +
+                    (g.squadsLeft > 0 ? $"  <color=#aaaaaa>({g.EnemiesAlive:N0} on the field)</color>" : "") +
                     $"\nKilled: <color=#9fe07a>{battle.Counter(C.Dead1):N0}</color>    Lost: <color=#ff8f8f>{battle.Counter(C.Dead0):N0}</color>    Time {t / 60:00}:{t % 60:00}" +
                     "\n\n<color=#aaaaaa>A red frame on a troop building means it is waiting for resources.\nEnemies that reach the wall hit it for 1 damage per attack.\n\nSpace: pause · Tab: fast forward · Esc: menu\nMouse wheel: zoom the battlefield · WASD: pan</color>");
             }
@@ -669,7 +670,15 @@ namespace HordeLab
             }
             foreach (var p in highlight)
                 if (cells.TryGetValue(p, out var v)) { v.frame.Show(true); v.frame.color = new Color(1f, 0.86f, 0.3f, 0.95f); }
-            if (dragDef >= 0 && hoverCellValid && cells.TryGetValue(hoverCell, out var hv)) { hv.frame.Show(true); hv.frame.color = Color.white; }
+            // Cầm thẻ trên tay kê lên công trình không gộp được → thay thế: viền cam + báo trước nhà cũ đi đâu
+            int handCard = dragCard >= 0 && dragCard < g.hand.Count ? g.hand[dragCard]
+                         : !dragFromCell && selectedCard >= 0 && selectedCard < g.hand.Count ? g.hand[selectedCard] : -1;
+            replaceTip = prep && handCard >= 0 && hoverCellValid ? g.ReplaceHint(handCard, hoverCell) : null;
+            if (dragDef >= 0 && hoverCellValid && cells.TryGetValue(hoverCell, out var hv))
+            {
+                hv.frame.Show(true);
+                hv.frame.color = replaceTip != null ? new Color(1f, 0.6f, 0.2f) : Color.white;
+            }
             if (!prep) { dragFromCell = false; }
         }
 
@@ -934,8 +943,9 @@ namespace HordeLab
         {
             string title = null, sub = null, body = tipText;
             int stars = 0;
-            if (infoDef >= 0) InfoParts(infoDef, infoBuilding, out title, out sub, out body, out stars);
-            bool show = !blocked && dragCard < 0 && !dragFromCell && (title != null || !string.IsNullOrEmpty(body));
+            if (replaceTip != null) body = replaceTip;
+            else if (infoDef >= 0) InfoParts(infoDef, infoBuilding, out title, out sub, out body, out stars);
+            bool show = !blocked && (replaceTip != null || (dragCard < 0 && !dragFromCell)) && (title != null || !string.IsNullOrEmpty(body));
             tip.Show(show);
             if (!show) return;
 

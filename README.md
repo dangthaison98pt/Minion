@@ -27,12 +27,14 @@ Phần mô phỏng vẫn là lõi "vạn quân" cũ: **Job System + Burst + GPU 
    - Kéo thẻ từ tay thả vào ô trống của lưới thành để xây (lưới bắt đầu 3×3). Hoặc bấm chọn thẻ rồi bấm vào ô.
    - Lăn chuột trên lưới để đổi cỡ ô, giữ chuột phải / giữa để kéo lưới.
    - Kéo thẻ lên nhà cùng loại, cùng sao để **gộp** (tối đa 4 sao). Kéo công trình sang ô khác để gộp hoặc đổi chỗ.
+   - Kéo thẻ lên công trình **không gộp được** để **thay thế** (viền cam + dòng báo trước): nhà cũ 1 sao quay về tay,
+     nhà cũ nhiều sao không tách ra được nên tự bán lấy Tinh thể.
    - Thẻ **Mở rộng đất**: thả vào ô sát cạnh lưới để mở thêm ô.
    - **Cửa hàng** (góc phải): mua thẻ bằng Tinh thể năng lượng, có nút làm mới. Nút **Lock** giữ thẻ ở ô đó qua các lần làm mới.
    - **Bán:** kéo thẻ hoặc công trình vào ô *SELL* để lấy Tinh thể (nhà n sao = 2^(n-1) nhà gộp lại nên được ngần ấy lần).
      Công trình 1 sao còn kéo ngược về tay được; nhà đã gộp thì không tách ra được, chỉ bán.
    - Rê chuột vào thẻ / công trình để xem chi tiết; nhà buff sẽ tô viền vàng các ô nó tác động.
-3. **Bắt đầu đợt** → chỉ ngồi xem. Nhà lính viền đỏ = đã hồi xong nhưng đang chờ đủ tài nguyên.
+3. **Bắt đầu đợt** → chỉ ngồi xem. Góc trên ghi *Enemies left*: số địch còn lại / tổng quân cả đợt (tính cả các tiểu đội chưa kéo đến). Nhà lính viền đỏ = đã hồi xong nhưng đang chờ đủ tài nguyên.
 4. Hết đợt: chọn 1 trong 3 thẻ + nhận Tinh thể. Thành thất thủ thì mất 1 trong 3 tim nhưng vẫn sang đợt sau và vẫn nhận thưởng.
 5. Thắng hoặc thua cả lượt: chọn *New run* hoặc *Main menu*.
 
@@ -82,7 +84,7 @@ Tất cả nằm trong class `Tuning` và bảng dữ liệu ở [`GameData.cs`]
 | Quy mô đợt địch | `5 + 2.2·đợt + 0.16·đợt²` tiểu đội, mạnh thêm 4% mỗi đợt |
 | Mọi chỉ số quân, chi phí, chu kỳ nhà | Số khởi điểm, chưa cân bằng |
 
-Ngoài GDD, có thêm vài thứ cho dễ chơi: kéo công trình để **đổi chỗ**, **tua nhanh** x2/x4, **bán** thẻ / công trình,
+Ngoài GDD, có thêm vài thứ cho dễ chơi: kéo công trình để **đổi chỗ**, thả thẻ đè lên nhà để **thay thế**, **tua nhanh** x2/x4, **bán** thẻ / công trình,
 **khoá ô** cửa hàng, **tự lưu** lượt chơi.
 Tầm bắn và tốc độ đi của mọi quân nhân 0,6 (`RangeScale`, `SpeedScale`) cho vừa chiến trường 96 × 54. Còn một lưới an toàn:
 nếu địch đã đến hết mà 150 giây sau trận vẫn chưa ngã ngũ thì tính là địch rút (phòng hai bên kẹt nhau mãi).
