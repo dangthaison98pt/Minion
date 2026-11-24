@@ -319,6 +319,16 @@ namespace HordeLab
             return seen > 0;
         }
 
+        /// <summary>Công cụ kiểm tra: vị trí con đầu tiên còn sống của loại <paramref name="type"/>.</summary>
+        public bool FindUnit(int type, out float2 pos)
+        {
+            simHandle.Complete();
+            pos = default;
+            int n = counters[C.Units];
+            for (int i = 0; i < n; i++) if (units[i].type == type && units[i].hp > 0f) { pos = units[i].pos; return true; }
+            return false;
+        }
+
         /// <summary>Công cụ kiểm tra: khoảng cách chân gần nhất từ 1 lính loại <paramref name="type"/> tới lính bất kỳ khác; -1 nếu không có.</summary>
         public float ClosestTo(int type)
         {

@@ -589,6 +589,74 @@ namespace HordeLab
         /// Hoàng đế vàng (lõi The Golden Emperor). Hào quang: quân ta quanh mình hồi máu, địch quanh mình mất máu liên tục.
         /// Chiếu chỉ (hồi chiêu riêng, dùng skillT): sóng vàng gây sát thương + choáng địch, hồi máu theo % cho quân ta.
         /// </summary>
+        /// <summary>
+        /// Chiêu của boss đợt trùm (hồi chiêu riêng, dùng skillT; chỉ tung khi có địch trong tầm).
+        /// Ancient Treant: rễ trói + sát thương. Iron King: búa nện đất, choáng. Fenrir: tru, sợ hãi bỏ chạy.
+        /// Sleeper: gọi bầy Voidling + ánh nhìn gây choáng.
+        /// </summary>
+        void Boss(int i, int n, ref Random rng)
+        {
+            Unit b = units[i];
+            if (b.skillT > 0f) return;
+            int t = b.type, foe = 1 - b.team;
+            float radius = t == UnitType.AncientTreant ? Aug.RootsRadius : t == UnitType.IronKing ? Aug.QuakeRadius
+                         : t == UnitType.Fenrir ? Aug.HowlRadius : Aug.SpawnRadius;
+            int near = Cc.NearestEnemy(units, cellStart, sortedIndex, n, b.pos, 0f, t == UnitType.Sleeper ? Aug.SpawnSight : radius, foe);
+            if (near < 0) return;
+            float every;
+            if (t == UnitType.AncientTreant)
+            {
+                Fx.Splash(units, cellStart, sortedIndex, n, b.pos, radius, foe, Aug.RootsDamage * b.dmgMul, 0f);
+                counters[C.CcHits] += Cc.Area(units, cellStart, sortedIndex, n, b.pos, radius, foe, CC.Root, Aug.RootsTime);
+                Fx.Ring(particles, counters, b.pos, radius * 0.5f, 18, PKind.Leaf);
+                Fx.Ring(particles, counters, b.pos, radius, 26, PKind.Leaf);
+                every = Aug.RootsEvery;
+            }
+            else if (t == UnitType.IronKing)
+            {
+                Fx.Splash(units, cellStart, sortedIndex, n, b.pos, radius, foe, Aug.QuakeDamage * b.dmgMul, 0f);
+                counters[C.CcHits] += Cc.Area(units, cellStart, sortedIndex, n, b.pos, radius, foe, CC.Stun, Aug.QuakeStun);
+                Fx.Ring(particles, counters, b.pos, radius, 26, PKind.Dust);
+                Fx.Spray(particles, counters, ref rng, b.pos, 1f, 16, PKind.Dust, 4f, 6f);
+                Fx.Spray(particles, counters, ref rng, b.pos, 0.6f, 8, PKind.Spark, 3f, 5f);
+                every = Aug.QuakeEvery;
+            }
+            else if (t == UnitType.Fenrir)
+            {
+                counters[C.CcHits] += Cc.Area(units, cellStart, sortedIndex, n, b.pos, radius, foe, CC.Fear, Aug.HowlFear);
+                Fx.Ring(particles, counters, b.pos, radius * 0.6f, 16, PKind.Dust);
+                Fx.Ring(particles, counters, b.pos, radius, 24, PKind.Smoke);
+                every = Aug.HowlEvery;
+            }
+            else
+            {
+                // ánh nhìn: choáng quanh quân ta gần nhất; bầy Voidling chui ra quanh boss
+                float2 gaze = units[near].pos;
+                counters[C.CcHits] += Cc.Area(units, cellStart, sortedIndex, n, gaze, radius, foe, CC.Stun, Aug.SpawnStun);
+                Fx.Ring(particles, counters, gaze, radius, 20, PKind.VoidGoo);
+                for (int k = 0; k < Aug.SpawnCount; k++)
+                {
+                    int m = counters[C.Units];
+                    if (m >= units.Length) break;
+                    float hp = stats[UnitType.Voidling].maxHp * b.dmgMul;
+                    units[m] = Clamp(new Unit
+                    {
+                        pos = b.pos + rng.NextFloat2Direction() * rng.NextFloat(1.2f, 2.4f),
+                        hp = hp, maxHp = hp, dmgMul = b.dmgMul, type = UnitType.Voidling, team = b.team,
+                        faceLeft = b.faceLeft, animT = rng.NextFloat()
+                    });
+                    counters[C.Units] = m + 1;
+                }
+                Fx.Ring(particles, counters, b.pos, radius, 24, PKind.VoidGoo);
+                Fx.Spray(particles, counters, ref rng, b.pos, 1f, 14, PKind.VoidGoo, 3f, 6f);
+                every = Aug.SpawnEvery;
+            }
+            b = units[i];
+            b.skillT = every;
+            units[i] = b;
+            counters[C.BossSkills]++;
+        }
+
         void Emperor(int i, int n, ref Random rng)
         {
             Unit e = units[i];
@@ -666,7 +734,12 @@ namespace HordeLab
             var rng = new Random(seed);
             int n = counters[C.Units];
             for (int i = 0; i < n; i++)
-                if (units[i].type == UnitType.Emperor && units[i].hp > 0f) Emperor(i, n, ref rng);
+            {
+                int gt = units[i].type;
+                if (gt < UnitType.Emperor || units[i].hp <= 0f) continue;
+                if (gt == UnitType.Emperor) Emperor(i, n, ref rng);
+                else Boss(i, n, ref rng);
+            }
             for (int i = 0; i < n; i++)
             {
                 int t = attackTarget[i];

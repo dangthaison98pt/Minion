@@ -359,6 +359,9 @@ namespace HordeLab
                         if (game.PlayCard(last, held)) { game.city.Get(held).stars = 1; game.city.Recompute(); }
                     }
                 }
+                // -boss F: mọi đợt đều là đợt trùm của phe F (thử boss)
+                int bossArg = IntArg(System.Environment.GetCommandLineArgs(), "-boss", -1);
+                if (bossArg >= 0) { game.wave = Mathf.Max(Tuning.BossEvery, (game.wave + Tuning.BossEvery - 1) / Tuning.BossEvery * Tuning.BossEvery); game.attacker = Mathf.Clamp(bossArg, 0, Faction.Count - 1); }
                 log.AppendLine($"--- Đợt {wave}: địch {GameData.Factions[game.attacker].name}, {game.EnemyPreviewCount()} quân | lưới {game.city.cells.Count} ô ({game.city.EmptyCount()} trống), tay {game.hand.Count} thẻ, tinh thể {game.crystals}");
                 game.StartWave();
                 if (allAugs)
@@ -393,6 +396,15 @@ namespace HordeLab
                             yield return Frames(3);                    // mỗi frame chỉ chụp được 1 tấm
                         }
                         Shot("04_tran_danh.png");
+                        if (game.IsBoss(game.wave) && battle.FindUnit(UnitType.BossOf(game.attacker), out var bp))
+                        {
+                            // phóng to vào con boss
+                            yield return Frames(3);
+                            battle.View.SetScale(battle.View.MinScale + 2, new Vector2(Screen.width * 0.5f, Screen.height * 0.5f));
+                            battle.View.Center = bp;
+                            yield return Frames(3); Shot("04e_boss_zoom.png"); yield return Frames(2);
+                            battle.View.SetScale(battle.View.MinScale, new Vector2(Screen.width * 0.5f, Screen.height * 0.5f));
+                        }
                         shot = true;
                         if (!zoomed)
                         {
@@ -419,6 +431,7 @@ namespace HordeLab
                 if (game.Augments.Exists(a => GameData.Augments[a].cat == AugCat.Legendary))
                     log.AppendLine($"    huyền thoại: rồng gọi {game.dragonsCalled}, thiên thạch {game.meteorsFired}, nỏ {game.boltsFired}, lính thuê {game.mercSquads} đội, last stand {game.lastStands}");
                     if (game.Has(Aug.Emperor)) log.AppendLine($"    hoàng đế: chiếu chỉ {battle.Counter(C.Decrees)} lần, còn sống {battle.TypeCount(UnitType.Emperor)}");
+                    if (game.bossesCalled > 0) log.AppendLine($"    boss {GameData.Units[game.bossType].name}: vào trận {game.bossesCalled}, dùng chiêu {battle.Counter(C.BossSkills) + (game.bossType == UnitType.Emperor ? battle.Counter(C.Decrees) : 0)} lần, còn sống {battle.TypeCount(game.bossType)}, khống chế {battle.Counter(C.CcHits)} lượt");
                 log.AppendLine($"    → {(game.lastWon ? "THẮNG" : "THUA")} sau {game.waveTime:0}s | thành {game.castleHp}/{game.MaxCastleHp} | diệt {battle.Counter(C.Dead1)} / mất {battle.Counter(C.Dead0)} | " +
                                $"kho: {r.pop:0} dân, {r.food:0} lương, {r.wood:0} gỗ, {r.gold:0} vàng | tim {game.hearts}" +
                                (string.IsNullOrEmpty(game.eventNote) ? "" : $" | sự kiện: {game.eventNote}"));

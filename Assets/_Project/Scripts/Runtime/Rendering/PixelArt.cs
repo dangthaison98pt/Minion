@@ -273,6 +273,10 @@ namespace HordeLab
                 case UnitType.Voidling: return DrawVoidling(state, f);
                 case UnitType.Dragon: return DrawDragon(state, f);
                 case UnitType.Emperor: return DrawEmperor(state, f);
+                case UnitType.AncientTreant: return DrawAncientTreant(state, f);
+                case UnitType.IronKing: return DrawIronKing(state, f);
+                case UnitType.Fenrir: return DrawFenrir(state, f);
+                case UnitType.Sleeper: return DrawSleeper(state, f);
                 default: return DrawHumanoid(LookOf(type), state, f);
             }
         }
@@ -777,6 +781,189 @@ namespace HordeLab
                 Line(s, hx - 1, hy + 2, hx + 2, hy - 1, goldL);
                 if (f == 3) { s.Set(hx + 10, hy + 9, goldL); s.Set(hx + 9, hy + 11, goldL); }                                      // tia sáng ở mũi kiếm
             }
+            return s;
+        }
+
+        /// <summary>Tô elip (cx, cy, rx, ry) bằng hàm màu theo toạ độ.</summary>
+        static void Ellipse(Canvas s, float cx, float cy, float rx, float ry, System.Func<int, int, Color32> shade)
+        {
+            for (int y = (int)(cy - ry) - 1; y <= (int)(cy + ry) + 1; y++)
+                for (int x = (int)(cx - rx) - 1; x <= (int)(cx + rx) + 1; x++)
+                {
+                    float dx = (x + 0.5f - cx) / rx, dy = (y + 0.5f - cy) / ry;
+                    if (dx * dx + dy * dy <= 1f) s.Set(x, y, shade(x, y));
+                }
+        }
+
+        /// <summary>Boss Elf: cây cổ thụ biết đi, tán lá trên đầu, mắt sáng vàng, tay cành. Đánh: giơ tay cành rồi đập xuống.</summary>
+        static Canvas DrawAncientTreant(int state, int f)
+        {
+            var s = new Canvas(GiantPx, GiantPx);
+            Color32 bark = Rgb(112, 80, 50), barkD = Rgb(74, 52, 34), barkL = Rgb(150, 112, 70);
+            Color32 moss = Rgb(90, 142, 60), leaf = Rgb(76, 146, 62), leafD = Rgb(48, 98, 44), leafL = Rgb(140, 200, 92), glow = Rgb(255, 232, 120);
+            bool attack = state == 1, stride = !attack && (f & 1) == 1;
+            int b = stride ? 1 : 0;
+            // rễ chân
+            int lx = stride ? 10 : 11, rx = stride ? 18 : 17;
+            Box(s, lx, 24 + b, lx + 3, 28, barkD); Line(s, lx - 1, 29, lx + 4, 29, barkD);
+            Box(s, rx, 24 + b, rx + 3, 28, bark); Line(s, rx - 1, 29, rx + 4, 29, barkD); s.Set(rx + 4, 28, barkD);
+            // tay cành phía sau
+            Line(s, 11, 13 + b, 6, 19 + b, barkD); Line(s, 11, 14 + b, 7, 20 + b, barkD); s.Set(5, 20 + b, barkD); s.Set(6, 21 + b, barkD);
+            // thân gỗ
+            Box(s, 11, 10 + b, 20, 24 + b, bark);
+            Box(s, 11, 10 + b, 12, 24 + b, barkD);
+            for (int y = 11; y <= 23; y += 2) { s.Set(14, y + b, barkD); s.Set(19, y + 1 + b, barkL); }
+            Box(s, 12, 20 + b, 14, 22 + b, moss); s.Set(18, 11 + b, moss); s.Set(19, 12 + b, moss);
+            // mặt: hốc mắt sáng, miệng là vết nứt
+            s.Set(16, 14 + b, glow); s.Set(18, 14 + b, glow); s.Set(17, 13 + b, barkD);
+            Line(s, 15, 18 + b, 19, 18 + b, barkD); s.Set(16, 19 + b, barkD);
+            // tán lá
+            Ellipse(s, 15.5f, 6f + b, 10f, 5.5f, (x, y) => y <= 3 + b ? leafL : (x + y * 3) % 7 == 0 ? leafD : x <= 9 ? leafD : leaf);
+            foreach (int lfx in new[] { 8, 13, 19, 23 }) s.Set(lfx, 2 + b, leafL);
+            // tay cành phía trước
+            int hx, hy;
+            if (!attack) { hx = 25; hy = 19 + b; }
+            else if (f < 2) { hx = 24 - f; hy = 4; }
+            else { hx = 28; hy = 24 + (f == 3 ? 2 : 0); }
+            Line(s, 20, 13 + b, hx, hy, bark); Line(s, 20, 14 + b, hx, hy + 1, barkD);
+            s.Set(hx + 1, hy - 1, barkL); s.Set(hx + 1, hy + 2, barkL); s.Set(hx + 2, hy, barkL);      // ngón cành
+            if (attack && f == 3) { s.Set(hx - 2, hy + 3, leafL); s.Set(hx + 2, hy + 3, leafL); s.Set(hx, hy + 4, leafD); }
+            return s;
+        }
+
+        /// <summary>Boss Người lùn: vua lùn khổng lồ giáp thép, mũ sừng có miện, râu cam tết bím, búa chiến. Đánh: giơ búa rồi nện đất.</summary>
+        static Canvas DrawIronKing(int state, int f)
+        {
+            var s = new Canvas(GiantPx, GiantPx);
+            Color32 steel = Rgb(170, 178, 194), steelD = Rgb(104, 110, 130), steelL = Rgb(216, 222, 234);
+            Color32 beard = Rgb(214, 110, 42), beardD = Rgb(158, 72, 28), gold = Rgb(232, 184, 60), skin = Rgb(226, 170, 132);
+            Color32 horn = Rgb(236, 226, 196), iron = Rgb(78, 82, 96), ironL = Rgb(122, 128, 144), wood = Rgb(122, 84, 50), eye = Rgb(40, 30, 40);
+            bool attack = state == 1, stride = !attack && (f & 1) == 1;
+            int b = stride ? 1 : 0;
+            // chân ngắn, ủng sắt
+            int lx = stride ? 10 : 11, rx = stride ? 18 : 17;
+            Box(s, lx, 23 + b, lx + 3, 27, steelD); Box(s, lx - 1, 28, lx + 3, 29, iron);
+            Box(s, rx, 23 + b, rx + 3, 27, steel); Box(s, rx, 28, rx + 4, 29, iron);
+            // thân giáp rộng
+            Box(s, 8, 13 + b, 22, 23 + b, steel);
+            Box(s, 8, 13 + b, 10, 23 + b, steelD);
+            Box(s, 12, 14 + b, 20, 15 + b, steelL);
+            Line(s, 8, 21 + b, 22, 21 + b, gold); s.Set(15, 21 + b, iron); s.Set(16, 21 + b, iron);
+            // vai
+            Box(s, 6, 12 + b, 9, 15 + b, steelD); Box(s, 21, 12 + b, 24, 15 + b, steelL);
+            // đầu + mũ sừng + miện
+            Box(s, 12, 6 + b, 19, 11 + b, skin);
+            s.Set(17, 8 + b, eye);
+            Box(s, 11, 3 + b, 20, 6 + b, steel); Box(s, 11, 3 + b, 12, 6 + b, steelD); Line(s, 12, 3 + b, 19, 3 + b, steelL);
+            Line(s, 11, 4 + b, 8, 1 + b, horn); Line(s, 20, 4 + b, 23, 1 + b, horn);
+            s.Set(13, 2 + b, gold); s.Set(15, 1 + b, gold); s.Set(15, 2 + b, gold); s.Set(17, 2 + b, gold); s.Set(19, 2 + b, gold);
+            // râu cam tết bím
+            Box(s, 12, 10 + b, 20, 16 + b, beard); Box(s, 12, 10 + b, 13, 16 + b, beardD);
+            for (int y = 17; y <= 20; y++) { s.Set(14, y + b, (y & 1) == 0 ? beardD : beard); s.Set(18, y + b, (y & 1) == 0 ? beardD : beard); }
+            s.Set(14, 21 + b, gold); s.Set(18, 21 + b, gold);
+            // búa chiến
+            if (!attack)
+            {
+                Line(s, 22, 17 + b, 25, 5 + b, wood); Line(s, 23, 17 + b, 26, 5 + b, wood);
+                Box(s, 22, 1 + b, 29, 5 + b, iron); Line(s, 22, 1 + b, 29, 1 + b, ironL); s.Set(21, 15 + b, skin);
+            }
+            else if (f < 2)
+            {
+                Line(s, 19, 12, 12, 4 - f, wood); Line(s, 20, 12, 13, 4 - f, wood);
+                Box(s, 7, 1, 13, 5 - f, iron); Line(s, 7, 1, 13, 1, ironL); s.Set(20, 12, skin);
+            }
+            else
+            {
+                Line(s, 21, 15, 26, 23, wood); Line(s, 22, 15, 27, 23, wood);
+                Box(s, 24, 23, 30, 28, iron); Line(s, 24, 23, 30, 23, ironL); s.Set(21, 15, skin);
+                if (f == 3) { s.Set(23, 29, horn); s.Set(30, 29, horn); s.Set(29, 22, ironL); s.Set(22, 27, steelL); }
+            }
+            return s;
+        }
+
+        /// <summary>Boss Người hoá thú: sói khổng lồ lông xám, mắt vàng, xích gãy ở chân. Đi = phi 4 khung. Đánh = cúi rồi há mõm cắn.</summary>
+        static Canvas DrawFenrir(int state, int f)
+        {
+            var s = new Canvas(GiantPx, GiantPx);
+            Color32 fur = Rgb(98, 100, 116), furD = Rgb(58, 60, 74), furL = Rgb(150, 152, 168), belly = Rgb(184, 186, 196);
+            Color32 eye = Rgb(255, 204, 60), chain = Rgb(170, 170, 180), chainD = Rgb(104, 104, 116), tooth = Rgb(244, 240, 228), mouth = Rgb(120, 30, 40);
+            bool attack = state == 1;
+            int b = !attack && (f == 1 || f == 3) ? -1 : 0;                  // phi: thân nhấp nhô
+            int hd = attack && f < 2 ? 1 : 0;                                 // cúi đầu lấy đà
+            // đuôi xù
+            FillPoly(s, V(7, 14, 3, 10, 1, 11, 2, 14, 5, 17), b, (x, y) => y <= 11 ? furL : fur);
+            // chân: 4 chân, đổi tư thế theo khung
+            int[] back = !attack && f == 1 ? new[] { 5, 9 } : !attack && f == 3 ? new[] { 8, 11 } : new[] { 7, 10 };
+            int[] front = !attack && f == 1 ? new[] { 21, 24 } : !attack && f == 3 ? new[] { 18, 21 } : new[] { 19, 22 };
+            foreach (int x in back) { Box(s, x, 20 + b, x + 1, 28, x == back[0] ? furD : fur); s.Set(x + 2, 28, furD); }
+            foreach (int x in front) { Box(s, x, 20 + b, x + 1, 28, x == front[0] ? furD : fur); s.Set(x + 2, 28, furD); }
+            // xích gãy ở chân trước
+            s.Set(front[1], 26, chain); s.Set(front[1] + 1, 26, chain); s.Set(front[1] - 1, 27, chainD);
+            s.Set(front[1] - 3, 28, chain); s.Set(front[1] - 5, 29, chainD); s.Set(front[1] - 7, 29, chain);
+            // thân
+            Ellipse(s, 14f, 17f + b, 9.5f, 5f, (x, y) => y <= 13 + b ? furD : y >= 20 + b ? belly : (x * 3 + y) % 9 == 0 ? furL : fur);
+            // bờm cổ
+            FillPoly(s, V(18, 10, 22, 8, 23, 15, 19, 18), b, (x, y) => (x + y) % 3 == 0 ? furL : fur);
+            // đầu
+            int oy = b + hd;
+            Ellipse(s, 24f, 11.5f + oy, 4f, 3.5f, (x, y) => y <= 9 + oy ? furL : fur);
+            FillPoly(s, V(22, 9, 23, 5, 25, 8), oy, (x, y) => furD);                       // tai
+            FillPoly(s, V(25, 9, 26, 5, 27, 9), oy, (x, y) => fur);
+            s.Set(26, 11 + oy, eye); s.Set(25, 11 + oy, furD);
+            if (attack && f >= 2)
+            {
+                Box(s, 27, 10 + oy, 30, 11 + oy, fur); s.Set(30, 10 + oy, furD);            // mõm trên
+                Box(s, 27, 12 + oy, 30, 13 + oy, mouth);                                    // miệng há
+                Box(s, 27, 14 + oy, 29, 15 + oy, fur);                                      // hàm dưới
+                s.Set(28, 12 + oy, tooth); s.Set(30, 12 + oy, tooth); s.Set(28, 13 + oy, tooth); s.Set(29, 13 + oy, tooth);
+            }
+            else
+            {
+                Box(s, 27, 11 + oy, 30, 13 + oy, fur); s.Set(30, 11 + oy, furD);            // mõm
+                Line(s, 27, 13 + oy, 30, 13 + oy, furD); s.Set(28, 14 + oy, tooth);
+            }
+            return s;
+        }
+
+        /// <summary>Boss Hư không: quái vật đầu bạch tuộc khổng lồ, nhiều mắt phát sáng, râu xúc tu, cánh dơi rách. Đánh: dang cánh, mắt rực sáng.</summary>
+        static Canvas DrawSleeper(int state, int f)
+        {
+            var s = new Canvas(GiantPx, GiantPx);
+            Color32 body = Rgb(96, 68, 142), bodyD = Rgb(60, 40, 96), bodyL = Rgb(142, 106, 190), tent = Rgb(122, 86, 164);
+            Color32 wing = Rgb(48, 32, 76), wingL = Rgb(78, 56, 116), eye = Rgb(196, 255, 120), eyeHot = Rgb(240, 255, 200), claw = Rgb(220, 210, 236);
+            bool attack = state == 1;
+            int sw = (f & 1) == 0 ? 0 : 1;                                     // xúc tu đung đưa
+            bool spread = attack && f >= 2;
+            // cánh rách sau lưng
+            if (spread) FillPoly(s, V(11, 11, 1, 2, 4, 7, 2, 10, 6, 12, 3, 16, 9, 16), 0, (x, y) => (x + y) % 4 == 0 ? wingL : wing);
+            else FillPoly(s, V(11, 11, 5, 3, 7, 8, 4, 10, 8, 13, 9, 16), 0, (x, y) => (x + y) % 4 == 0 ? wingL : wing);
+            // chân xúc tu
+            for (int k = 0; k < 5; k++)
+            {
+                int x0 = 9 + k * 3, wob = ((k + f) & 1) == 0 ? -1 : 1;
+                Line(s, x0, 23, x0 + wob, 26, k % 2 == 0 ? bodyD : tent); Line(s, x0 + wob, 26, x0, 29, bodyD);
+            }
+            // thân gù
+            Ellipse(s, 14.5f, 18f, 8f, 6.5f, (x, y) => x <= 9 ? bodyD : y <= 13 ? bodyL : (x + y) % 6 == 0 ? bodyD : body);
+            // tay vuốt phía trước
+            int hy = attack ? (f < 2 ? 12 : 20) : 18 + sw;
+            Line(s, 19, 16, 25, hy, body); Line(s, 19, 17, 25, hy + 1, bodyD);
+            s.Set(26, hy - 1, claw); s.Set(27, hy, claw); s.Set(26, hy + 2, claw);
+            // đầu bạch tuộc phình to
+            Ellipse(s, 19.5f, 7.5f, 5f, 5.5f, (x, y) => y <= 4 ? bodyL : x <= 16 ? bodyD : body);
+            s.Set(18, 3, bodyL); s.Set(21, 2, bodyL);
+            // nhiều mắt
+            Color32 e = attack ? eyeHot : eye;
+            s.Set(21, 7, e); s.Set(23, 8, e); s.Set(20, 9, e); s.Set(22, 10, attack ? eyeHot : bodyD);
+            if (attack) { s.Set(24, 6, eye); s.Set(19, 6, eye); }
+            // râu xúc tu dưới mặt
+            for (int k = 0; k < 4; k++)
+            {
+                int x0 = 18 + k * 2, len = 4 + (k & 1) * 2, curl = ((k + sw) & 1) == 0 ? 1 : -1;
+                Line(s, x0, 12, x0, 12 + len, k % 2 == 0 ? tent : bodyD);
+                s.Set(x0 + curl, 13 + len, tent);
+            }
+            if (spread) { s.Set(26, 14, eye); s.Set(27, 15, eyeHot); s.Set(26, 16, eye); }   // cầu sáng hư không
             return s;
         }
 

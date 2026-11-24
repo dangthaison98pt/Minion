@@ -53,8 +53,8 @@ namespace HordeLab
         readonly Dictionary<Vector2Int, CellView> cells = new Dictionary<Vector2Int, CellView>();
         readonly List<Vector2Int> wanted = new List<Vector2Int>(), highlight = new List<Vector2Int>();
         readonly CardView[] cards = new CardView[Tuning.HandLimit];
-        readonly Image[] previewIcons = new Image[5];
-        readonly int[] previewUnit = new int[5];
+        readonly Image[] previewIcons = new Image[6];   // 5 loại quân + boss (đợt trùm)
+        readonly int[] previewUnit = new int[6];
         static readonly float[] GridCells = { 48f, 64f, 96f, 128f };
         int gridZoom = 2;
         Vector2 gridPan, panFrom, panStart;
@@ -347,8 +347,8 @@ namespace HordeLab
             waveInfo = Txt(leftPanel, "", 17f, TextAlignmentOptions.MidlineLeft, true).At(ox + 124f, 822f, 120f, 44f);
             for (int i = 0; i < previewIcons.Length; i++)
             {
-                var bg = Img(leftPanel, White, Slot, false, false, "Enemy").At(ox + 254f + i * 51f, 822f, 44f, 44f);
-                previewIcons[i] = Img(bg.transform, null, Color.white).AtCenter(0f, 0f, 52f, 52f);
+                var bg = Img(leftPanel, White, Slot, false, false, "Enemy").At(ox + 250f + i * 43f, 824f, 40f, 40f);
+                previewIcons[i] = Img(bg.transform, null, Color.white).AtCenter(0f, 0f, 46f, 46f);
             }
             augOwned = Txt(leftPanel, "", 13f, TextAlignmentOptions.TopLeft, false, true).At(ox + 12f, 872f, 496f, 34f);
             battleInfo = Txt(leftPanel, "", 15f, TextAlignmentOptions.TopLeft, false, true).At(ox + 12f, 560f, 496f, 300f);
@@ -973,10 +973,10 @@ namespace HordeLab
             waveInfo.Set($"x{g.EnemyPreviewCount():N0}" + (g.IsBoss(g.wave) ? "\n<size=13><color=#ff8f6a>Boss</color></size>" : ""));
             for (int i = 0; i < previewIcons.Length; i++) previewIcons[i].transform.parent.Show(false);
             int k = 0;
-            for (int s = 0; s < 5; s++)
+            for (int s = 0; s < 6; s++)
             {
-                int t = g.attacker * 5 + s;
-                if (GameData.Units[t].minWave > g.wave) continue;
+                int t = s < 5 ? g.attacker * 5 + s : UnitType.BossOf(g.attacker);   // ô cuối: boss của đợt trùm
+                if (s == 5 ? !g.IsBoss(g.wave) : GameData.Units[t].minWave > g.wave) continue;
                 var bg = (RectTransform)previewIcons[k].transform.parent;
                 bg.Show(true);
                 previewIcons[k].sprite = UnitIcons[t];
@@ -984,7 +984,8 @@ namespace HordeLab
                 if (!modal && Over(bg))
                 {
                     var u = GameData.Units[t];
-                    tipText = $"<b>{u.name}</b>\n<color=#aaaaaa>{u.role}</color>\nHP {u.stats.maxHp:0} · Damage {u.stats.damage:0.#} · Range {u.stats.range:0.#} · Speed {u.stats.speed:0.#}";
+                    bool boss = t >= UnitType.FirstGiant;
+                    tipText = (boss ? "<color=#ff8f6a>Boss</color>  " : "") + $"<b>{u.name}</b>\n<color=#aaaaaa>{u.role}</color>\nHP {u.stats.maxHp * (boss ? Tuning.BossHp : 1f):0} · Damage {u.stats.damage:0.#} · Range {u.stats.range:0.#} · Speed {u.stats.speed:0.#}";
                 }
                 k++;
             }

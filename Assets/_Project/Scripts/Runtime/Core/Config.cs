@@ -48,9 +48,10 @@ namespace HordeLab
         // Đếm số lần lõi chuyên quân ra tay (công cụ kiểm tra đọc; xoá mỗi khi dọn sân)
         public const int LeaderSkill = 10, CcHits = 11, Revives = 12, Splits = 13, PierceHits = 14, Counters = 15;
         public const int Dead0 = 4, Dead1 = 5, Breach = 6;
-        public const int Decrees = 7;                        // số lần Hoàng đế vàng ban Chiếu chỉ   // Dead0 = quân ta tử trận, Dead1 = quân địch bị diệt, Breach = số đòn địch đã đánh trúng tường thành
+        public const int Decrees = 7;                        // số lần Hoàng đế vàng ban Chiếu chỉ
+        public const int BossSkills = 16;                    // số lần boss đợt trùm dùng chiêu   // Dead0 = quân ta tử trận, Dead1 = quân địch bị diệt, Breach = số đòn địch đã đánh trúng tường thành
         public const int Team0 = 8, Team1 = 9;               // số lính còn sống mỗi phe
-        public const int Type0 = 16;                         // 16.. : số lượng mỗi loại lính
+        public const int Type0 = 17;                         // 16.. : số lượng mỗi loại lính
         public const int Length = Type0 + UnitType.Count;
     }
 
@@ -77,9 +78,13 @@ namespace HordeLab
         public const int Aberration = 20, Shade = 21, Eye = 22, Summoner = 23, Screamer = 24;
         public const int Voidling = 25;      // quân con do Kẻ triệu hồi sinh ra, không có nhà lính
         public const int Dragon = 26;        // rồng của lõi Dragon's Pact, không có nhà lính, không thuộc phe nào
-        public const int Emperor = 27;       // Hoàng đế vàng của lõi bí mật The Golden Emperor (phe Người), không có nhà lính
+        public const int Emperor = 27;       // Hoàng đế vàng: lõi bí mật The Golden Emperor (phe Người) + boss của phe Người
+        // Boss của đợt trùm, mỗi phe 1 con (Người dùng Hoàng đế vàng)
+        public const int AncientTreant = 28, IronKing = 29, Fenrir = 30, Sleeper = 31;
         public const int Buildable = 25;
-        public const int Count = 28;
+        public const int Count = 32;
+        /// <summary>Boss đi cùng đợt trùm của phe <paramref name="faction"/>.</summary>
+        public static int BossOf(int faction) => faction == 0 ? Emperor : faction == 1 ? AncientTreant : faction == 2 ? IronKing : faction == 3 ? Fenrir : Sleeper;
 
         // Quân khổng lồ (32x32) nằm ở CUỐI bảng, từ Dragon trở đi: mỗi con chiếm 8 hàng atlas 16px thay vì 2
         public const int FirstGiant = Dragon, GiantCount = Count - FirstGiant;

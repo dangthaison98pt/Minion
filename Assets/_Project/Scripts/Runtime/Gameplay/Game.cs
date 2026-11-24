@@ -66,6 +66,8 @@ namespace HordeLab
         // ---- Lõi huyền thoại trong trận ----
         float dragonT, meteorT, ballistaT, mercT, emperorT;
         bool emperorCalled;              // Hoàng đế đã ra trận trong đợt này (chết thì chờ đợt sau)
+        float bossT;                     // đợt trùm: còn bao lâu boss vào trận (< 0 = đã vào / không có)
+        public int bossesCalled, bossType = -1;   // boss của đợt đang / vừa đánh (-1 = không phải đợt trùm)
         // ---- Lõi bí mật The Golden Emperor (phe Người) ----
         public int flawless;             // số đợt liên tiếp giữ thành không mất máu
         public bool emperorUnlocked;     // đã đạt điều kiện ẩn: từ giờ lõi này có thể ra khi chọn lõi
@@ -512,6 +514,8 @@ namespace HordeLab
             castleBonus = 0; lastStandUsed = false;
             dragonT = Aug.DragonDelay; meteorT = 3f; ballistaT = 1f; mercT = 6f;
             emperorT = Aug.EmperorDelay; emperorCalled = false;
+            bossT = IsBoss(wave) ? Tuning.BossDelay : -1f; bossesCalled = 0;
+            bossType = IsBoss(wave) ? UnitType.BossOf(attacker) : -1;
             dragonsCalled = meteorsFired = boltsFired = mercSquads = lastStands = 0;
             if (Has(Aug.Stockpile)) city.res = new Res(city.res.pop + Aug.StockpileRes, city.res.food + Aug.StockpileRes, city.res.wood + Aug.StockpileRes, city.res.gold + Aug.StockpileRes);
             endedAt = -1f;
@@ -551,6 +555,16 @@ namespace HordeLab
 
             city.Tick(dt, AlliesAlive < Tuning.PlayerUnitCap, CallSquads);
             LegendaryStep(dt);
+
+            // đợt trùm: boss của phe tấn công vào trận (1 con, máu nhân thêm)
+            if (bossT > 0f && (bossT -= dt) <= 0f)
+            {
+                int bt = bossType;
+                battle.SpawnSquad(bt, 1, new float2(Cfg.EnemySpawnX, 0f), 1, enemyPower * Tuning.BossHp, enemyPower,
+                                  bt == UnitType.AncientTreant ? Aug.TreantRegen * enemyPower * Tuning.BossHp : 0f);
+                bossT = -1f;
+                bossesCalled++;
+            }
 
             if (squadsLeft > 0)
             {

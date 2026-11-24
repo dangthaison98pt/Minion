@@ -161,7 +161,7 @@ Tất cả nằm trong class `Tuning` và bảng dữ liệu ở [`GameData.cs`]
 | Tinh thể thưởng mỗi đợt | Cố định 5 như TFT, giữ được thành thêm +1, thua không có (`CrystalReward`, `WinBonus`); vào game có sẵn 5 |
 | Lãi Tinh thể | Hết mỗi đợt: +1 cho mỗi 10 Tinh thể đang giữ (tính trước khi cộng thưởng), tối đa +5 như TFT (`InterestStep`, `InterestMax`) |
 | Cửa hàng | 5 thẻ, giá 3–4, roll giá 1, roll thay mọi ô không bị khoá, tự làm mới miễn phí sau mỗi đợt; Mở rộng đất bán riêng (nút Buy Land, giá 5) |
-| Trùm | Chưa thiết kế → tạm là đợt đông hơn 60% và mạnh hơn 25% |
+| Trùm | Đợt 6/12/18/24/30: quân đông hơn 25% (sức như thường) + **1 boss khổng lồ của phe tấn công** vào trận sau 4s, máu x3. Human: The Golden Emperor (hào quang + Chiếu chỉ). Elf: Ancient Treant (rễ trói 2,5s, tự hồi máu). Dwarf: The Iron King (búa nện đất, choáng). Beastfolk: Fenrir (tru, quân ta sợ hãi bỏ chạy). Void: The Sleeper in the Deep (gọi 8 Voidling, ánh nhìn gây choáng). Ô 'Next' hiện thêm biểu tượng boss. Bot: `-boss F` biến mọi đợt thành đợt trùm của phe F |
 | Phép hỗ trợ trong trận | Chưa có |
 | Công thức ghép khác loại | Chưa có |
 | Xác suất sự kiện đổi phe thù địch | 25% sau mỗi đợt |
