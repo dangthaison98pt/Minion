@@ -13,7 +13,5 @@ MonoBehaviour:
   m_Name: 22_Infirmary
   m_EditorClassIdentifier: HordeLab.Runtime::HordeLab.BuildingBalance
   building: 22
-  displayName: Infirmary
   period: 0
   amount: 0
-  description: Troops from buildings around it regenerate 1 HP per second.

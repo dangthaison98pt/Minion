@@ -13,7 +13,5 @@ MonoBehaviour:
   m_Name: 05_TreeNursery
   m_EditorClassIdentifier: HordeLab.Runtime::HordeLab.BuildingBalance
   building: 5
-  displayName: Tree Nursery
   period: 3
   amount: 0.5
-  description: Yields very little at first, then grows as the battle goes on.

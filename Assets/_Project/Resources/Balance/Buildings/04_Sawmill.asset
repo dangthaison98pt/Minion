@@ -13,7 +13,5 @@ MonoBehaviour:
   m_Name: 04_Sawmill
   m_EditorClassIdentifier: HordeLab.Runtime::HordeLab.BuildingBalance
   building: 4
-  displayName: Sawmill
   period: 0
   amount: 0
-  description: Produces no Wood itself. Lumber Camps around it work 50% faster.

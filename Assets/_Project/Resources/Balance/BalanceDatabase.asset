@@ -12,14 +12,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 96b6592e846af9a4f9429b6cb02b2af5, type: 3}
   m_Name: BalanceDatabase
   m_EditorClassIdentifier: HordeLab.Runtime::HordeLab.BalanceDatabase
-  tuning: {fileID: 11400000, guid: 08b4938f6b1924e41b37c030bf5a4cba, type: 2}
-  factions:
-  - {fileID: 11400000, guid: b977d550ea3cb2d4898218df7b7381d0, type: 2}
-  - {fileID: 11400000, guid: df772b637664c16499d843ba97739377, type: 2}
-  - {fileID: 11400000, guid: 375dfe2e478d49a459a9456c6edc8a96, type: 2}
-  - {fileID: 11400000, guid: 99ec1e2b88d9082479cdb168393cd2b2, type: 2}
-  - {fileID: 11400000, guid: 240041ab2efeffc468b6c34c59fe7094, type: 2}
-  - {fileID: 11400000, guid: b871041a3be874d45959c963d1aff4dc, type: 2}
   units:
   - {fileID: 11400000, guid: b717d38f71b95284cb7963fa284aecd6, type: 2}
   - {fileID: 11400000, guid: ae4cd69a12ada2c46b47f9d4e7d5c69e, type: 2}

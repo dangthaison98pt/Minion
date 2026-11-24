@@ -13,7 +13,5 @@ MonoBehaviour:
   m_Name: 12_Windmill
   m_EditorClassIdentifier: HordeLab.Runtime::HordeLab.BuildingBalance
   building: 12
-  displayName: Windmill
   period: 0
   amount: 0
-  description: Wheat Fields yield 50% more.

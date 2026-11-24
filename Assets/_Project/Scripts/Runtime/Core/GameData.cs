@@ -8,8 +8,6 @@ namespace HordeLab
     /// </summary>
     public static class Tuning
     {
-        // Số cân bằng (không có chữ const) được nạp đè từ asset Resources/Balance/Tuning.asset nếu có
-        static Tuning() { Balance.ApplyTuning(); }
 
         // ---- Lượt chơi (đã chốt trong GDD) ----
         public const int Hearts = 3;
@@ -310,9 +308,7 @@ namespace HordeLab
 
         static FactionDef[] BuildFactions()
         {
-            var f = DefaultFactions();
-            Balance.ApplyFactions(f);                // asset Resources/Balance/Factions/* đè lên số trong code
-            return f;
+            return DefaultFactions();
         }
 
         /// <summary>Số gốc trong code (giá trị mặc định khi chưa có asset).</summary>
@@ -536,7 +532,7 @@ namespace HordeLab
         static UnitDef[] BuildUnits()
         {
             var u = DefaultUnits();
-            Balance.ApplyUnits(u);                   // asset Resources/Balance/Units/* đè lên số trong code
+            Balance.ApplyUnits(u);                   // số liệu thô từ asset Resources/Balance/Units/* đè lên số trong code
             // Đặc trưng phe được nhân sẵn vào bảng chỉ số
             for (int t = 0; t < UnitType.Count; t++)
             {
@@ -694,7 +690,7 @@ namespace HordeLab
                 };
             }
             b[B.Expand] = new BuildingDef { id = B.Expand, name = "Expand Land", cat = Cat.Expand, desc = "Opens 1 empty tile next to your grid." };
-            Balance.ApplyBuildings(b);               // asset Resources/Balance/Buildings/* đè lên số trong code (nhà tài nguyên + nhà buff)
+            Balance.ApplyBuildings(b);               // chu kỳ + sản lượng từ asset Resources/Balance/Buildings/* (nhà tài nguyên + nhà buff)
             return b;
         }
 

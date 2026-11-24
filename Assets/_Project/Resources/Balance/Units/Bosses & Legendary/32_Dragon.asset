@@ -13,28 +13,11 @@ MonoBehaviour:
   m_Name: 32_Dragon
   m_EditorClassIdentifier: HordeLab.Runtime::HordeLab.UnitBalance
   unitType: 32
-  displayName: Dragon
-  house: 
-  role: Legendary ally (fire breath)
   maxHp: 900
   damage: 24
   cooldown: 2
   range: 8
   speed: 3.4
-  mode: 2
-  flags: 72
-  projectile: 0
-  blood: 5
-  animFps: 8
-  splash: 3.2
-  slow: 0
-  knock: 0
-  chargeBonus: 0
-  arrowResist: 0.8
-  dodge: 0
-  minRange: 0
-  explodeDamage: 0
-  explodeRadius: 0
   costPop: 0
   costFood: 0
   costWood: 0

@@ -13,28 +13,11 @@ MonoBehaviour:
   m_Name: 37_Fenrir
   m_EditorClassIdentifier: HordeLab.Runtime::HordeLab.UnitBalance
   unitType: 37
-  displayName: Fenrir
-  house: 
-  role: 'The Berserker''s wolf form: a terrifying howl, then frenzied fast attacks'
   maxHp: 1600
   damage: 30
   cooldown: 0.55
   range: 1.4
   speed: 5
-  mode: 0
-  flags: 72
-  projectile: 0
-  blood: 0
-  animFps: 12
-  splash: 1.6
-  slow: 0
-  knock: 0.4
-  chargeBonus: 0
-  arrowResist: 0
-  dodge: 0
-  minRange: 0
-  explodeDamage: 0
-  explodeRadius: 0
   costPop: 0
   costFood: 0
   costWood: 0

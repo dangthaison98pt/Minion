@@ -13,7 +13,5 @@ MonoBehaviour:
   m_Name: 21_WarBanner
   m_EditorClassIdentifier: HordeLab.Runtime::HordeLab.BuildingBalance
   building: 21
-  displayName: War Banner
   period: 0
   amount: 0
-  description: Troops from buildings in the row have +20% HP.

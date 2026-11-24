@@ -13,29 +13,11 @@ MonoBehaviour:
   m_Name: 33_TheGoldenEmperor
   m_EditorClassIdentifier: HordeLab.Runtime::HordeLab.UnitBalance
   unitType: 33
-  displayName: The Golden Emperor
-  house: 
-  role: Legendary (Human). Golden aura heals allies, burns foes. Imperial Decree
-    stuns. As a boss he rises again once at 50% HP
   maxHp: 1400
   damage: 30
   cooldown: 1.6
   range: 1.2
   speed: 2.6
-  mode: 0
-  flags: 72
-  projectile: 0
-  blood: 0
-  animFps: 7
-  splash: 2.2
-  slow: 0
-  knock: 0.6
-  chargeBonus: 0
-  arrowResist: 0.5
-  dodge: 0
-  minRange: 0
-  explodeDamage: 0
-  explodeRadius: 0
   costPop: 0
   costFood: 0
   costWood: 0

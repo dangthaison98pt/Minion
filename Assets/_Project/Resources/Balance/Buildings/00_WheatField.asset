@@ -13,7 +13,5 @@ MonoBehaviour:
   m_Name: 00_WheatField
   m_EditorClassIdentifier: HordeLab.Runtime::HordeLab.BuildingBalance
   building: 0
-  displayName: Wheat Field
   period: 3
   amount: 3
-  description: Steady and cheap. +15% for each adjacent Wheat Field.

@@ -13,7 +13,5 @@ MonoBehaviour:
   m_Name: 03_LumberCamp
   m_EditorClassIdentifier: HordeLab.Runtime::HordeLab.BuildingBalance
   building: 3
-  displayName: Lumber Camp
   period: 3
   amount: 3
-  description: Steady and cheap.

@@ -13,7 +13,5 @@ MonoBehaviour:
   m_Name: 10_ResidentialBlock
   m_EditorClassIdentifier: HordeLab.Runtime::HordeLab.BuildingBalance
   building: 10
-  displayName: Residential Block
   period: 4
   amount: 8
-  description: 'Big yield. Noisy: adjacent buildings work 20% slower.'

@@ -13,28 +13,11 @@ MonoBehaviour:
   m_Name: 07_BladeDancer
   m_EditorClassIdentifier: HordeLab.Runtime::HordeLab.UnitBalance
   unitType: 7
-  displayName: Blade Dancer
-  house: Blade Court
-  role: Striker (dodges)
   maxHp: 30
   damage: 8
   cooldown: 0.6
   range: 1
   speed: 3.6
-  mode: 0
-  flags: 0
-  projectile: 0
-  blood: 0
-  animFps: 11
-  splash: 0
-  slow: 0
-  knock: 0
-  chargeBonus: 0
-  arrowResist: 0
-  dodge: 0.4
-  minRange: 0
-  explodeDamage: 0
-  explodeRadius: 0
   costPop: 5
   costFood: 6
   costWood: 0

@@ -13,28 +13,11 @@ MonoBehaviour:
   m_Name: 17_Leopardfolk
   m_EditorClassIdentifier: HordeLab.Runtime::HordeLab.UnitBalance
   unitType: 17
-  displayName: Leopardfolk
-  house: Leopard Run
-  role: Mobile (flanks from behind)
   maxHp: 28
   damage: 9
   cooldown: 0.8
   range: 1
   speed: 5.2
-  mode: 0
-  flags: 1
-  projectile: 0
-  blood: 0
-  animFps: 13
-  splash: 0
-  slow: 0
-  knock: 0
-  chargeBonus: 0
-  arrowResist: 0
-  dodge: 0
-  minRange: 0
-  explodeDamage: 0
-  explodeRadius: 0
   costPop: 5
   costFood: 7
   costWood: 0

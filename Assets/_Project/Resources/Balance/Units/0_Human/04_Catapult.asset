@@ -13,28 +13,11 @@ MonoBehaviour:
   m_Name: 04_Catapult
   m_EditorClassIdentifier: HordeLab.Runtime::HordeLab.UnitBalance
   unitType: 4
-  displayName: Catapult
-  house: Siege Workshop
-  role: Area damage
   maxHp: 60
   damage: 12
   cooldown: 7
   range: 34
   speed: 1.6
-  mode: 1
-  flags: 8
-  projectile: 3
-  blood: 11
-  animFps: 6
-  splash: 1.8
-  slow: 0
-  knock: 0
-  chargeBonus: 0
-  arrowResist: 0
-  dodge: 0
-  minRange: 6
-  explodeDamage: 0
-  explodeRadius: 0
   costPop: 8
   costFood: 0
   costWood: 14

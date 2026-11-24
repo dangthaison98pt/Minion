@@ -6,7 +6,7 @@ using UnityEngine;
 namespace HordeLab.EditorTools
 {
     /// <summary>
-    /// Tạo / bổ sung asset cân bằng (ScriptableObject) từ số đang có trong code, để GD chỉnh trong Inspector.
+    /// Tạo / bổ sung asset số liệu thô (quân + nhà) từ số đang có trong code, để GD điền trong Inspector.
     /// Chỉ TẠO asset còn thiếu, không bao giờ ghi đè asset đã có (số GD đã chỉnh được giữ nguyên).
     /// </summary>
     public static class BalanceTools
@@ -19,28 +19,7 @@ namespace HordeLab.EditorTools
             Folder(Root);
             int created = 0;
 
-            // ---- Tuning ----
-            var tuning = Find<TuningBalance>().Count > 0 ? Find<TuningBalance>()[0] : null;
-            if (tuning == null)
-            {
-                tuning = ScriptableObject.CreateInstance<TuningBalance>();
-                tuning.CopyFromTuning();
-                AssetDatabase.CreateAsset(tuning, $"{Root}/Tuning.asset");
-                created++;
-            }
-
-            // ---- Phe ----
             var factionDefs = GameData.DefaultFactions();
-            var factions = Index(Find<FactionBalance>(), a => a.faction);
-            Folder($"{Root}/Factions");
-            for (int f = 0; f < factionDefs.Length; f++)
-            {
-                if (factions.ContainsKey(f)) continue;
-                var a = ScriptableObject.CreateInstance<FactionBalance>();
-                a.CopyFrom(f, factionDefs[f]);
-                AssetDatabase.CreateAsset(a, $"{Root}/Factions/{f}_{Safe(factionDefs[f].name)}.asset");
-                factions[f] = a; created++;
-            }
 
             // ---- Quân (số gốc trong code, chưa nhân đặc trưng phe) ----
             var unitDefs = GameData.DefaultUnits();
@@ -75,13 +54,11 @@ namespace HordeLab.EditorTools
             string dbPath = $"{Root}/BalanceDatabase.asset";
             var db = AssetDatabase.LoadAssetAtPath<BalanceDatabase>(dbPath);
             if (db == null) { db = ScriptableObject.CreateInstance<BalanceDatabase>(); AssetDatabase.CreateAsset(db, dbPath); created++; }
-            db.tuning = tuning;
-            db.factions = Sorted(factions);
             db.units = Sorted(units);
             db.buildings = Sorted(buildings);
             EditorUtility.SetDirty(db);
             AssetDatabase.SaveAssets();
-            Debug.Log($"[HordeLab] Balance: tạo mới {created} asset; tổng {db.factions.Length} phe, {db.units.Length} loại quân, {db.buildings.Length} nhà ({Root})");
+            Debug.Log($"[HordeLab] Balance: tạo mới {created} asset; tổng {db.units.Length} loại quân, {db.buildings.Length} nhà ({Root})");
         }
 
         /// <summary>Kiểm tra: chỉ số game đọc từ asset có khớp chỉ số gốc trong code không (dùng sau khi vừa tạo asset).</summary>

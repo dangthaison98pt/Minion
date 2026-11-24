@@ -13,28 +13,11 @@ MonoBehaviour:
   m_Name: 24_Screamer
   m_EditorClassIdentifier: HordeLab.Runtime::HordeLab.UnitBalance
   unitType: 24
-  displayName: Screamer
-  house: Howling Pit
-  role: Area damage (sonic wave)
   maxHp: 36
   damage: 9
   cooldown: 3
   range: 7
   speed: 2.4
-  mode: 2
-  flags: 0
-  projectile: 0
-  blood: 9
-  animFps: 7
-  splash: 3
-  slow: 0
-  knock: 0
-  chargeBonus: 0
-  arrowResist: 0
-  dodge: 0
-  minRange: 0
-  explodeDamage: 0
-  explodeRadius: 0
   costPop: 9
   costFood: 0
   costWood: 0

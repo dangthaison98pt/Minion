@@ -13,28 +13,11 @@ MonoBehaviour:
   m_Name: 05_Treant
   m_EditorClassIdentifier: HordeLab.Runtime::HordeLab.UnitBalance
   unitType: 5
-  displayName: Treant
-  house: Sacred Grove
-  role: Frontline (very tanky, area slam)
   maxHp: 110
   damage: 9
   cooldown: 1.4
   range: 1.2
   speed: 1.7
-  mode: 0
-  flags: 8
-  projectile: 0
-  blood: 10
-  animFps: 5
-  splash: 1.4
-  slow: 0
-  knock: 0
-  chargeBonus: 0
-  arrowResist: 0
-  dodge: 0
-  minRange: 0
-  explodeDamage: 0
-  explodeRadius: 0
   costPop: 6
   costFood: 0
   costWood: 12

@@ -13,28 +13,11 @@ MonoBehaviour:
   m_Name: 20_Aberration
   m_EditorClassIdentifier: HordeLab.Runtime::HordeLab.UnitBalance
   unitType: 20
-  displayName: Aberration
-  house: Rift
-  role: Frontline (explodes on death)
   maxHp: 50
   damage: 6
   cooldown: 1.1
   range: 1
   speed: 2.6
-  mode: 0
-  flags: 0
-  projectile: 0
-  blood: 9
-  animFps: 7
-  splash: 0
-  slow: 0
-  knock: 0
-  chargeBonus: 0
-  arrowResist: 0
-  dodge: 0
-  minRange: 0
-  explodeDamage: 14
-  explodeRadius: 1.8
   costPop: 8
   costFood: 0
   costWood: 0

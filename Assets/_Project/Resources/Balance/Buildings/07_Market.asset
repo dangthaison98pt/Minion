@@ -13,8 +13,5 @@ MonoBehaviour:
   m_Name: 07_Market
   m_EditorClassIdentifier: HordeLab.Runtime::HordeLab.BuildingBalance
   building: 7
-  displayName: Market
   period: 5
   amount: 5
-  description: 'Trades Gold for the resource you pick when you place it: each cycle
-    5 Gold for 5 Food, Wood or Pop. Pick it up and place it again to switch.'

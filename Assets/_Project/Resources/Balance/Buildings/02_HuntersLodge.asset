@@ -13,7 +13,5 @@ MonoBehaviour:
   m_Name: 02_HuntersLodge
   m_EditorClassIdentifier: HordeLab.Runtime::HordeLab.BuildingBalance
   building: 2
-  displayName: Hunter's Lodge
   period: 3
   amount: 2
-  description: 'Only works on the border: 2 Food for each side facing the wilds.'

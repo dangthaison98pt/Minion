@@ -13,7 +13,5 @@ MonoBehaviour:
   m_Name: 17_Plaza
   m_EditorClassIdentifier: HordeLab.Runtime::HordeLab.BuildingBalance
   building: 17
-  displayName: Plaza
   period: 0
   amount: 0
-  description: Houses around it produce Pop 25% faster.

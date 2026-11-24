@@ -13,7 +13,5 @@ MonoBehaviour:
   m_Name: 08_TownHall
   m_EditorClassIdentifier: HordeLab.Runtime::HordeLab.BuildingBalance
   building: 8
-  displayName: Town Hall
   period: 5
   amount: 0.05
-  description: 'Each cycle: Gold equal to 5% of your current Pop.'

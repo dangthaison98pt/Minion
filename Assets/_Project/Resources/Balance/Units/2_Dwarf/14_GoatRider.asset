@@ -13,28 +13,11 @@ MonoBehaviour:
   m_Name: 14_GoatRider
   m_EditorClassIdentifier: HordeLab.Runtime::HordeLab.UnitBalance
   unitType: 14
-  displayName: Goat Rider
-  house: Goat Pen
-  role: Mobile (slower than cavalry, tankier)
   maxHp: 110
   damage: 9
   cooldown: 1.1
   range: 1.2
   speed: 4.8
-  mode: 0
-  flags: 8
-  projectile: 0
-  blood: 0
-  animFps: 11
-  splash: 0
-  slow: 0
-  knock: 0.7
-  chargeBonus: 1.2
-  arrowResist: 0
-  dodge: 0
-  minRange: 0
-  explodeDamage: 0
-  explodeRadius: 0
   costPop: 6
   costFood: 6
   costWood: 0

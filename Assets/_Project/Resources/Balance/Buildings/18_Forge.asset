@@ -13,7 +13,5 @@ MonoBehaviour:
   m_Name: 18_Forge
   m_EditorClassIdentifier: HordeLab.Runtime::HordeLab.BuildingBalance
   building: 18
-  displayName: Forge
   period: 0
   amount: 0
-  description: Troops from the building below deal +60% damage.

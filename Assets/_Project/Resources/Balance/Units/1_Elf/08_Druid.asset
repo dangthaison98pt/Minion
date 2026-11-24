@@ -13,28 +13,11 @@ MonoBehaviour:
   m_Name: 08_Druid
   m_EditorClassIdentifier: HordeLab.Runtime::HordeLab.UnitBalance
   unitType: 8
-  displayName: Druid
-  house: Moon Temple
-  role: Area spells (slow enemies)
   maxHp: 18
   damage: 7
   cooldown: 2.2
   range: 18
   speed: 2.7
-  mode: 1
-  flags: 0
-  projectile: 6
-  blood: 0
-  animFps: 9
-  splash: 2
-  slow: 2.5
-  knock: 0
-  chargeBonus: 0
-  arrowResist: 0
-  dodge: 0
-  minRange: 0
-  explodeDamage: 0
-  explodeRadius: 0
   costPop: 5
   costFood: 0
   costWood: 0

@@ -13,28 +13,11 @@ MonoBehaviour:
   m_Name: 06_ForestArcher
   m_EditorClassIdentifier: HordeLab.Runtime::HordeLab.UnitBalance
   unitType: 6
-  displayName: Forest Archer
-  house: Bow Academy
-  role: Ranged (longest range)
   maxHp: 16
   damage: 6
   cooldown: 1.6
   range: 28
   speed: 2.9
-  mode: 1
-  flags: 0
-  projectile: 1
-  blood: 0
-  animFps: 9
-  splash: 0
-  slow: 0
-  knock: 0
-  chargeBonus: 0
-  arrowResist: 0
-  dodge: 0
-  minRange: 0
-  explodeDamage: 0
-  explodeRadius: 0
   costPop: 5
   costFood: 0
   costWood: 6

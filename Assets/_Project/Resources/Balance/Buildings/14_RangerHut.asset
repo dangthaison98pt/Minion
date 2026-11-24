@@ -13,7 +13,5 @@ MonoBehaviour:
   m_Name: 14_RangerHut
   m_EditorClassIdentifier: HordeLab.Runtime::HordeLab.BuildingBalance
   building: 14
-  displayName: Ranger Hut
   period: 0
   amount: 0
-  description: The Tree Nursery grows twice as fast.

@@ -13,28 +13,11 @@ MonoBehaviour:
   m_Name: 27_BoarRider
   m_EditorClassIdentifier: HordeLab.Runtime::HordeLab.UnitBalance
   unitType: 27
-  displayName: Boar Rider
-  house: Boar Pen
-  role: Mobile (charge, knockback)
   maxHp: 90
   damage: 10
   cooldown: 1.1
   range: 1.2
   speed: 4.6
-  mode: 0
-  flags: 8
-  projectile: 0
-  blood: 0
-  animFps: 11
-  splash: 0
-  slow: 0
-  knock: 1
-  chargeBonus: 1.5
-  arrowResist: 0
-  dodge: 0
-  minRange: 0
-  explodeDamage: 0
-  explodeRadius: 0
   costPop: 6
   costFood: 9
   costWood: 0

@@ -13,7 +13,5 @@ MonoBehaviour:
   m_Name: 13_Well
   m_EditorClassIdentifier: HordeLab.Runtime::HordeLab.BuildingBalance
   building: 13
-  displayName: Well
   period: 0
   amount: 0
-  description: All Food buildings yield +15%.

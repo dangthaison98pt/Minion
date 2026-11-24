@@ -13,7 +13,5 @@ MonoBehaviour:
   m_Name: 01_CattleBarn
   m_EditorClassIdentifier: HordeLab.Runtime::HordeLab.BuildingBalance
   building: 1
-  displayName: Cattle Barn
   period: 10
   amount: 14
-  description: Slow cycle, big yield. Doubled next to a Wheat Field.
