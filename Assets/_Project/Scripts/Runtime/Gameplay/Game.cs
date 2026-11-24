@@ -318,7 +318,41 @@ namespace HordeLab
         // ------------------------------------------------------------------
         /// <summary>Bốc 1 thẻ: thẻ dùng chung + nhà lính của phe mình. Không bao giờ ra thẻ phe khác.</summary>
         /// <summary>Thẻ ngẫu nhiên. Cửa hàng không bao giờ ra Mở rộng đất (có nút mua đất riêng); phần thưởng thì vẫn có thể ra.</summary>
+        /// <summary>
+        /// Thẻ có ích với lưới hiện tại không: nhà buff chỉ buff cho đúng 1 loại nhà thì phải có loại nhà đó
+        /// (trên lưới hoặc trên tay) mới được rút ra — tránh làm người chơi hiểu nhầm.
+        /// </summary>
+        public bool CardUseful(int id)
+        {
+            bool Owns(System.Func<BuildingDef, bool> want)
+            {
+                foreach (var b in city.cells.Values) if (b != null && want(b.Def)) return true;
+                foreach (int c in hand) if (c != B.Expand && c >= 0 && c < B.Count && want(GameData.Buildings[c])) return true;
+                return false;
+            }
+            switch (id)
+            {
+                case B.Windmill: return Owns(d => d.id == B.Field);
+                case B.Well: return Owns(d => d.cat == Cat.Food);
+                case B.RangerHut: return Owns(d => d.id == B.Nursery);
+                case B.Mint: return Owns(d => d.id == B.GoldMine);
+                case B.TradeRoad: return Owns(d => d.id == B.Market);
+                case B.Plaza: return Owns(d => d.cat == Cat.Pop);
+                case B.Sawmill: return Owns(d => d.id == B.LumberCamp);
+                case B.Forge: case B.TrainingGround: case B.Depot: case B.Banner: case B.Infirmary: return Owns(d => d.cat == Cat.Barracks);
+                default: return true;
+            }
+        }
+
+        /// <summary>Rút 1 thẻ ngẫu nhiên, bỏ qua nhà buff không có gì để buff.</summary>
         public int RandomCard(bool forShop = false)
+        {
+            int c = RawCard(forShop);
+            for (int k = 0; k < 30 && !CardUseful(c); k++) c = RawCard(forShop);
+            return c;
+        }
+
+        int RawCard(bool forShop)
         {
             const int shared = B.Barracks;            // 0..22: nhà tài nguyên + nhà buff
             const float barracksW = 1.6f;
@@ -648,7 +682,13 @@ namespace HordeLab
             lastCrystals = Tuning.CrystalReward;
             lastWinBonus = won ? Tuning.WinBonus : 0;
             crystals += lastCrystals + lastWinBonus + lastInterest;
-            for (int i = 0; i < reward.Length; i++) reward[i] = RandomCard();
+            // phần thưởng chỉ được chọn 1 lá: các lá phải khác nhau
+            for (int i = 0; i < reward.Length; i++)
+            {
+                int c = RandomCard();
+                for (int k = 0; k < 30 && System.Array.IndexOf(reward, c, 0, i) >= 0; k++) c = RandomCard();
+                reward[i] = c;
+            }
 
             eventNote = RollHostileEvent();
             wave++;

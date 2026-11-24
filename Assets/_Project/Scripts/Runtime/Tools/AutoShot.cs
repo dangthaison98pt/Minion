@@ -141,6 +141,7 @@ namespace HordeLab
         }
 
         bool augShot, ownedShot, augRollTested;
+        int cardChecks, cardFails;
         static readonly bool allAugs = System.Array.IndexOf(System.Environment.GetCommandLineArgs(), "-allaugs") >= 0;
 
         /// <summary>Kiểm tra lõi (chạy cùng -savetest): bật tạm từng lõi, so số liệu trước / sau, rồi gỡ ra.</summary>
@@ -366,6 +367,18 @@ namespace HordeLab
                         int last = game.hand.Count - 1;
                         if (game.PlayCard(last, held)) { game.city.Get(held).stars = 1; game.city.Recompute(); }
                     }
+                }
+                // kiểm tra thẻ: phần thưởng không trùng, cửa hàng + phần thưởng không có nhà buff vô dụng
+                {
+                    int dup = 0, useless = 0;
+                    for (int ri = 0; ri < game.reward.Length && game.wave > 1; ri++)   // trước đợt 1 chưa rút phần thưởng nào
+                    {
+                        if (System.Array.IndexOf(game.reward, game.reward[ri], 0, ri) >= 0) dup++;
+                        if (game.reward[ri] >= 0 && !game.CardUseful(game.reward[ri])) useless++;
+                    }
+                    foreach (int sc in game.shop) if (sc >= 0 && !game.CardUseful(sc)) useless++;
+                    cardChecks++; if (dup > 0 || useless > 0) cardFails++;
+                    log.AppendLine($"CARD TEST: {(dup == 0 && useless == 0 ? "OK" : "FAIL")} (phần thưởng trùng {dup}, thẻ buff vô dụng {useless})");
                 }
                 // -boss F: mọi đợt đều là đợt trùm của phe F (thử boss)
                 int bossArg = IntArg(System.Environment.GetCommandLineArgs(), "-boss", -1);

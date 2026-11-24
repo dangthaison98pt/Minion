@@ -1195,10 +1195,11 @@ namespace HordeLab
             Box(s, 3, 6 + bob, 3, 11 + bob, trD);
             // tay trước + dùi cui
             if (walk) { Box(s, 11, 6 + bob, 12, 10 + bob, tr); Box(s, 12, 11 + bob, 13, 13, club); s.Set(13, 13, clubD); }
-            else if (f == 0) { Box(s, 11, 2, 12, 5, tr); Box(s, 12, 0, 14, 2, club); s.Set(14, 0, clubD); }                 // giơ dùi
-            else if (f == 1) { Box(s, 11, 3, 12, 6, tr); Box(s, 13, 1, 15, 3, club); }
-            else if (f == 2) { Box(s, 11, 6, 12, 8, tr); Box(s, 13, 6, 15, 8, club); s.Set(15, 8, clubD); }                 // đập ngang
-            else { Box(s, 11, 8, 12, 10, tr); Box(s, 13, 10, 15, 13, club); s.Set(15, 13, clubD); s.Set(14, 14, Rgb(150, 132, 104)); }   // đập xuống đất
+            // dùi cui luôn cách mép ô ít nhất 1 pixel để còn chỗ cho viền
+            else if (f == 0) { Box(s, 11, 3, 12, 5, tr); Box(s, 11, 1, 13, 2, club); s.Set(13, 1, clubD); }                 // giơ dùi
+            else if (f == 1) { Box(s, 11, 4, 12, 6, tr); Box(s, 12, 1, 14, 3, club); s.Set(14, 1, clubD); }
+            else if (f == 2) { Box(s, 11, 6, 12, 8, tr); Box(s, 13, 6, 14, 8, club); s.Set(14, 8, clubD); }                 // đập ngang
+            else { Box(s, 11, 8, 12, 10, tr); Box(s, 13, 10, 14, 13, club); s.Set(14, 13, clubD); }                         // đập xuống đất
             return s;
         }
 
