@@ -143,7 +143,7 @@ namespace HordeLab
             var c = new Vector3[4];
             v.rt.GetWorldCorners(c);
             var mid = (c[0] + c[2]) * 0.5f;
-            return new Vector2(mid.x / scale, (Screen.height - mid.y) / scale);
+            return new Vector2(mid.x / scale, (ScreenFrame.Top - mid.y) / scale);
         }
 
         public void Init(Game game)
@@ -174,7 +174,8 @@ namespace HordeLab
             fader.gameObject.SetActive(false);
 
             var canvas = NewCanvas("UI Canvas", 0, true);
-            root = (RectTransform)canvas.transform;
+            root = Node("Frame", canvas.transform);      // khung 16:9 (đặt vị trí mỗi frame trong LateUpdate)
+            root.Fill();
 
             veil = Img(root, White, new Color(0.05f, 0.04f, 0.07f, 0f), false, false, "Veil");
             veilRt = veil.rectTransform;
@@ -808,9 +809,13 @@ namespace HordeLab
         {
             if (g == null) return;
             scale = Mathf.Min(Screen.width / 1920f, Screen.height / VH);   // khớp CanvasScaler Expand
-            VW = Screen.width / scale;
-            VHa = Screen.height / scale;
-            mouse = fakeMouse.HasValue ? new Vector2(fakeMouse.Value.x * scale, Screen.height - fakeMouse.Value.y * scale) : (Vector2)Input.mousePosition;
+            // giao diện nằm trong khung 16:9 giữa màn (màn dọc / 4:3 có viền trên dưới), xem ScreenFrame
+            VW = ScreenFrame.W / scale;
+            VHa = ScreenFrame.H / scale;
+            root.anchorMin = Vector2.zero; root.anchorMax = new Vector2(1f, 0f); root.pivot = Vector2.zero;
+            root.anchoredPosition = new Vector2(0f, ScreenFrame.Y0 / scale);
+            root.sizeDelta = new Vector2(0f, VHa);
+            mouse = fakeMouse.HasValue ? new Vector2(fakeMouse.Value.x * scale, ScreenFrame.Top - fakeMouse.Value.y * scale) : (Vector2)Input.mousePosition;
             if (EventSystem.current != null && EventSystem.current.currentSelectedGameObject != null) EventSystem.current.SetSelectedGameObject(null);   // Space / Enter không bấm nhầm nút vừa click
 
             // ảnh chiến trường
@@ -825,7 +830,7 @@ namespace HordeLab
                 float x0 = Mathf.Clamp((-Cfg.HalfW - cp.x) * Cfg.PPU + tw * 0.5f, 0f, tw), x1 = Mathf.Clamp((Cfg.HalfW - cp.x) * Cfg.PPU + tw * 0.5f, 0f, tw);
                 float y0 = Mathf.Clamp((-Cfg.HalfH - cp.y) * Cfg.PPU + th * 0.5f, 0f, th), y1 = Mathf.Clamp((Cfg.HalfH - cp.y) * Cfg.PPU + th * 0.5f, 0f, th);
                 viewImage.uvRect = new Rect(x0 / tw, y0 / th, (x1 - x0) / tw, (y1 - y0) / th);
-                viewImage.rectTransform.anchoredPosition = new Vector2(x0 * e, y0 * e);
+                viewImage.rectTransform.anchoredPosition = new Vector2(x0 * e, y0 * e + ScreenFrame.Y0);
                 viewImage.rectTransform.sizeDelta = new Vector2((x1 - x0) * e, (y1 - y0) * e);
             }
 
@@ -1405,7 +1410,7 @@ namespace HordeLab
             ghost.Show(def >= 0);
             if (def < 0) return;
             ghostImg.sprite = Tiles[def];
-            ghost.At(mouse.x / scale - 32f, (Screen.height - mouse.y) / scale - 32f, 64f, 64f);
+            ghost.At(mouse.x / scale - 32f, (ScreenFrame.Top - mouse.y) / scale - 32f, 64f, 64f);
         }
 
         // ------------------------------------------------------------------
@@ -1565,7 +1570,7 @@ namespace HordeLab
             }
             tipBody.At(pad, pad + headH, w - 2f * pad, bodyH + 4f);
 
-            float mx = mouse.x / scale, my = (Screen.height - mouse.y) / scale;
+            float mx = mouse.x / scale, my = (ScreenFrame.Top - mouse.y) / scale;
             float x = mx + 24f, y = my + 14f;
             if (x + w > VW - 6f) x = mx - w - 14f;
             y = Mathf.Clamp(y, TopH + 4f, VHa - h - 6f);

@@ -4,6 +4,21 @@ using UnityEngine;
 namespace HordeLab
 {
     /// <summary>
+    /// Khung hiển thị của game (pixel màn hình). Màn rộng từ 16:9 trở lên: cả màn hình. Màn hẹp / cao hơn 16:9
+    /// (màn dọc, 16:10, 4:3): một khung 16:9 nằm giữa, trên dưới để viền tối → bố cục y hệt màn ngang, không bị hở giữa.
+    /// </summary>
+    public static class ScreenFrame
+    {
+        public static int W => Screen.width;
+        public static int H => Mathf.Min(Screen.height, Mathf.RoundToInt(Screen.width * 9f / 16f));
+        /// <summary>Mép dưới của khung (pixel từ mép dưới màn hình).</summary>
+        public static int Y0 => (Screen.height - H) / 2;
+        public static int Top => Y0 + H;
+        /// <summary>Toạ độ màn hình → toạ độ trong khung (gốc dưới-trái của khung).</summary>
+        public static Vector2 ToFrame(Vector2 p) => new Vector2(p.x, p.y - Y0);
+    }
+
+    /// <summary>
     /// Camera pixel-perfect: vẽ chiến trường vào 1 RenderTexture độ phân giải thấp (1 pixel nghệ thuật = 1 texel),
     /// rồi phóng to NGUYÊN LẦN (x1, x2, x3...) lên màn hình với lọc Point → mọi thứ, kể cả mũi tên xoay
     /// và hạt lửa, đều ra chất pixel.
@@ -66,27 +81,27 @@ namespace HordeLab
         /// <summary>Mức phóng lớn nhất mà cả chiến trường vẫn lọt vùng hiển thị (dưới thanh giao diện).</summary>
         void ComputeFit()
         {
-            float fit = math.min(Screen.width / (float)Cfg.GroundW, ViewHeight / (float)Cfg.GroundH);
+            float fit = math.min(ScreenFrame.W / (float)Cfg.GroundW, ViewHeight / (float)Cfg.GroundH);
             MinScale = math.max(1, (int)math.floor(fit + 1e-4f));
             fitK = fit / MinScale;                               // >= 1 khi có dư; < 1 khi cửa sổ quá nhỏ (thu nhỏ cho vừa)
         }
-        float ViewHeight => math.max(1f, Screen.height - TopInsetPx);
+        float ViewHeight => math.max(1f, ScreenFrame.H - TopInsetPx);
 
         void EnsureTarget()
         {
             int inset = Mathf.RoundToInt(TopInsetPx);
-            if (Target != null && lastW == Screen.width && lastH == Screen.height && lastScale == Scale && lastInset == inset) return;
-            if (lastW != Screen.width || lastH != Screen.height || lastInset != inset)
+            if (Target != null && lastW == ScreenFrame.W && lastH == ScreenFrame.H && lastScale == Scale && lastInset == inset) return;
+            if (lastW != ScreenFrame.W || lastH != ScreenFrame.H || lastInset != inset)
             {
                 ComputeFit();                                // đổi cỡ cửa sổ / thanh giao diện: tính lại mức vừa khít
                 Scale = math.clamp(Scale, MinScale, MinScale + 5);
             }
-            lastW = Screen.width;
-            lastH = Screen.height;
+            lastW = ScreenFrame.W;
+            lastH = ScreenFrame.H;
             lastScale = Scale;
             lastInset = inset;
 
-            int w = Mathf.CeilToInt(Screen.width / Eff);
+            int w = Mathf.CeilToInt(ScreenFrame.W / Eff);
             int h = Mathf.CeilToInt(ViewHeight / Eff);
             w += w & 1; // kích thước chẵn → mép pixel trùng lưới 1/PPU
             h += h & 1;
@@ -112,6 +127,7 @@ namespace HordeLab
             scale = math.clamp(scale, MinScale, MinScale + 5);   // không thu nhỏ quá mức vừa khít chiến trường
             if (scale == Scale) return;
             float2 anchorWorld = ScreenToWorld(anchorScreen);
+            anchorScreen = ScreenFrame.ToFrame(anchorScreen);
             Scale = scale;
             EnsureTarget();
             // giữ điểm dưới chuột đứng yên khi zoom
@@ -162,6 +178,7 @@ namespace HordeLab
 
         public float2 ScreenToWorld(Vector2 screen)
         {
+            screen = ScreenFrame.ToFrame(screen);
             Vector3 cp = Cam.transform.position;
             float px = screen.x / Eff, py = screen.y / Eff;
             return new float2(cp.x, cp.y) + new float2(px - Target.width * 0.5f, py - Target.height * 0.5f) / Cfg.PPU;
