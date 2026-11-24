@@ -29,7 +29,7 @@ namespace HordeLab
         public const int StartCrystals = 5;             // đủ mua 1 thẻ ngay đợt đầu
         public static int CrystalReward(int wave) => 6 + wave / 2;   // đợt 1: 6, đợt 10: 11, đợt 20: 16, đợt 30: 21
         // Lãi: hết mỗi đợt, cứ InterestStep Tinh thể đang giữ thì được thêm 1, tối đa InterestMax → để dành mới có lợi
-        public const int InterestStep = 5, InterestMax = 3;
+        public const int InterestStep = 10, InterestMax = 5;   // giống TFT
         public static int Interest(int held) => Mathf.Min(Mathf.Max(held, 0) / InterestStep, InterestMax);
         public static int CardPrice(Cat c) => c == Cat.Expand ? 5 : c == Cat.Barracks || c == Cat.BuffMil ? 4 : 3;
 

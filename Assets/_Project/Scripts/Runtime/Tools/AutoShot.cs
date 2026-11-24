@@ -198,7 +198,7 @@ namespace HordeLab
                         foreach (var t in tiers) t.stars = 1;
                         game.city.Recompute();
                     }
-                    game.crystals = 15;                    // giữ 15 Tinh thể qua đợt 1 → hết đợt phải được lãi +3
+                    game.crystals = 50;                    // giữ 50 Tinh thể qua đợt 1 → hết đợt phải được lãi tối đa +5
                     // Cầm 1 thẻ 2 sao trên tay để thử lưu cả số sao của thẻ
                     Vector2Int held = default; bool holding = false;
                     foreach (var kv in game.city.cells)
