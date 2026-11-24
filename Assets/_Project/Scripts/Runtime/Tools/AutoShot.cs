@@ -262,6 +262,9 @@ namespace HordeLab
                     game.ui.fakeMouse = new Vector2(164f, 270f);          // rê vào ô đầu tiên của lưới để chụp tooltip
                     yield return Frames(5); Shot("03b_tooltip.png"); yield return Frames(3);
                     game.ui.fakeMouse = null;
+                    game.ui.TogglePauseForTest(); game.ui.OpenSettings();   // Settings mở từ menu tạm dừng phải nằm trên
+                    yield return Frames(4); Shot("03i_settings_tu_pause.png"); yield return Frames(2);
+                    game.ui.CloseSettings(); game.ui.TogglePauseForTest(); yield return Frames(2);
                     game.ui.fakeMouse = new Vector2(1920f - 200f, 36f);    // rê vào Tinh thể trên thanh trên: tooltip chỉ có chữ
                     yield return Frames(5); Shot("03h_tooltip_chu.png"); yield return Frames(3);
                     game.ui.fakeMouse = null;

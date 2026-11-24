@@ -752,8 +752,17 @@ namespace HordeLab
             settings.gameObject.SetActive(false);
         }
 
-        public void OpenSettings() { settings.gameObject.SetActive(true); settings.SetAsLastSibling(); }
-        public void CloseSettings() => settings.gameObject.SetActive(false);
+        public void OpenSettings()
+        {
+            settings.gameObject.SetActive(true);
+            settings.SetAsLastSibling();
+            pause.GetChild(0).gameObject.SetActive(false);          // mở từ menu tạm dừng: ẩn khung Paused cho khỏi lấp ló phía sau
+        }
+        public void CloseSettings()
+        {
+            settings.gameObject.SetActive(false);
+            pause.GetChild(0).gameObject.SetActive(true);
+        }
 
         void RefreshSettings()
         {
@@ -765,6 +774,8 @@ namespace HordeLab
             setBtns[3].Label().Set(On(Settings.BattleShopOpen));
             setBtns[4].Label().Set($"x{Settings.BattleSpeed}");
         }
+
+        public void TogglePauseForTest() => TogglePause();
 
         void TogglePause()
         {
@@ -1475,6 +1486,7 @@ namespace HordeLab
                                 : $"All {Tuning.Hearts} hearts lost on wave {g.lastWave}.");
             }
             if (pause.gameObject.activeSelf) pause.SetAsLastSibling();
+            if (SettingsOpen) settings.SetAsLastSibling();          // Settings (mở từ menu tạm dừng) luôn nằm trên cùng
         }
 
         // ------------------------------------------------------------------
@@ -1549,6 +1561,7 @@ namespace HordeLab
             tip.At(x, y, w, h);
             tip.SetAsLastSibling();
             if (pause.gameObject.activeSelf) pause.SetAsLastSibling();
+            if (SettingsOpen) settings.SetAsLastSibling();          // Settings (mở từ menu tạm dừng) luôn nằm trên cùng
         }
 
         static string ShapeName(Shape s) =>
