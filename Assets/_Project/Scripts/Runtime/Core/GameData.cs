@@ -31,8 +31,8 @@ namespace HordeLab
         public const float MarketTrade = 5f;            // Market: mỗi chu kỳ đổi 5 Vàng lấy 5 tài nguyên đã chọn (x số sao)
         // ---- Độ khó (chọn ở màn chọn phe): Easy / Normal / Hard. Hard = cân bằng gốc ----
         public static readonly string[] DiffName = { "Easy", "Normal", "Hard" };
-        public static readonly float[] DiffSquads = { 0.6f, 0.8f, 1f };      // số tiểu đội địch
-        public static readonly float[] DiffBoss = { 0.6f, 0.8f, 1f };        // máu boss đợt trùm (nhân thêm)
+        public static readonly float[] DiffSquads = { 0.7f, 0.85f, 1f };      // số tiểu đội địch
+        public static readonly float[] DiffBoss = { 0.7f, 0.85f, 1f };        // máu boss đợt trùm (nhân thêm)
         public static readonly int[] DiffCrystals = { 5, 2, 0 };             // tinh thể khởi đầu cộng thêm             // đủ mua 1 thẻ ngay đợt đầu
         public const int CrystalReward = 5;             // mỗi đợt cố định như TFT, thắng hay thua đều nhận
         public const int WinBonus = 1;                  // giữ được thành thì thêm, thua không có
