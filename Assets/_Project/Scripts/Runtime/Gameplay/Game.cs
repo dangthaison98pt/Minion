@@ -356,10 +356,12 @@ namespace HordeLab
             if (phase != Phase.Prep || index < 0 || index >= hand.Count) return false;
             int card = hand[index], stars = HandStars(index);
             if (CanReplace(card, stars, p)) return Replace(index, p);
-            bool ok = card == B.Expand ? city.Expand(p)
-                    : city.CanPlace(p) ? city.Place(p, card, stars)
-                    : city.MergeCard(p, card, stars);
+            bool merged = false, ok;
+            if (card == B.Expand) ok = city.Expand(p);
+            else if (city.CanPlace(p)) ok = city.Place(p, card, stars);
+            else ok = merged = city.MergeCard(p, card, stars);
             if (ok) { RemoveCard(index); SaveRun(); }
+            if (merged) onMerged?.Invoke(p, city.Get(p).stars);
             return ok;
         }
 
@@ -438,10 +440,17 @@ namespace HordeLab
         /// <summary>Kéo công trình sang ô khác: gộp nếu được, không thì đổi chỗ.</summary>
         public bool MoveBuilding(Vector2Int from, Vector2Int to)
         {
+            var target = city.Get(to);
+            int before = target != null ? target.stars : 0;
             if (phase != Phase.Prep || !city.MoveOrMerge(from, to)) return false;
             SaveRun();
+            // gộp: nhà ở ô đích vẫn là nhà cũ nhưng thêm sao (đổi chỗ thì ô đích là nhà khác)
+            if (target != null && city.Get(to) == target && target.stars > before) onMerged?.Invoke(to, target.stars);
             return true;
         }
+
+        /// <summary>Báo giao diện vừa gộp lên sao ở ô nào (để chạy hiệu ứng nháy sao).</summary>
+        public System.Action<Vector2Int, int> onMerged;
 
         public void PickReward(int i)
         {

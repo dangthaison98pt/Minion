@@ -254,6 +254,24 @@ namespace HordeLab
                     AugTest();
                     if (!Headless)
                     {
+                        // tooltip nhà lính (icon chỉ số) + hiệu ứng gộp lên sao
+                        Vector2Int bp = default; bool hasB = false;
+                        foreach (var kv in game.city.cells) if (kv.Value != null && kv.Value.Def.cat == Cat.Barracks) { bp = kv.Key; hasB = true; break; }
+                        if (hasB)
+                        {
+                            game.ui.fakeMouse = game.ui.CellUiPos(bp);
+                            yield return Frames(6); Shot("03f_tooltip_nha_linh.png"); yield return Frames(3);
+                            game.ui.fakeMouse = null;
+                            var bb = game.city.Get(bp);
+                            game.hand.Add(bb.def); game.handStars.Add(bb.stars);
+                            game.PlayCard(game.hand.Count - 1, bp);
+                            yield return new WaitForSecondsRealtime(0.18f); Shot("03g_gop_sao.png"); yield return Frames(3);
+                            yield return new WaitForSecondsRealtime(1f);
+                            bb.stars = 1; game.city.Recompute();
+                        }
+                    }
+                    if (!Headless)
+                    {
                         // Chụp 4 hạng sao (đồng / bạc / vàng / bạch kim) trên lưới: tạm nâng 4 nhà lên 1..4 sao rồi trả lại
                         var tiers = new List<Building>();
                         foreach (var kv in game.city.cells) if (kv.Value != null && tiers.Count < Tuning.MaxStars) tiers.Add(kv.Value);

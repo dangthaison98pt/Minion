@@ -96,6 +96,8 @@ namespace HordeLab
             public Image tile, strip, starBg, shape, frame, tint, bar;
             public TextMeshProUGUI name;
             public Image[] stars = new Image[Tuning.MaxStars];
+            public Image burst;           // hiệu ứng gộp lên sao: ngôi sao to bật lên giữa ô
+            public float mergedAt = -99f;
         }
 
         class CardView { public RectTransform rt; public Image bg, tile, frame, starBg; public readonly Image[] stars = new Image[Tuning.MaxStars]; public CanvasGroup group; }
@@ -114,9 +116,20 @@ namespace HordeLab
         // ==================================================================
         // Dựng
         // ==================================================================
+        /// <summary>Công cụ kiểm tra: toạ độ giao diện (gốc trên-trái) của tâm ô lưới, để rê chuột giả vào.</summary>
+        public Vector2? CellUiPos(Vector2Int p)
+        {
+            if (!cells.TryGetValue(p, out var v)) return null;
+            var c = new Vector3[4];
+            v.rt.GetWorldCorners(c);
+            var mid = (c[0] + c[2]) * 0.5f;
+            return new Vector2(mid.x / scale, (Screen.height - mid.y) / scale);
+        }
+
         public void Init(Game game)
         {
             g = game;
+            game.onMerged += OnMerged;
             battle = game.battle;
             city = game.city;
             UiKit.Load(battle.UnitAtlas);
@@ -317,6 +330,13 @@ namespace HordeLab
             startHint = Txt(dock, "", 14f, TextAlignmentOptions.Center, false, true, Grey);
         }
 
+        /// <summary>1 ô "icon + số" trong tooltip. br = xuống hàng trước ô này.</summary>
+        struct TipChip { public Sprite icon; public string text; public bool br; public TipChip(Sprite i, string t, bool b = false) { icon = i; text = t; br = b; } }
+        readonly List<TipChip> chips = new List<TipChip>();
+        readonly List<Image> chipIcons = new List<Image>();
+        readonly List<TextMeshProUGUI> chipTexts = new List<TextMeshProUGUI>();
+        TextMeshProUGUI tipExtra;
+
         void BuildTooltip()
         {
             var p = Panel(root, true, "Tooltip");
@@ -328,6 +348,7 @@ namespace HordeLab
             tipSub = Txt(tip, "", 14f, TextAlignmentOptions.TopLeft, false, false, Grey);
             tipLine = Img(tip, White, new Color(0.85f, 0.75f, 0.5f, 0.5f));
             tipBody = Txt(tip, "", 15f, TextAlignmentOptions.TopLeft, false, true);
+            tipExtra = Txt(tip, "", 14f, TextAlignmentOptions.TopLeft, false, true);
             for (int i = 0; i < tipStars.Length; i++) tipStars[i] = Img(tip, Star, Color.white);
         }
 
@@ -772,8 +793,18 @@ namespace HordeLab
             v.barFill.offsetMin = new Vector2(1f, 1f); v.barFill.offsetMax = new Vector2(-1f, -1f);
             v.frame = Frame(v.rt, Color.white);
             v.frame.Fill();
+            v.burst = Img(v.rt, Star, Color.white);
+            v.burst.Show(false);
             cells[p] = v;
             return v;
+        }
+
+        /// <summary>Gộp lên sao: ô nháy trắng, sao to bật ra giữa ô rồi mờ dần, hàng sao nhỏ nảy lên (khoảng 0,9 giây).</summary>
+        const float MergeFxTime = 0.9f;
+
+        void OnMerged(Vector2Int p, int stars)
+        {
+            GetCell(p).mergedAt = Time.unscaledTime;
         }
 
         void DrawCell(CellView v, Vector2Int p, bool open, Building b, float cell, bool over, int dragDef)
@@ -781,6 +812,9 @@ namespace HordeLab
             bool labelled = cell >= 60f, large = cell >= 90f;
             v.frame.Show(false);
             v.tint.color = Color.clear;
+            float mt = Time.unscaledTime - v.mergedAt;
+            bool merging = b != null && mt < MergeFxTime;
+            v.burst.Show(merging);
             if (b == null)
             {
                 v.tile.sprite = Tiles[open ? PixelArt.TileEmpty : PixelArt.TileCandidate];
@@ -812,10 +846,28 @@ namespace HordeLab
             float st = large ? 14f : labelled ? 11f : 8f;
             v.starBg.Show(true);
             v.starBg.At(0f, 0f, 4f + b.stars * (st - 1f), st + 3f);
+            float pop = merging && mt < 0.5f ? 1f + 0.7f * Mathf.Sin(mt / 0.5f * Mathf.PI) : 1f;   // hàng sao nảy lên
             for (int i = 0; i < v.stars.Length; i++)
             {
                 v.stars[i].Show(i < b.stars);
-                if (i < b.stars) { v.stars[i].At(2f + i * (st - 1f), 1f, st, st); v.stars[i].sprite = StarFor(b.stars); }
+                if (i < b.stars)
+                {
+                    float s2 = st * pop;
+                    v.stars[i].At(2f + i * (st - 1f) + (st - s2) * 0.5f, 1f + (st - s2) * 0.5f, s2, s2);
+                    v.stars[i].sprite = StarFor(b.stars);
+                }
+            }
+            if (merging)
+            {
+                // ô nháy trắng rồi tắt dần, sao to (màu hạng mới) phồng ra rồi mờ dần
+                float k = mt / MergeFxTime;
+                v.tint.color = new Color(1f, 0.9f, 0.55f, 0.45f * Mathf.Clamp01(1f - mt / 0.3f));
+                float e = Mathf.Min(1f, mt / 0.3f);
+                float size = cell * (0.2f + 0.35f * (1f - (1f - e) * (1f - e)));               // phồng nhanh rồi đứng
+                v.burst.sprite = StarFor(b.stars);
+                v.burst.color = new Color(1f, 1f, 1f, 0.9f * Mathf.Clamp01((1f - k) * 1.6f));
+                v.burst.At((cell - size) * 0.5f, (cell - size) * 0.5f, size, size);
+                v.burst.transform.SetAsLastSibling();
             }
 
             bool shape = d.shape != Shape.None && labelled;
@@ -1045,19 +1097,48 @@ namespace HordeLab
         // ------------------------------------------------------------------
         void RefreshTooltip(bool blocked)
         {
-            string title = null, sub = null, body = tipText;
+            string title = null, sub = null, body = tipText, extra = null;
             int stars = 0;
+            chips.Clear();
             if (replaceTip != null) body = replaceTip;
-            else if (infoDef >= 0) InfoParts(infoDef, infoBuilding, out title, out sub, out body, out stars, infoStars);
+            else if (infoDef >= 0) InfoParts(infoDef, infoBuilding, out title, out sub, out body, out stars, infoStars, chips, out extra);
             bool show = !blocked && (replaceTip != null || (dragCard < 0 && !dragFromCell)) && (title != null || !string.IsNullOrEmpty(body));
             tip.Show(show);
             if (!show) return;
 
-            const float w = 350f, pad = 18f;
+            const float w = 350f, pad = 18f, chipH = 24f, icon = 20f;
             float headH = title != null ? 54f : 0f;
             tipBody.Set(body ?? "");
             float bodyH = string.IsNullOrEmpty(body) ? 0f : tipBody.GetPreferredValues(body, w - 2f * pad, 0f).y;
-            float h = pad + headH + bodyH + pad;
+
+            // hàng "icon + số": xếp trái sang phải, tràn thì xuống hàng
+            float y0 = pad + headH + bodyH + (bodyH > 0f ? 8f : 0f), cx = pad, cy = y0;
+            while (chipIcons.Count < chips.Count)
+            {
+                chipIcons.Add(Img(tip, null, Color.white, false, false, "Chip icon"));
+                chipTexts.Add(Txt(tip, "", 15f, TextAlignmentOptions.MidlineLeft, true));
+            }
+            for (int i = 0; i < chipIcons.Count; i++)
+            {
+                bool on = i < chips.Count;
+                chipIcons[i].Show(on); chipTexts[i].Show(on);
+                if (!on) continue;
+                var c = chips[i];
+                chipTexts[i].Set(c.text);
+                float tw = chipTexts[i].GetPreferredValues(c.text).x + 2f;
+                float cw = icon + 4f + tw;
+                if ((c.br && cx > pad) || cx + cw > w - pad) { cx = pad; cy += chipH; }
+                chipIcons[i].sprite = c.icon;
+                chipIcons[i].At(cx, cy + (chipH - icon) * 0.5f, icon, icon);
+                chipTexts[i].At(cx + icon + 4f, cy, tw, chipH);
+                cx += cw + 12f;
+            }
+            float chipsH = chips.Count > 0 ? cy + chipH - y0 + 6f : 0f;
+            tipExtra.Set(extra ?? "");
+            float extraH = string.IsNullOrEmpty(extra) ? 0f : tipExtra.GetPreferredValues(extra, w - 2f * pad, 0f).y;
+            tipExtra.Show(extraH > 0f);
+            tipExtra.At(pad, y0 + chipsH, w - 2f * pad, extraH + 4f);
+            float h = y0 + chipsH + extraH + pad;
 
             tipTitle.Show(title != null); tipSub.Show(title != null); tipLine.Show(title != null);
             for (int i = 0; i < tipStars.Length; i++) tipStars[i].Show(title != null && i < stars);
@@ -1083,6 +1164,67 @@ namespace HordeLab
 
         static string ShapeName(Shape s) =>
             s == Shape.Cross ? "cross (4 tiles)" : s == Shape.Ring ? "ring (8 tiles)" : s == Shape.Below ? "the tile below" : "the whole row";
+
+        /// <summary>
+        /// Tooltip gọn: mô tả ngắn + hàng icon chỉ số (<paramref name="chipsOut"/>) + vài dòng phụ (<paramref name="extra"/>: bonus, gợi ý).
+        /// Bản không có icon (thẻ phần thưởng) vẫn dùng InfoParts dạng chữ bên dưới.
+        /// </summary>
+        void InfoParts(int def, Building b, out string title, out string sub, out string body, out int stars, int cardStars,
+                       List<TipChip> chipsOut, out string extra)
+        {
+            var d = GameData.Buildings[def];
+            stars = d.cat == Cat.Expand ? 0 : b != null ? b.stars : cardStars;
+            title = d.name;
+            sub = $"{GameData.CatName[(int)d.cat]}{(d.faction >= 0 ? " · " + GameData.Factions[d.faction].name : "")}";
+            body = d.desc;
+            var ex = new StringBuilder();
+            string W(string s) => $"<color=#ffffff>{s}</color>";
+
+            if (d.cat == Cat.Barracks)
+            {
+                var u = GameData.Units[d.unit];
+                var f = GameData.Factions[d.faction];
+                Res cost = b != null ? city.CallCost(b) : new Res(u.cost.pop * f.popCostMul, u.cost.food, u.cost.wood, u.cost.gold);
+                float period = d.period / (b != null ? b.speed : 1f);
+                float power = b != null ? city.TroopPower(b) : 1f;
+                chipsOut.Add(new TipChip(UnitIcons[d.unit], W($"x{f.squadSide * f.squadSide}")));
+                chipsOut.Add(new TipChip(Heart, W($"{u.stats.maxHp * power * (b != null ? b.hp : 1f):0}")));
+                chipsOut.Add(new TipChip(StatIcons[PixelArt.StatDamage], W($"{u.stats.damage * power * (b != null ? b.dmg : 1f):0.#}")));
+                chipsOut.Add(new TipChip(StatIcons[PixelArt.StatRange], W($"{u.stats.range:0.#}")));
+                chipsOut.Add(new TipChip(StatIcons[PixelArt.StatSpeed], W($"{u.stats.speed:0.#}")));
+                if (u.stats.splash > 0f) chipsOut.Add(new TipChip(StatIcons[PixelArt.StatSplash], W($"{u.stats.splash:0.#}")));
+                chipsOut.Add(new TipChip(StatIcons[PixelArt.StatTime], W($"{period:0.#}s"), true));
+                for (int r = 0; r < ResId.Count; r++)
+                    if (cost[r] > 0.01f) chipsOut.Add(new TipChip(ResIcons[r], $"<color=#ff9f8f>-{cost[r]:0.#}</color>"));
+                if (b != null)
+                {
+                    if (b.regen > 0f) ex.Append($"<color=#9fe07a>Regenerates {b.regen:0.#} HP/s</color>\n");
+                    if (b.costMul < 0.999f) ex.Append($"<color=#9fe07a>-{(1f - b.costMul) * 100f:0}% cost</color>\n");
+                }
+                if (u.stats.minRange > 0f) ex.Append($"<color=#aaaaaa>Cannot hit targets closer than {u.stats.minRange:0.#}</color>\n");
+            }
+            else if (d.period > 0f)
+            {
+                float per = b != null ? d.period / b.speed : d.period;
+                float y = b != null ? city.Yield(b) : d.amount;
+                bool known = b != null || (def != B.Market && def != B.TownHall && def != B.HunterLodge);
+                chipsOut.Add(new TipChip(StatIcons[PixelArt.StatTime], W($"{per:0.#}s")));
+                if (known) chipsOut.Add(new TipChip(ResIcons[d.res], $"<color=#9fe07a>+{y:0.#}</color>"));
+                if (b != null && b.def == B.Nursery) ex.Append("<color=#aaaaaa>Still growing</color>\n");
+                if (b != null && b.def == B.HunterLodge) ex.Append($"<color=#aaaaaa>{b.edges} wild edges</color>\n");
+            }
+            if (d.shape != Shape.None) chipsOut.Add(new TipChip(Shapes[(int)d.shape], W(ShapeName(d.shape)), true));
+
+            // gợi ý gộp / bán bằng icon
+            if ((b != null || cardStars > 1) && d.cat != Cat.Expand && stars < Tuning.MaxStars)
+            {
+                chipsOut.Add(new TipChip(StarFor(stars), "<color=#aaaaaa>x2 =</color>", true));       // 2 nhà cùng sao = 1 nhà thêm 1 sao
+                chipsOut.Add(new TipChip(StarFor(stars + 1), $"<color=#ffd84a>{stars + 1}</color>"));
+            }
+            if (b != null && g.phase == Phase.Prep)
+                chipsOut.Add(new TipChip(Crystal, $"<color=#8fe8ff>+{g.SellValue(b.stars)}</color> <color=#aaaaaa>sell</color>", stars >= Tuning.MaxStars));
+            extra = ex.ToString().TrimEnd('\n');
+        }
 
         void InfoParts(int def, Building b, out string title, out string sub, out string body, out int stars, int cardStars = 1)
         {
