@@ -685,7 +685,20 @@ namespace HordeLab
             while (i < n)
             {
                 Arrow a = arrows[i];
-                if (a.t < 1f) { i++; continue; }
+                if (a.t < 1f)
+                {
+                    if (a.kind == Proj.Meteor)
+                    {
+                        // thiên thạch kéo theo vệt lửa + khói suốt đường bay
+                        float2 g = math.lerp(a.from, a.to, a.t);
+                        float2 back = math.normalizesafe(a.from - a.to);
+                        for (int k = 0; k < 3; k++)
+                            Fx.Emit(particles, counters, new Particle { pos = g + back * rng.NextFloat(0.5f, 1.4f) + rng.NextFloat2(-0.25f, 0.25f), vel = back * rng.NextFloat(0.5f, 2f), h = 0.2f, vh = rng.NextFloat(0.3f, 1.2f), maxLife = rng.NextFloat(0.3f, 0.6f), kind = PKind.Fire });
+                        Fx.Emit(particles, counters, new Particle { pos = g + back * rng.NextFloat(1f, 2f) + rng.NextFloat2(-0.3f, 0.3f), vel = back * rng.NextFloat(0.2f, 1f), h = 0.3f, vh = rng.NextFloat(0.5f, 1.2f), maxLife = rng.NextFloat(0.8f, 1.5f), kind = PKind.Smoke });
+                    }
+                    i++;
+                    continue;
+                }
 
                 if (a.wall != 0)
                 {
@@ -695,7 +708,16 @@ namespace HordeLab
                 else if (a.splash > 0f)
                 {
                     Fx.Splash(units, cellStart, sortedIndex, nu, a.to, a.splash, 1 - a.team, a.damage * rng.NextFloat(0.85f, 1.15f), a.slow);
-                    if (a.kind == Proj.Cannonball)
+                    if (a.kind == Proj.Meteor)
+                    {
+                        Fx.Flames(particles, counters, ref rng, a.to, a.splash * 0.8f, 40, PKind.Fire, 1.1f);
+                        Fx.Flames(particles, counters, ref rng, a.to, a.splash * 0.7f, 16, PKind.Smoke, 2.6f);
+                        Fx.Ring(particles, counters, a.to, a.splash, 18, PKind.Fire);
+                        Fx.Spray(particles, counters, ref rng, a.to, 0.4f, 18, PKind.Dust, 5f, 7f);
+                        for (int k = 0; k < 3; k++)
+                            Fx.Stamp(stamps, counters, a.to + rng.NextFloat2Direction() * rng.NextFloat(0f, a.splash * 0.5f), StampCell.Scorch + rng.NextInt(0, 4), rng.NextInt(0, 8));
+                    }
+                    else if (a.kind == Proj.Cannonball)
                     {
                         Fx.Flames(particles, counters, ref rng, a.to, a.splash * 0.6f, 22, PKind.Fire, 0.9f);
                         Fx.Flames(particles, counters, ref rng, a.to, a.splash * 0.6f, 8, PKind.Smoke, 2f);
@@ -953,7 +975,7 @@ namespace HordeLab
             gpu[i] = new ArrowGpu
             {
                 a = new float4(g, h, a.kind),
-                b = new float4(math.atan2(vg.y + vh, vg.x), math.atan2(vg.y, vg.x), 0f, 0f)
+                b = new float4(math.atan2(vg.y + vh, vg.x), math.atan2(vg.y, vg.x), a.kind == Proj.Meteor ? 1f : 0f, 0f)   // z = 1: không có bóng
             };
         }
     }

@@ -43,6 +43,7 @@ Shader "Horde/Arrows"
                 ArrowGpu g = _Arrows[iid];
                 float2 c = kCorners[vid];
                 bool shadow = _Shadow > 0.5;
+                if (shadow && g.b.z > 0.5) c = 0;              // b.z = 1: không vẽ bóng (thiên thạch rơi từ trời)
 
                 float s, co;
                 sincos(shadow ? g.b.y : g.b.x, s, co);

@@ -294,6 +294,15 @@ namespace HordeLab
                     }
                     if (!shot && Time.time >= shotAt)
                     {
+                        if (game.Has(Aug.Meteor))
+                        {
+                            // chụp thiên thạch đang rơi và lúc nổ
+                            battle.speed = 1;
+                            game.FireMeteorNow();
+                            yield return new WaitForSeconds(0.6f); Shot("04c_thien_thach_roi.png");
+                            yield return new WaitForSeconds(0.75f); Shot("04d_thien_thach_no.png");
+                            yield return Frames(3);                    // mỗi frame chỉ chụp được 1 tấm
+                        }
                         Shot("04_tran_danh.png");
                         shot = true;
                         if (!zoomed)

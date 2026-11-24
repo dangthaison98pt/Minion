@@ -101,9 +101,10 @@ namespace HordeLab
     public static class Proj
     {
         public const int Arrow = 0, ElfArrow = 1, Bolt = 2, Rock = 3, Cannonball = 4, Javelin = 5, NatureOrb = 6, VoidOrb = 7, LightOrb = 8;
-        public const int Count = 9;
+        public const int Meteor = 9, BigBolt = 10;   // lõi Meteor Shower / Ballista Towers
+        public const int Count = 11;
         /// <summary>Đạn xuyên (tên, tên tiên, nỏ, lao) — bị arrowResist giảm sát thương.</summary>
-        public static bool Piercing(int kind) => kind <= Bolt || kind == Javelin;
+        public static bool Piercing(int kind) => kind <= Bolt || kind == Javelin || kind == BigBolt;
     }
 
     public static class PKind

@@ -573,6 +573,9 @@ namespace HordeLab
         // ------------------------------------------------------------------
         public int MaxCastleHp => Tuning.CastleHp + (Has(Aug.Walls) ? Aug.WallsHp : 0);
 
+        /// <summary>Công cụ kiểm tra: thiên thạch kế tiếp rơi ngay bước sau.</summary>
+        public void FireMeteorNow() => meteorT = 0f;
+
         /// <summary>Lõi huyền thoại trong trận: rồng, thiên thạch, nỏ trên tường, lính đánh thuê. Mạnh dần theo đợt như quân địch.</summary>
         void LegendaryStep(float dt)
         {
@@ -589,7 +592,8 @@ namespace HordeLab
             if (Has(Aug.Meteor) && (meteorT -= dt) <= 0f && battle.PickEnemy(0, false, out var target))
             {
                 // rơi chéo từ trên trời xuống: điểm xuất phát lệch sang trái, vòng cung cao
-                battle.FireProjectile(0, target + new float2(-9f, 4f), target, Aug.MeteorDamage * power, Aug.MeteorSplash, Proj.Cannonball, 16f, 9f);
+                // rơi chéo từ trên trời xuống (điểm xuất phát cao hẳn trên màn hình), kéo vệt lửa
+                battle.FireProjectile(0, target + new float2(-6f, 14f), target, Aug.MeteorDamage * power, Aug.MeteorSplash, Proj.Meteor, 12f, 0.5f);
                 meteorsFired++;
                 meteorT = Aug.MeteorEvery;
             }
@@ -599,7 +603,7 @@ namespace HordeLab
                 ballistaT = Aug.BallistaEvery;
                 if (battle.PickEnemy(0, true, out var near) && near.x < Cfg.WallX + Aug.BallistaRange)
                 {
-                    battle.FireProjectile(0, new float2(Cfg.WallX - 0.5f, near.y), near, Aug.BallistaDamage * power, 0f, Proj.Bolt, 30f, 0.6f);
+                    battle.FireProjectile(0, new float2(Cfg.WallX - 0.5f, near.y), near, Aug.BallistaDamage * power, 0f, Proj.BigBolt, 30f, 0.6f);
                     boltsFired++;
                 }
             }

@@ -50,7 +50,7 @@ Shader "Horde/Units"
                 v2f o;
                 o.pos = mul(UNITY_MATRIX_VP, float4(p, DepthFromY(u.y), 1.0));
                 o.uv = float2((col + local.x * k) / _Atlas.x, 1.0 - (row + k * (1.0 - local.y)) / _Atlas.y);
-                o.fx = float2((flags & 2u) ? 1.0 : 0.0, (flags & 4u) ? 1.0 : 0.0);
+                o.fx = float2((flags & 2u) ? ((flags & 8u) ? 0.35 : 1.0) : 0.0, (flags & 4u) ? 1.0 : 0.0);   // quân khổng lồ nháy nhẹ thôi
                 return o;
             }
 

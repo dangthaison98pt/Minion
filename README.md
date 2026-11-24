@@ -86,9 +86,9 @@ class `Aug` và `GameData.BuildAugments()` trong [`GameData.cs`](Assets/_Project
 | Tiện ích | Land Grant | Nhận ngay 2 thẻ Mở rộng đất |
 | Tiện ích | Veteran Recruits | Nhận ngay 1 nhà lính 2 sao ngẫu nhiên của phe mình |
 | Tiện ích | Master Architect | Nhà buff mạnh hơn 40% |
-| Huyền thoại | Dragon's Pact | Mỗi đợt có 1 con rồng khổng lồ (loại quân `UnitType.Dragon`) đi bộ chặn đường, đẩy lính dạt ra, phun lửa lan; vảy giảm 60% sát thương từ tên / nỏ / lao; chết thì 30 giây sau quay lại |
-| Huyền thoại | Meteor Shower | Mỗi 6 giây 1 thiên thạch rơi vào 1 tên địch ngẫu nhiên, sát thương lan + biển lửa |
-| Huyền thoại | Ballista Towers | Tường thành bắn nỏ vào tên địch gần tường nhất (tầm 40), khoảng 1 phát / giây |
+| Huyền thoại | Dragon's Pact | Mỗi đợt có 1 con rồng khổng lồ (loại quân `UnitType.Dragon`) đi bộ chặn đường, đẩy lính dạt ra, phun lửa lan; vảy giảm 80% sát thương từ tên / nỏ / lao; chết thì 30 giây sau quay lại |
+| Huyền thoại | Meteor Shower | Mỗi 6 giây 1 thiên thạch (đạn `Proj.Meteor`: đầu đá cháy + đuôi lửa, kéo vệt lửa / khói) rơi chéo từ trời vào 1 tên địch ngẫu nhiên; nổ lửa lan + vết cháy |
+| Huyền thoại | Ballista Towers | Tường thành bắn mũi nỏ to (đạn `Proj.BigBolt`, đuôi lông đỏ) vào tên địch gần tường nhất (tầm 40), khoảng 1 phát / giây |
 | Huyền thoại | Mercenary Camp | Mỗi 20 giây 1 đội 4×4 lính thuê ngẫu nhiên của phe khác tới giúp |
 | Huyền thoại | Last Stand | Mỗi đợt, lần đầu thành sắp vỡ thì hồi lại 50% máu |
 

@@ -16,7 +16,7 @@ namespace HordeLab
         public const int GiantPx = 32;
         public const int UnitCell = 16, InfantryPx = 10, UnitCols = 4, UnitRows = UnitType.Count * 2 + 6;
         public const int StampPx = 20, StampCols = 8, StampRows = 3 + (UnitType.Count * 2 + StampCols - 1) / StampCols;
-        public const int ProjW = 12, ProjH = 3;   // mỗi loại đạn 1 hàng 12x3 pixel
+        public const int ProjW = 24, ProjH = 11;  // mỗi loại đạn 1 hàng 24x11 pixel (đạn thường vẽ 12x3 ở giữa, thiên thạch / nỏ to vẽ to hơn)
 
         static Color32 Rgb(byte r, byte g, byte b, byte a = 255) => new Color32(r, g, b, a);
 
@@ -1076,24 +1076,85 @@ namespace HordeLab
         // ------------------------------------------------------------------
         public static Texture2D BuildArrowTexture()
         {
-            var a = new Canvas(ProjW, ProjH * Proj.Count);
-            DrawArrow(a, Proj.Arrow * ProjH, Wood, Steel, White);
-            DrawArrow(a, Proj.ElfArrow * ProjH, HorseLight, LeafLight, Leaf);
+            const int SmallH = 3;                                   // đạn thường vẽ trên băng 12x3 rồi đặt vào giữa ô 16x7
+            var a = new Canvas(12, SmallH * Proj.Count);
+            DrawArrow(a, Proj.Arrow * SmallH, Wood, Steel, White);
+            DrawArrow(a, Proj.ElfArrow * SmallH, HorseLight, LeafLight, Leaf);
             // tên nỏ: ngắn, đậm
-            for (int x = 4; x <= 9; x++) a.Set(x, Proj.Bolt * ProjH + 1, Leather);
-            a.Set(10, Proj.Bolt * ProjH + 1, Steel); a.Set(3, Proj.Bolt * ProjH, SteelDark); a.Set(3, Proj.Bolt * ProjH + 2, SteelDark);
+            for (int x = 4; x <= 9; x++) a.Set(x, Proj.Bolt * SmallH + 1, Leather);
+            a.Set(10, Proj.Bolt * SmallH + 1, Steel); a.Set(3, Proj.Bolt * SmallH, SteelDark); a.Set(3, Proj.Bolt * SmallH + 2, SteelDark);
             // đá
-            Blob(a, Proj.Rock * ProjH, Rgb(150, 146, 156), Rgb(104, 100, 112), Rgb(186, 182, 192));
+            Blob(a, Proj.Rock * SmallH, Rgb(150, 146, 156), Rgb(104, 100, 112), Rgb(186, 182, 192));
             // đạn pháo
-            Blob(a, Proj.Cannonball * ProjH, Rgb(46, 46, 56), Rgb(24, 24, 30), Rgb(110, 112, 130));
+            Blob(a, Proj.Cannonball * SmallH, Rgb(46, 46, 56), Rgb(24, 24, 30), Rgb(110, 112, 130));
             // lao
-            for (int x = 1; x <= 9; x++) a.Set(x, Proj.Javelin * ProjH + 1, Wood);
-            a.Set(10, Proj.Javelin * ProjH + 1, Steel); a.Set(11, Proj.Javelin * ProjH + 1, Steel); a.Set(10, Proj.Javelin * ProjH, Steel); a.Set(10, Proj.Javelin * ProjH + 2, Steel);
+            for (int x = 1; x <= 9; x++) a.Set(x, Proj.Javelin * SmallH + 1, Wood);
+            a.Set(10, Proj.Javelin * SmallH + 1, Steel); a.Set(11, Proj.Javelin * SmallH + 1, Steel); a.Set(10, Proj.Javelin * SmallH, Steel); a.Set(10, Proj.Javelin * SmallH + 2, Steel);
             // cầu phép: có vệt đuôi
-            Orb(a, Proj.NatureOrb * ProjH, LeafLight, Leaf);
-            Orb(a, Proj.VoidOrb * ProjH, VoidGlow, Void1);
-            Orb(a, Proj.LightOrb * ProjH, Rgb(255, 250, 210), Gold);
-            return a.ToTexture("Projectiles");
+            Orb(a, Proj.NatureOrb * SmallH, LeafLight, Leaf);
+            Orb(a, Proj.VoidOrb * SmallH, VoidGlow, Void1);
+            Orb(a, Proj.LightOrb * SmallH, Rgb(255, 250, 210), Gold);
+
+            // ghép vào ô ProjW x ProjH: hàng của loại k, đặt vào giữa
+            var big = new Canvas(ProjW, ProjH * Proj.Count);
+            for (int k = 0; k < Proj.Count; k++)
+                for (int y = 0; y < SmallH; y++)
+                    for (int x = 0; x < 12; x++)
+                    {
+                        var c = a.Get(x, k * SmallH + y);
+                        if (c.a > 0) big.Set(x + (ProjW - 12) / 2, k * ProjH + (ProjH - SmallH) / 2 + y, c);
+                    }
+            DrawMeteor(big, Proj.Meteor * ProjH);
+            DrawBigBolt(big, Proj.BigBolt * ProjH);
+            return big.ToTexture("Projectiles");
+        }
+
+        /// <summary>Thiên thạch 24x11 bay sang phải: đầu đá cháy to (9x9) sáng rực ở mặt trước, đuôi lửa dài thon dần về sau.</summary>
+        static void DrawMeteor(Canvas a, int oy)
+        {
+            Color32 white = Rgb(255, 248, 214), yellow = Rgb(255, 210, 72), orange = Rgb(250, 126, 32), red = Rgb(200, 52, 30), ember = Rgb(140, 30, 24);
+            Color32 rock = Rgb(84, 46, 40), rockDark = Rgb(52, 28, 28);
+            // đuôi lửa: thon dần từ đầu (x 15) về sau (x 0), giữa ở hàng 5
+            for (int x = 0; x <= 15; x++)
+            {
+                int half = x >= 13 ? 3 : x >= 9 ? 2 : x >= 4 ? 1 : 0;
+                for (int dy = -half; dy <= half; dy++)
+                {
+                    int edge = half - System.Math.Abs(dy);
+                    Color32 c = x >= 12 ? (edge >= 2 ? white : yellow) : x >= 8 ? (edge >= 1 ? yellow : orange) : x >= 4 ? (edge >= 1 ? orange : red) : red;
+                    if (((x * 7 + dy * 3) % 5 == 0) && x < 12) c = ember;   // lốm đốm cho có lửa
+                    a.Set(x, oy + 5 + dy, c);
+                }
+            }
+            a.Set(2, oy + 3, red); a.Set(5, oy + 8, orange); a.Set(1, oy + 6, ember);   // tàn lửa lẻ
+            // đầu đá tròn 9x9 tâm (19, 5): mặt sau là đá tối có vết nứt, mặt trước nóng trắng
+            for (int y = 1; y <= 9; y++)
+                for (int x = 15; x <= 23; x++)
+                {
+                    float dx = x - 19f, dyy = y - 5f;
+                    if (dx * dx + dyy * dyy > 17f) continue;
+                    Color32 c = dx >= 2.5f ? white : dx >= 1f ? yellow : dx >= -0.5f ? orange : ((x + y) % 3 == 0 ? rockDark : rock);
+                    a.Set(x, oy + y, c);
+                }
+            a.Set(17, oy + 4, orange); a.Set(16, oy + 6, orange); a.Set(18, oy + 7, red);   // vết nứt nóng chảy
+        }
+
+        /// <summary>Mũi nỏ thành 16x7: thân gỗ dày 2 pixel, đầu thép to, đuôi lông đỏ.</summary>
+        static void DrawBigBolt(Canvas a, int oy)
+        {
+            var b = new Canvas(16, 7);
+            DrawBigBolt16(b);
+            for (int y = 0; y < 7; y++) for (int x = 0; x < 16; x++) { var c = b.Get(x, y); if (c.a > 0) a.Set(x + (ProjW - 16) / 2, oy + (ProjH - 7) / 2 + y, c); }
+        }
+
+        static void DrawBigBolt16(Canvas a, int oy = 0)
+        {
+            for (int x = 3; x <= 11; x++) { a.Set(x, oy + 3, Wood); a.Set(x, oy + 4, Leather); }
+            a.Set(12, oy + 1, SteelDark); a.Set(12, oy + 2, SteelDark); a.Set(12, oy + 3, Steel); a.Set(12, oy + 4, Steel); a.Set(12, oy + 5, SteelDark);
+            a.Set(13, oy + 2, Steel); a.Set(13, oy + 3, Steel); a.Set(13, oy + 4, Steel);
+            a.Set(14, oy + 3, White); a.Set(14, oy + 4, Steel); a.Set(15, oy + 3, White);
+            for (int x = 0; x <= 3; x++) { a.Set(x, oy + 1 + (x == 0 ? 0 : 0), x < 2 ? Cloth : ClothDark); a.Set(x, oy + 6, x < 2 ? Cloth : ClothDark); }
+            a.Set(1, oy + 2, Cloth); a.Set(2, oy + 2, ClothDark); a.Set(1, oy + 5, Cloth); a.Set(2, oy + 5, ClothDark);
         }
 
         static void DrawArrow(Canvas a, int oy, Color32 shaft, Color32 head, Color32 fletch)
