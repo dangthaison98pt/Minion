@@ -1,0 +1,44 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d11a54c755b1ed1418600bf52b038fb7, type: 3}
+  m_Name: 20_Aberration
+  m_EditorClassIdentifier: HordeLab.Runtime::HordeLab.UnitBalance
+  unitType: 20
+  displayName: Aberration
+  house: Rift
+  role: Frontline (explodes on death)
+  maxHp: 50
+  damage: 6
+  cooldown: 1.1
+  range: 1
+  speed: 2.6
+  mode: 0
+  flags: 0
+  projectile: 0
+  blood: 9
+  animFps: 7
+  splash: 0
+  slow: 0
+  knock: 0
+  chargeBonus: 0
+  arrowResist: 0
+  dodge: 0
+  minRange: 0
+  explodeDamage: 14
+  explodeRadius: 1.8
+  costPop: 8
+  costFood: 0
+  costWood: 0
+  costGold: 0
+  callTime: 8
+  minWave: 1
+  waveWeight: 5

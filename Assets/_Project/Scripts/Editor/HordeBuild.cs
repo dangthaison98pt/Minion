@@ -82,6 +82,7 @@ namespace HordeLab.EditorTools
             if (!File.Exists(ScenePath)) CreateScene();
             EditorBuildSettings.scenes = new[] { new EditorBuildSettingsScene(ScenePath, true) };
 
+            BalanceTools.CreateMissing();                      // bảo đảm có đủ asset cân bằng (không ghi đè số GD đã chỉnh)
             PlayerSettings.companyName = "FantasyWorldWar";
             PlayerSettings.productName = "Fantasy World War";
             ApplyIcons();

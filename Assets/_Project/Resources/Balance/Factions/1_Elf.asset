@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 736721b581464af4898d54ee5c38a055, type: 3}
+  m_Name: 1_Elf
+  m_EditorClassIdentifier: HordeLab.Runtime::HordeLab.FactionBalance
+  faction: 1
+  displayName: Elf
+  color: {r: 0.4, g: 0.8, b: 0.45, a: 1}
+  hpMul: 1
+  damageMul: 1.5
+  speedMul: 1
+  rangeMul: 1
+  popCostMul: 1
+  squadSide: 5
+  strength: 'Elite troops: 50% more damage and longer range'
+  weakness: Each call brings only 16 troops (4x4)

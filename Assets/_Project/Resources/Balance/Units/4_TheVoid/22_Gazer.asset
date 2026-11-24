@@ -1,0 +1,44 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d11a54c755b1ed1418600bf52b038fb7, type: 3}
+  m_Name: 22_Gazer
+  m_EditorClassIdentifier: HordeLab.Runtime::HordeLab.UnitBalance
+  unitType: 22
+  displayName: Gazer
+  house: Eye Tower
+  role: Ranged (slows)
+  maxHp: 16
+  damage: 5
+  cooldown: 1.9
+  range: 22
+  speed: 2.6
+  mode: 1
+  flags: 0
+  projectile: 7
+  blood: 9
+  animFps: 6
+  splash: 0
+  slow: 2
+  knock: 0
+  chargeBonus: 0
+  arrowResist: 0
+  dodge: 0
+  minRange: 0
+  explodeDamage: 0
+  explodeRadius: 0
+  costPop: 5
+  costFood: 0
+  costWood: 5
+  costGold: 0
+  callTime: 10
+  minWave: 1
+  waveWeight: 3

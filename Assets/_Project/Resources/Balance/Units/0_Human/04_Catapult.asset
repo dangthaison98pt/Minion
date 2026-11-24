@@ -1,0 +1,44 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d11a54c755b1ed1418600bf52b038fb7, type: 3}
+  m_Name: 04_Catapult
+  m_EditorClassIdentifier: HordeLab.Runtime::HordeLab.UnitBalance
+  unitType: 4
+  displayName: Catapult
+  house: Siege Workshop
+  role: Area damage
+  maxHp: 60
+  damage: 12
+  cooldown: 7
+  range: 34
+  speed: 1.6
+  mode: 1
+  flags: 8
+  projectile: 3
+  blood: 11
+  animFps: 6
+  splash: 1.8
+  slow: 0
+  knock: 0
+  chargeBonus: 0
+  arrowResist: 0
+  dodge: 0
+  minRange: 6
+  explodeDamage: 0
+  explodeRadius: 0
+  costPop: 8
+  costFood: 0
+  costWood: 14
+  costGold: 12
+  callTime: 36
+  minWave: 7
+  waveWeight: 0.5

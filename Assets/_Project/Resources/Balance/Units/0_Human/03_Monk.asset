@@ -1,0 +1,44 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d11a54c755b1ed1418600bf52b038fb7, type: 3}
+  m_Name: 03_Monk
+  m_EditorClassIdentifier: HordeLab.Runtime::HordeLab.UnitBalance
+  unitType: 3
+  displayName: Monk
+  house: Monastery
+  role: Support (heals)
+  maxHp: 20
+  damage: 2
+  cooldown: 2
+  range: 7
+  speed: 2.8
+  mode: 1
+  flags: 16
+  projectile: 8
+  blood: 0
+  animFps: 9
+  splash: 0
+  slow: 0
+  knock: 0
+  chargeBonus: 0
+  arrowResist: 0
+  dodge: 0
+  minRange: 0
+  explodeDamage: 0
+  explodeRadius: 0
+  costPop: 5
+  costFood: 0
+  costWood: 0
+  costGold: 5
+  callTime: 14
+  minWave: 5
+  waveWeight: 1

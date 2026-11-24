@@ -1,0 +1,44 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d11a54c755b1ed1418600bf52b038fb7, type: 3}
+  m_Name: 15_Bearfolk
+  m_EditorClassIdentifier: HordeLab.Runtime::HordeLab.UnitBalance
+  unitType: 15
+  displayName: Bearfolk
+  house: Bear Den
+  role: Frontline (sweeping knockback)
+  maxHp: 90
+  damage: 10
+  cooldown: 1.3
+  range: 1.2
+  speed: 2.6
+  mode: 0
+  flags: 8
+  projectile: 0
+  blood: 0
+  animFps: 7
+  splash: 1.5
+  slow: 0
+  knock: 0.8
+  chargeBonus: 0
+  arrowResist: 0
+  dodge: 0
+  minRange: 0
+  explodeDamage: 0
+  explodeRadius: 0
+  costPop: 6
+  costFood: 12
+  costWood: 0
+  costGold: 0
+  callTime: 13
+  minWave: 1
+  waveWeight: 4

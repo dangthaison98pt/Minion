@@ -1,0 +1,44 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d11a54c755b1ed1418600bf52b038fb7, type: 3}
+  m_Name: 27_BoarRider
+  m_EditorClassIdentifier: HordeLab.Runtime::HordeLab.UnitBalance
+  unitType: 27
+  displayName: Boar Rider
+  house: Boar Pen
+  role: Mobile (charge, knockback)
+  maxHp: 90
+  damage: 10
+  cooldown: 1.1
+  range: 1.2
+  speed: 4.6
+  mode: 0
+  flags: 8
+  projectile: 0
+  blood: 0
+  animFps: 11
+  splash: 0
+  slow: 0
+  knock: 1
+  chargeBonus: 1.5
+  arrowResist: 0
+  dodge: 0
+  minRange: 0
+  explodeDamage: 0
+  explodeRadius: 0
+  costPop: 6
+  costFood: 9
+  costWood: 0
+  costGold: 0
+  callTime: 12
+  minWave: 3
+  waveWeight: 1.5

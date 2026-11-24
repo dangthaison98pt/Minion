@@ -8,6 +8,9 @@ namespace HordeLab
     /// </summary>
     public static class Tuning
     {
+        // Số cân bằng (không có chữ const) được nạp đè từ asset Resources/Balance/Tuning.asset nếu có
+        static Tuning() { Balance.ApplyTuning(); }
+
         // ---- Lượt chơi (đã chốt trong GDD) ----
         public const int Hearts = 3;
         public const int Waves = 30;
@@ -25,19 +28,19 @@ namespace HordeLab
         public const bool MergeFromHand = true;         // kéo thẻ từ tay lên công trình cùng loại, cùng sao để gộp
         public const bool MergeNeedsAdjacent = false;
         public const int ShopSlots = 5;
-        public const int RollCost = 1;
-        public const float EventChance = 0.25f;         // xác suất có sự kiện đổi phe thù địch sau mỗi đợt
-        public const int StartCrystals = 5;
-        public const float MarketTrade = 5f;            // Market: mỗi chu kỳ đổi 5 Vàng lấy 5 tài nguyên đã chọn (x số sao)
+        public static int RollCost = 1;
+        public static float EventChance = 0.25f;         // xác suất có sự kiện đổi phe thù địch sau mỗi đợt
+        public static int StartCrystals = 5;
+        public static float MarketTrade = 5f;            // Market: mỗi chu kỳ đổi 5 Vàng lấy 5 tài nguyên đã chọn (x số sao)
         // ---- Độ khó (chọn ở màn chọn phe): Easy / Normal / Hard. Hard = cân bằng gốc ----
         public static readonly string[] DiffName = { "Easy", "Normal", "Hard" };
         public static readonly float[] DiffSquads = { 0.7f, 0.85f, 1f };      // số tiểu đội địch
         public static readonly float[] DiffBoss = { 0.7f, 0.85f, 1f };        // máu boss đợt trùm (nhân thêm)
         public static readonly int[] DiffCrystals = { 5, 2, 0 };             // tinh thể khởi đầu cộng thêm             // đủ mua 1 thẻ ngay đợt đầu
-        public const int CrystalReward = 5;             // mỗi đợt cố định như TFT, thắng hay thua đều nhận
-        public const int WinBonus = 1;                  // giữ được thành thì thêm, thua không có
+        public static int CrystalReward = 5;             // mỗi đợt cố định như TFT, thắng hay thua đều nhận
+        public static int WinBonus = 1;                  // giữ được thành thì thêm, thua không có
         // Lãi: hết mỗi đợt, cứ InterestStep Tinh thể đang giữ thì được thêm 1, tối đa InterestMax → để dành mới có lợi
-        public const int InterestStep = 10, InterestMax = 5;   // giống TFT
+        public static int InterestStep = 10, InterestMax = 5;   // giống TFT
         public static int Interest(int held, int extraCap = 0) => Mathf.Min(Mathf.Max(held, 0) / InterestStep, InterestMax + extraCap);
 
         // ---- Lõi (giống Augment của TFT) ----
@@ -48,32 +51,34 @@ namespace HordeLab
             new[] { 50, 45, 5 }, new[] { 35, 50, 15 }, new[] { 20, 55, 25 }, new[] { 10, 55, 35 }, new[] { 5, 50, 45 },
         };   // sau đợt 1 + mỗi đợt trùm (đợt 30 là đợt cuối) → 5 lõi
         public const int AugmentChoices = 3;
-        public static int CardPrice(Cat c) => c == Cat.Expand ? 5 : c == Cat.Barracks || c == Cat.BuffMil ? 4 : 3;
+        public static int PriceExpand = 5, PriceMilitary = 4, PriceOther = 3;
+        public static int CardPrice(Cat c) => c == Cat.Expand ? PriceExpand : c == Cat.Barracks || c == Cat.BuffMil ? PriceMilitary : PriceOther;
 
         // ---- Thành & tài nguyên ----
-        public const int CastleHp = 300;                // mỗi đòn địch đánh trúng tường trừ 1 máu
-        public const int SellValue = 1;                 // bán 1 thẻ / công trình 1 sao được ngần này Tinh thể (nhà nhiều sao nhân theo số nhà đã gộp)
-        public static readonly Res StartRes = new Res(30, 30, 30, 30);
+        public static int CastleHp = 300;                // mỗi đòn địch đánh trúng tường trừ 1 máu
+        public static int SellValue = 1;                 // bán 1 thẻ / công trình 1 sao được ngần này Tinh thể (nhà nhiều sao nhân theo số nhà đã gộp)
+        public static Res StartRes = new Res(30, 30, 30, 30);
         public static readonly float[] StarYield = { 1f, 2f, 4f, 8f };      // sản lượng nhà tài nguyên theo sao
         // Nhà lính lên sao KHÔNG gọi thêm quân (luôn 1 tiểu đội mỗi lần): lính mạnh hơn, mỗi lần gọi đắt hơn một chút
         public static readonly float[] StarTroopPower = { 1f, 1.4f, 1.8f, 2.2f };   // hệ số máu + sát thương của lính
         public static readonly float[] StarTroopCost = { 1f, 1.5f, 2f, 2.5f };      // hệ số chi phí mỗi lần gọi
         public static readonly float[] StarBuff = { 1f, 1.5f, 2f, 2.5f };   // độ mạnh buff theo sao
-        public const float BuffCap = 1.5f;              // trần cộng dồn: tối đa +150%
-        public const float CostCutCap = 0.6f;           // Kho quân nhu giảm tối đa 60%
-        public const int PlayerUnitCap = 4000;              // chiến trường nhỏ: quá ngần này thì nhà lính tạm ngừng gọi
-        public const float SpeedScale = 0.6f;           // tốc độ đi cũng nhân theo, để địch không tới tường quá nhanh
-        public const float RangeScale = 0.6f;           // tầm bắn nhân với hệ số này cho vừa chiến trường 96 x 54
+        public static float BuffCap = 1.5f;              // trần cộng dồn: tối đa +150%
+        public static float CostCutCap = 0.6f;           // Kho quân nhu giảm tối đa 60%
+        public static int PlayerUnitCap = 4000;              // chiến trường nhỏ: quá ngần này thì nhà lính tạm ngừng gọi
+        public static float SpeedScale = 0.6f;           // tốc độ đi cũng nhân theo, để địch không tới tường quá nhanh
+        public static float RangeScale = 0.6f;           // tầm bắn nhân với hệ số này cho vừa chiến trường 96 x 54
 
         // ---- Đợt địch ----
-        public static int EnemySquads(int wave) => Mathf.RoundToInt(5f + 2.2f * wave + 0.16f * wave * wave);
-        public static float WaveDuration(int wave) => 45f + 2f * wave;       // quân địch kéo đến rải đều trong ngần này giây
-        public static float EnemyPower(int wave) => 1f + 0.04f * (wave - 1); // hệ số máu + sát thương của địch
-        public const float BossSize = 1.25f, BossPower = 1f;                // đợt trùm: đông hơn chút, sức như thường — điểm nhấn là con boss
-        public const float BossHp = 3f;                                     // máu boss nhân thêm (ngoài hệ số theo đợt)
-        public const float BossDelay = 4f;                                  // boss vào trận sau 4 giây
-        public const float FullMoonPower = 1.4f;
-        public const float WaveTimeout = 150f;          // quá ngần này giây sau khi địch đến hết mà chưa xong thì coi như địch rút
+        public static float SquadsA = 5f, SquadsB = 2.2f, SquadsC = 0.16f, DurationA = 45f, DurationB = 2f, PowerPerWave = 0.04f;
+        public static int EnemySquads(int wave) => Mathf.RoundToInt(SquadsA + SquadsB * wave + SquadsC * wave * wave);
+        public static float WaveDuration(int wave) => DurationA + DurationB * wave;       // quân địch kéo đến rải đều trong ngần này giây
+        public static float EnemyPower(int wave) => 1f + PowerPerWave * (wave - 1); // hệ số máu + sát thương của địch
+        public static float BossSize = 1.25f, BossPower = 1f;                // đợt trùm: đông hơn chút, sức như thường — điểm nhấn là con boss
+        public static float BossHp = 3f;                                     // máu boss nhân thêm (ngoài hệ số theo đợt)
+        public static float BossDelay = 4f;                                  // boss vào trận sau 4 giây
+        public static float FullMoonPower = 1.4f;
+        public static float WaveTimeout = 150f;          // quá ngần này giây sau khi địch đến hết mà chưa xong thì coi như địch rút
     }
 
     public static class ResId
@@ -301,7 +306,17 @@ namespace HordeLab
 
     public static class GameData
     {
-        public static readonly FactionDef[] Factions =
+        public static readonly FactionDef[] Factions = BuildFactions();
+
+        static FactionDef[] BuildFactions()
+        {
+            var f = DefaultFactions();
+            Balance.ApplyFactions(f);                // asset Resources/Balance/Factions/* đè lên số trong code
+            return f;
+        }
+
+        /// <summary>Số gốc trong code (giá trị mặc định khi chưa có asset).</summary>
+        public static FactionDef[] DefaultFactions() => new[]
         {
             new FactionDef { name = "Human", color = new Color(0.36f, 0.56f, 0.95f), hpMul = 0.9f,
                 strength = "Houses produce Pop 25% faster", weakness = "Frail: troops have 10% less HP" },
@@ -520,6 +535,25 @@ namespace HordeLab
 
         static UnitDef[] BuildUnits()
         {
+            var u = DefaultUnits();
+            Balance.ApplyUnits(u);                   // asset Resources/Balance/Units/* đè lên số trong code
+            // Đặc trưng phe được nhân sẵn vào bảng chỉ số
+            for (int t = 0; t < UnitType.Count; t++)
+            {
+                int fi = Faction.Of(t);
+                var f = fi >= 0 ? Factions[fi] : new FactionDef();     // quân trung lập: không có đặc trưng phe
+                u[t].stats.maxHp *= f.hpMul;
+                u[t].stats.damage *= f.dmgMul;
+                u[t].stats.speed *= f.speedMul * Tuning.SpeedScale;
+                if (u[t].stats.mode != Mode.Melee) u[t].stats.range *= f.rangeMul * Tuning.RangeScale;
+                u[t].stats.radius = Cfg.RadiusOf(u[t].stats.flags);
+            }
+            return u;
+        }
+
+        /// <summary>Chỉ số gốc trong code (chưa nhân đặc trưng phe, chưa có asset) — giá trị mặc định khi tạo asset.</summary>
+        public static UnitDef[] DefaultUnits()
+        {
             var u = new UnitDef[UnitType.Count];
             UnitStats s;
 
@@ -608,22 +642,13 @@ namespace HordeLab
             u[UnitType.Warboss] = U("", "The Warboss", "Orc boss. War Cry: nearby allies attack much faster and heal, nearby foes flee", s, default, 0f, 99, 0f);
             u[UnitType.Broodmother] = U("", "The Broodmother", "Void boss. Venomous bite. Every 10s she lays 4 spiderlings", s, default, 0f, 99, 0f);
 
-            // Đặc trưng phe được nhân sẵn vào bảng chỉ số
-            for (int t = 0; t < UnitType.Count; t++)
-            {
-                int fi = Faction.Of(t);
-                var f = fi >= 0 ? Factions[fi] : new FactionDef();     // quân trung lập: không có đặc trưng phe
-                u[t].stats.maxHp *= f.hpMul;
-                u[t].stats.damage *= f.dmgMul;
-                u[t].stats.speed *= f.speedMul * Tuning.SpeedScale;
-                if (u[t].stats.mode != Mode.Melee) u[t].stats.range *= f.rangeMul * Tuning.RangeScale;
-                u[t].stats.radius = Cfg.RadiusOf(u[t].stats.flags);
-            }
             return u;
         }
 
         /// <summary>Số quân con mỗi lần Kẻ triệu hồi làm phép.</summary>
         public const int SummonCount = 4;
+
+        public static BuildingDef[] DefaultBuildings() { Balance.IgnoreAssets = true; try { return BuildBuildings(); } finally { Balance.IgnoreAssets = false; } }
 
         static BuildingDef[] BuildBuildings()
         {
@@ -669,6 +694,7 @@ namespace HordeLab
                 };
             }
             b[B.Expand] = new BuildingDef { id = B.Expand, name = "Expand Land", cat = Cat.Expand, desc = "Opens 1 empty tile next to your grid." };
+            Balance.ApplyBuildings(b);               // asset Resources/Balance/Buildings/* đè lên số trong code (nhà tài nguyên + nhà buff)
             return b;
         }
 
