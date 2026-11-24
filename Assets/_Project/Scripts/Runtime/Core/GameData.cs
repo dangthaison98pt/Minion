@@ -195,11 +195,15 @@ namespace HordeLab
         public const float EmperorAura = 4.5f, EmperorAuraHeal = 1f, EmperorAuraDps = 3f;   // hào quang: quân ta hồi 1 máu/s, địch mất 3 máu/s (nhân theo đợt)
         public const float DecreeEvery = 12f, DecreeRadius = 5.5f, DecreeDamage = 40f, DecreeStun = 1.5f, DecreeHeal = 0.25f;
 
-        // Chiêu của boss đợt trùm (nhân sát thương theo đợt)
-        public const float RootsEvery = 10f, RootsRadius = 6f, RootsDamage = 25f, RootsTime = 2.5f, TreantRegen = 6f;   // Ancient Treant
-        public const float QuakeEvery = 8f, QuakeRadius = 4.5f, QuakeDamage = 45f, QuakeStun = 1.2f;                    // The Iron King
-        public const float HowlEvery = 11f, HowlRadius = 7f, HowlFear = 2f;                                              // Fenrir
-        public const float SpawnEvery = 9f, SpawnRadius = 4f, SpawnStun = 1f, SpawnSight = 12f; public const int SpawnCount = 8;   // The Sleeper in the Deep (đứng xa: thấy địch trong 12 là ra chiêu)
+        // Chiêu của boss đợt trùm (sát thương nhân theo đợt)
+        public const float TreantRegen = 6f;                                    // The World Tree: tự hồi máu (nhân theo đợt)
+        public const float TreeRegen = 3f;                                      // ... mọi Treant cùng phe hồi 3 máu/s, ở đâu cũng được
+        public const float PunchEvery = 7f, PunchRange = 7f, PunchDamage = 20f, PunchPush = 3.5f, PunchCone = 0.45f;   // cú đấm: sóng đẩy lùi phía trước
+        public const int ThorChain = 4; public const float ThorChainRange = 3.5f, ThorChainDmg = 0.6f;   // Thor: mỗi nhát búa phóng sét lan qua 4 địch
+        public const float ThorHasteRadius = 5f, Haste = 1.6f;                  // ... quân cùng phe đứng gần đánh nhanh x1.6
+        public const float BerserkLifesteal = 0.1f, BerserkRage = 0.25f, RageFearRadius = 6f, RageFear = 2f;   // Berserker: hút máu 10%; dưới 25% máu hoá Fenrir
+        public const float BroodEvery = 10f, BroodSight = 12f, PoisonTime = 5f, PoisonDps = 4f; public const int BroodCount = 4;   // Broodmother
+        public const float EmperorRevive = 0.5f;                                // boss Hoàng đế: chết thì hồi sinh 1 lần với 50% máu
 
         // Số liệu lõi chuyên quân (số tạm)
         public const float ShieldWallResist = 0.4f;
@@ -455,6 +459,7 @@ namespace HordeLab
             s = S(36, 9, 3.0f, 7f, 2.4f, Mode.Blast, 0, 0, PKind.VoidGoo, 7f); s.splash = 3f;
             u[UnitType.Screamer] = U("Howling Pit", "Screamer", "Area damage (sonic wave)", s, new Res(9, 0, 0, 0), 16f, 7, 1f);
             u[UnitType.Voidling] = U("", "Voidling", "Spawned by the Summoner", S(10, 3, 0.8f, 1.0f, 3.6f, Mode.Melee, 0, 0, PKind.VoidGoo, 12f), default, 0f, 99, 0f);
+            u[UnitType.Spiderling] = U("", "Spiderling", "Spawned by the Broodmother (venomous bite)", S(14, 4, 0.8f, 1.0f, 4.2f, Mode.Melee, 0, 0, PKind.VoidGoo, 14f), default, 0f, 99, 0f);
 
             // ---------------- Trung lập ----------------
             // Rồng (lõi Dragon's Pact): bay qua hàng địch, phun lửa lan. Máu / sát thương còn nhân theo đợt (Game.SpawnDragon)
@@ -464,17 +469,19 @@ namespace HordeLab
             // Hoàng đế vàng (lõi bí mật The Golden Emperor): khổng lồ giáp vàng, đại kiếm chém quét; hào quang + Chiếu chỉ ở ResolveJob
             s = S(1400, 30, 1.6f, 1.2f, 2.6f, Mode.Melee, UFlag.Big | UFlag.Giant, 0, PKind.Blood, 7f); s.splash = 2.2f;
             s.arrowResist = 0.5f; s.knock = 0.6f;                                                                       // giáp vàng: tên / nỏ / lao chỉ còn 50%; đòn chém hất lùi
-            u[UnitType.Emperor] = U("", "The Golden Emperor", "Legendary (Human). Golden aura heals allies, burns foes. Imperial Decree stuns", s, default, 0f, 99, 0f);
+            u[UnitType.Emperor] = U("", "The Golden Emperor", "Legendary (Human). Golden aura heals allies, burns foes. Imperial Decree stuns. As a boss he rises again once at 50% HP", s, default, 0f, 99, 0f);
 
-            // ---------------- Boss đợt trùm (mỗi phe 1 con, chiêu ở ResolveJob.Boss) ----------------
-            s = S(2200, 26, 1.8f, 1.4f, 2.2f, Mode.Melee, UFlag.Big | UFlag.Giant, 0, PKind.Splinter, 6f); s.splash = 2f; s.knock = 0.8f; s.arrowResist = 0.3f;
-            u[UnitType.AncientTreant] = U("", "Ancient Treant", "Elf boss. Grasping Roots: roots and hurts troops nearby. Regenerates", s, default, 0f, 99, 0f);
-            s = S(1800, 40, 1.7f, 1.3f, 2.2f, Mode.Melee, UFlag.Big | UFlag.Giant, 0, PKind.Blood, 7f); s.splash = 2.4f; s.knock = 1f; s.arrowResist = 0.6f;
-            u[UnitType.IronKing] = U("", "The Iron King", "Dwarf boss. Earthshaker: hammer slam stuns troops nearby", s, default, 0f, 99, 0f);
-            s = S(1300, 32, 0.9f, 1.4f, 5f, Mode.Melee, UFlag.Big | UFlag.Giant, 0, PKind.Blood, 12f); s.splash = 1.8f; s.knock = 0.6f;
-            u[UnitType.Fenrir] = U("", "Fenrir", "Beastfolk boss. Howl: troops nearby flee in fear", s, default, 0f, 99, 0f);
-            s = S(2000, 20, 2.2f, 9f, 2.4f, Mode.Blast, UFlag.Big | UFlag.Giant, 0, PKind.VoidGoo, 6f); s.splash = 2.5f;
-            u[UnitType.Sleeper] = U("", "The Sleeper in the Deep", "Void boss. Calls a swarm of Voidlings, its gaze stuns", s, default, 0f, 99, 0f);
+            // ---------------- Boss đợt trùm (mỗi phe 1 con, chiêu ở ResolveJob.Boss / GiantHit, DeathJob) ----------------
+            s = S(2400, 22, 2.0f, 1.6f, 2.0f, Mode.Melee, UFlag.Big | UFlag.Giant, 0, PKind.Splinter, 6f); s.splash = 1.8f; s.knock = 1.2f; s.arrowResist = 0.3f;
+            u[UnitType.WorldTree] = U("", "The World Tree", "Elf boss. Every Treant regenerates 3 HP/s. Its punch sends a shockwave that hurls troops back", s, default, 0f, 99, 0f);
+            s = S(1800, 36, 1.6f, 1.3f, 2.4f, Mode.Melee, UFlag.Big | UFlag.Giant, 0, PKind.Blood, 7f); s.splash = 2f; s.knock = 0.8f; s.arrowResist = 0.4f;
+            u[UnitType.Thor] = U("", "Thor", "Dwarf boss. Every hammer blow sends chain lightning. Allies near him attack faster", s, default, 0f, 99, 0f);
+            s = S(1600, 30, 1.3f, 1.3f, 2.8f, Mode.Melee, UFlag.Big | UFlag.Giant, 0, PKind.Blood, 8f); s.splash = 2f; s.knock = 0.6f;
+            u[UnitType.Berserker] = U("", "The Berserker", "Beastfolk boss. Heals 10% of the damage he deals. Below 25% HP he becomes Fenrir", s, default, 0f, 99, 0f);
+            s = S(1600, 30, 0.55f, 1.4f, 5f, Mode.Melee, UFlag.Big | UFlag.Giant, 0, PKind.Blood, 12f); s.splash = 1.6f; s.knock = 0.4f;
+            u[UnitType.Fenrir] = U("", "Fenrir", "The Berserker's wolf form: a terrifying howl, then frenzied fast attacks", s, default, 0f, 99, 0f);
+            s = S(2000, 24, 1.4f, 1.4f, 2.6f, Mode.Melee, UFlag.Big | UFlag.Giant, 0, PKind.VoidGoo, 10f); s.splash = 1.6f; s.arrowResist = 0.2f;
+            u[UnitType.Broodmother] = U("", "The Broodmother", "Void boss. Venomous bite. Every 10s she lays 4 spiderlings", s, default, 0f, 99, 0f);
 
             // Đặc trưng phe được nhân sẵn vào bảng chỉ số
             for (int t = 0; t < UnitType.Count; t++)

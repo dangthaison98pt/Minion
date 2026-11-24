@@ -49,9 +49,10 @@ namespace HordeLab
         public const int LeaderSkill = 10, CcHits = 11, Revives = 12, Splits = 13, PierceHits = 14, Counters = 15;
         public const int Dead0 = 4, Dead1 = 5, Breach = 6;
         public const int Decrees = 7;                        // số lần Hoàng đế vàng ban Chiếu chỉ
-        public const int BossSkills = 16;                    // số lần boss đợt trùm dùng chiêu   // Dead0 = quân ta tử trận, Dead1 = quân địch bị diệt, Breach = số đòn địch đã đánh trúng tường thành
+        public const int BossSkills = 16;                    // số lần boss đợt trùm dùng chiêu
+        public const int TreeTeam = 17;                      // phe có The World Tree còn sống + 1 (0 = không có): mọi Treant phe đó tự hồi máu   // Dead0 = quân ta tử trận, Dead1 = quân địch bị diệt, Breach = số đòn địch đã đánh trúng tường thành
         public const int Team0 = 8, Team1 = 9;               // số lính còn sống mỗi phe
-        public const int Type0 = 17;                         // 16.. : số lượng mỗi loại lính
+        public const int Type0 = 18;                         // 16.. : số lượng mỗi loại lính
         public const int Length = Type0 + UnitType.Count;
     }
 
@@ -61,7 +62,7 @@ namespace HordeLab
         public const int Human = 0, Elf = 1, Dwarf = 2, Beast = 3, Void = 4;
         public const int Count = 5;
         /// <summary>Phe của một loại quân; -1 = quân trung lập (Rồng của lõi Dragon's Pact).</summary>
-        public static int Of(int unitType) => unitType == UnitType.Voidling ? Void : unitType >= UnitType.FirstGiant ? -1 : unitType / 5;
+        public static int Of(int unitType) => unitType == UnitType.Voidling || unitType == UnitType.Spiderling ? Void : unitType >= UnitType.FirstGiant ? -1 : unitType / 5;
     }
 
     public static class UnitType
@@ -77,14 +78,15 @@ namespace HordeLab
         // The Void
         public const int Aberration = 20, Shade = 21, Eye = 22, Summoner = 23, Screamer = 24;
         public const int Voidling = 25;      // quân con do Kẻ triệu hồi sinh ra, không có nhà lính
-        public const int Dragon = 26;        // rồng của lõi Dragon's Pact, không có nhà lính, không thuộc phe nào
-        public const int Emperor = 27;       // Hoàng đế vàng: lõi bí mật The Golden Emperor (phe Người) + boss của phe Người
-        // Boss của đợt trùm, mỗi phe 1 con (Người dùng Hoàng đế vàng)
-        public const int AncientTreant = 28, IronKing = 29, Fenrir = 30, Sleeper = 31;
+        public const int Spiderling = 26;    // nhện con do boss Broodmother đẻ ra (phe Hư không)
+        public const int Dragon = 27;        // rồng của lõi Dragon's Pact, không có nhà lính, không thuộc phe nào
+        public const int Emperor = 28;       // Hoàng đế vàng: lõi bí mật The Golden Emperor (phe Người) + boss của phe Người
+        // Boss của đợt trùm, mỗi phe 1 con (Người dùng Hoàng đế vàng). Fenrir = dạng sói của Berserker khi máu dưới 25%
+        public const int WorldTree = 29, Thor = 30, Berserker = 31, Fenrir = 32, Broodmother = 33;
         public const int Buildable = 25;
-        public const int Count = 32;
+        public const int Count = 34;
         /// <summary>Boss đi cùng đợt trùm của phe <paramref name="faction"/>.</summary>
-        public static int BossOf(int faction) => faction == 0 ? Emperor : faction == 1 ? AncientTreant : faction == 2 ? IronKing : faction == 3 ? Fenrir : Sleeper;
+        public static int BossOf(int faction) => faction == 0 ? Emperor : faction == 1 ? WorldTree : faction == 2 ? Thor : faction == 3 ? Berserker : Broodmother;
 
         // Quân khổng lồ (32x32) nằm ở CUỐI bảng, từ Dragon trở đi: mỗi con chiếm 8 hàng atlas 16px thay vì 2
         public const int FirstGiant = Dragon, GiantCount = Count - FirstGiant;
@@ -186,6 +188,8 @@ namespace HordeLab
         public float still;     // Người cây: đã đứng yên bao lâu (đủ 3 giây thì bén rễ)
         public int pack;        // Người sói: số sói đồng đội đứng gần
         public int revived;     // đã được hồi sinh 1 lần
+        public float haste;     // > 0: đang được Thor tiếp sức, đánh nhanh hơn
+        public float poison;    // còn bị trúng độc bao lâu (nhện)
     }
 
     /// <summary>Khống chế. Hết khống chế thì miễn khống chế <see cref="Immune"/> giây, khống chế không cộng dồn.</summary>

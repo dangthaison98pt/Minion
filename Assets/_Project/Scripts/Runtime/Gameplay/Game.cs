@@ -67,6 +67,7 @@ namespace HordeLab
         float dragonT, meteorT, ballistaT, mercT, emperorT;
         bool emperorCalled;              // Hoàng đế đã ra trận trong đợt này (chết thì chờ đợt sau)
         float bossT;                     // đợt trùm: còn bao lâu boss vào trận (< 0 = đã vào / không có)
+        public float bossHpMul = Tuning.BossHp;  // công cụ kiểm tra có thể hạ máu boss
         public int bossesCalled, bossType = -1;   // boss của đợt đang / vừa đánh (-1 = không phải đợt trùm)
         // ---- Lõi bí mật The Golden Emperor (phe Người) ----
         public int flawless;             // số đợt liên tiếp giữ thành không mất máu
@@ -560,8 +561,8 @@ namespace HordeLab
             if (bossT > 0f && (bossT -= dt) <= 0f)
             {
                 int bt = bossType;
-                battle.SpawnSquad(bt, 1, new float2(Cfg.EnemySpawnX, 0f), 1, enemyPower * Tuning.BossHp, enemyPower,
-                                  bt == UnitType.AncientTreant ? Aug.TreantRegen * enemyPower * Tuning.BossHp : 0f);
+                battle.SpawnSquad(bt, 1, new float2(Cfg.EnemySpawnX, 0f), 1, enemyPower * bossHpMul, enemyPower,
+                                  bt == UnitType.WorldTree ? Aug.TreantRegen * enemyPower * Tuning.BossHp : 0f);
                 bossT = -1f;
                 bossesCalled++;
             }

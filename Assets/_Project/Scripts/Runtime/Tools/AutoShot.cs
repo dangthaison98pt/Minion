@@ -361,6 +361,7 @@ namespace HordeLab
                 }
                 // -boss F: mọi đợt đều là đợt trùm của phe F (thử boss)
                 int bossArg = IntArg(System.Environment.GetCommandLineArgs(), "-boss", -1);
+                if (System.Array.IndexOf(System.Environment.GetCommandLineArgs(), "-bossweak") >= 0) game.bossHpMul = 0.4f;   // boss yếu: dễ thấy hoá sói / hồi sinh
                 if (bossArg >= 0) { game.wave = Mathf.Max(Tuning.BossEvery, (game.wave + Tuning.BossEvery - 1) / Tuning.BossEvery * Tuning.BossEvery); game.attacker = Mathf.Clamp(bossArg, 0, Faction.Count - 1); }
                 log.AppendLine($"--- Đợt {wave}: địch {GameData.Factions[game.attacker].name}, {game.EnemyPreviewCount()} quân | lưới {game.city.cells.Count} ô ({game.city.EmptyCount()} trống), tay {game.hand.Count} thẻ, tinh thể {game.crystals}");
                 game.StartWave();
@@ -431,7 +432,7 @@ namespace HordeLab
                 if (game.Augments.Exists(a => GameData.Augments[a].cat == AugCat.Legendary))
                     log.AppendLine($"    huyền thoại: rồng gọi {game.dragonsCalled}, thiên thạch {game.meteorsFired}, nỏ {game.boltsFired}, lính thuê {game.mercSquads} đội, last stand {game.lastStands}");
                     if (game.Has(Aug.Emperor)) log.AppendLine($"    hoàng đế: chiếu chỉ {battle.Counter(C.Decrees)} lần, còn sống {battle.TypeCount(UnitType.Emperor)}");
-                    if (game.bossesCalled > 0) log.AppendLine($"    boss {GameData.Units[game.bossType].name}: vào trận {game.bossesCalled}, dùng chiêu {battle.Counter(C.BossSkills) + (game.bossType == UnitType.Emperor ? battle.Counter(C.Decrees) : 0)} lần, còn sống {battle.TypeCount(game.bossType)}, khống chế {battle.Counter(C.CcHits)} lượt");
+                    if (game.bossesCalled > 0) log.AppendLine($"    boss {GameData.Units[game.bossType].name}: vào trận {game.bossesCalled}, dùng chiêu {battle.Counter(C.BossSkills) + (game.bossType == UnitType.Emperor ? battle.Counter(C.Decrees) : 0)} lần, còn sống {battle.TypeCount(game.bossType)}, khống chế {battle.Counter(C.CcHits)} lượt, hồi sinh {battle.Counter(C.Revives)}, Fenrir {battle.TypeCount(UnitType.Fenrir)}, nhện con {battle.TypeCount(UnitType.Spiderling)}");
                 log.AppendLine($"    → {(game.lastWon ? "THẮNG" : "THUA")} sau {game.waveTime:0}s | thành {game.castleHp}/{game.MaxCastleHp} | diệt {battle.Counter(C.Dead1)} / mất {battle.Counter(C.Dead0)} | " +
                                $"kho: {r.pop:0} dân, {r.food:0} lương, {r.wood:0} gỗ, {r.gold:0} vàng | tim {game.hearts}" +
                                (string.IsNullOrEmpty(game.eventNote) ? "" : $" | sự kiện: {game.eventNote}"));

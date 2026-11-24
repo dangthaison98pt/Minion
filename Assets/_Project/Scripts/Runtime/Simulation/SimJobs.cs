@@ -285,6 +285,8 @@ namespace HordeLab
             if (u.cc > 0f) { u.cc -= dt; if (u.cc <= 0f) { u.cc = 0f; u.ccImmune = CC.Immune; } }
             u.skillT -= dt;
             if (u.burn > 0f) { u.burn -= dt; u.hp -= Cc.BurnDps * dt; }
+            if (u.poison > 0f) { u.poison -= dt; u.hp -= Aug.PoisonDps * dt; }           // nọc nhện
+            u.haste = math.max(0f, u.haste - dt);
             int cx = Cfg.CellX(u.pos.x), cy = Cfg.CellY(u.pos.y);
 
             // --- Quét 3x3 ô quanh mình: đẩy nhau ra cho khỏi chồng + tìm địch sát bên + xem có đứng trong vùng buff không ---
@@ -345,7 +347,8 @@ namespace HordeLab
 
             u.pack = pack;
             bool rooted = aug && u.type == UnitType.Treant && u.still >= Aug.RootAfter;
-            float heal = u.regen + ((aura & 2) != 0 ? Fx.HealRate : 0f) + (rooted ? Aug.RootRegen : 0f);
+            float heal = u.regen + ((aura & 2) != 0 ? Fx.HealRate : 0f) + (rooted ? Aug.RootRegen : 0f)
+                       + (u.type == UnitType.Treant && counters[C.TreeTeam] == team + 1 ? Aug.TreeRegen : 0f);   // The World Tree còn sống
             if (heal > 0f) u.hp = math.min(u.maxHp, u.hp + heal * dt);
             u.buffed = (aura & 4) != 0 ? 1 : 0;
 
@@ -513,7 +516,7 @@ namespace HordeLab
 
             u.state = attacking && !kite ? 1 : 0;
             u.animT += dt;
-            u.cooldown -= dt;
+            u.cooldown -= u.haste > 0f ? dt * Aug.Haste : dt;                       // Thor tiếp sức: đánh nhanh hơn
             u.flash = math.max(0f, u.flash - dt * 8f);
             u.slow = math.max(0f, u.slow - dt);
             if (aug && u.type == UnitType.Treant) u.still = vl < 0.3f ? u.still + dt : 0f;   // Bén rễ: đứng yên đủ lâu
@@ -590,71 +593,167 @@ namespace HordeLab
         /// Chiếu chỉ (hồi chiêu riêng, dùng skillT): sóng vàng gây sát thương + choáng địch, hồi máu theo % cho quân ta.
         /// </summary>
         /// <summary>
-        /// Chiêu của boss đợt trùm (hồi chiêu riêng, dùng skillT; chỉ tung khi có địch trong tầm).
-        /// Ancient Treant: rễ trói + sát thương. Iron King: búa nện đất, choáng. Fenrir: tru, sợ hãi bỏ chạy.
-        /// Sleeper: gọi bầy Voidling + ánh nhìn gây choáng.
+        /// Boss đợt trùm, chạy mỗi bước. The World Tree: báo cho Treant cùng phe hồi máu + cú đấm sóng đẩy lùi.
+        /// Thor: tiếp sức quân cùng phe đứng gần (sét lan nằm ở GiantHit). Berserker: dưới 25% máu hoá Fenrir, tru làm hoảng sợ 1 lần.
+        /// Broodmother: cứ 10s đẻ 4 nhện con (cắn độc nằm ở GiantHit / đòn thường).
         /// </summary>
         void Boss(int i, int n, ref Random rng)
         {
             Unit b = units[i];
-            if (b.skillT > 0f) return;
             int t = b.type, foe = 1 - b.team;
-            float radius = t == UnitType.AncientTreant ? Aug.RootsRadius : t == UnitType.IronKing ? Aug.QuakeRadius
-                         : t == UnitType.Fenrir ? Aug.HowlRadius : Aug.SpawnRadius;
-            int near = Cc.NearestEnemy(units, cellStart, sortedIndex, n, b.pos, 0f, t == UnitType.Sleeper ? Aug.SpawnSight : radius, foe);
-            if (near < 0) return;
-            float every;
-            if (t == UnitType.AncientTreant)
+            if (t == UnitType.WorldTree)
             {
-                Fx.Splash(units, cellStart, sortedIndex, n, b.pos, radius, foe, Aug.RootsDamage * b.dmgMul, 0f);
-                counters[C.CcHits] += Cc.Area(units, cellStart, sortedIndex, n, b.pos, radius, foe, CC.Root, Aug.RootsTime);
-                Fx.Ring(particles, counters, b.pos, radius * 0.5f, 18, PKind.Leaf);
-                Fx.Ring(particles, counters, b.pos, radius, 26, PKind.Leaf);
-                every = Aug.RootsEvery;
+                counters[C.TreeTeam] = b.team + 1;
+                if (b.skillT > 0f) return;
+                int near = Cc.NearestEnemy(units, cellStart, sortedIndex, n, b.pos, 0f, Aug.PunchRange - 1f, foe);
+                if (near < 0) return;
+                float2 dir = math.normalizesafe(units[near].pos - b.pos, new float2(b.team == 0 ? 1f : -1f, 0f));
+                int cr = (int)math.ceil(Aug.PunchRange / Cfg.CellSize), cx = Cfg.CellX(b.pos.x), cy = Cfg.CellY(b.pos.y);
+                for (int y = math.max(cy - cr, 0); y <= math.min(cy + cr, Cfg.GridH - 1); y++)
+                    for (int x = math.max(cx - cr, 0); x <= math.min(cx + cr, Cfg.GridW - 1); x++)
+                    {
+                        int c = y * Cfg.GridW + x;
+                        for (int k = cellStart[c]; k < cellStart[c + 1]; k++)
+                        {
+                            int j = sortedIndex[k];
+                            if (j >= n) continue;
+                            Unit u = units[j];
+                            if (u.team != foe || u.hp <= 0f) continue;
+                            float2 d = u.pos - b.pos;
+                            float dist = math.length(d);
+                            if (dist > Aug.PunchRange || math.dot(d / math.max(dist, 1e-4f), dir) < Aug.PunchCone) continue;
+                            u.hp -= Aug.PunchDamage * b.dmgMul;
+                            u.flash = 1f;
+                            u.pos += dir * (Aug.PunchPush * (1f - dist / Aug.PunchRange) + 1f);   // càng gần càng bị hất xa
+                            units[j] = u;
+                        }
+                    }
+                // sóng lá + bụi bay về phía trước
+                for (int k = 0; k < 26; k++)
+                {
+                    float2 side = new float2(-dir.y, dir.x) * rng.NextFloat(-0.7f, 0.7f);
+                    float2 v = (dir + side) * rng.NextFloat(6f, 13f);
+                    Fx.Emit(particles, counters, new Particle { pos = b.pos + dir * 1.2f, vel = v, h = rng.NextFloat(0.3f, 1.5f), vh = rng.NextFloat(1f, 4f), maxLife = 1.2f,
+                                                                 kind = (k & 1) == 0 ? PKind.Leaf : PKind.Dust });
+                }
+                b = units[i]; b.skillT = Aug.PunchEvery; units[i] = b;
+                counters[C.BossSkills]++;
             }
-            else if (t == UnitType.IronKing)
+            else if (t == UnitType.Thor)
             {
-                Fx.Splash(units, cellStart, sortedIndex, n, b.pos, radius, foe, Aug.QuakeDamage * b.dmgMul, 0f);
-                counters[C.CcHits] += Cc.Area(units, cellStart, sortedIndex, n, b.pos, radius, foe, CC.Stun, Aug.QuakeStun);
-                Fx.Ring(particles, counters, b.pos, radius, 26, PKind.Dust);
-                Fx.Spray(particles, counters, ref rng, b.pos, 1f, 16, PKind.Dust, 4f, 6f);
-                Fx.Spray(particles, counters, ref rng, b.pos, 0.6f, 8, PKind.Spark, 3f, 5f);
-                every = Aug.QuakeEvery;
+                // quân cùng phe đứng gần đánh nhanh hơn
+                int cr = (int)math.ceil(Aug.ThorHasteRadius / Cfg.CellSize), cx = Cfg.CellX(b.pos.x), cy = Cfg.CellY(b.pos.y);
+                float r2 = Aug.ThorHasteRadius * Aug.ThorHasteRadius;
+                for (int y = math.max(cy - cr, 0); y <= math.min(cy + cr, Cfg.GridH - 1); y++)
+                    for (int x = math.max(cx - cr, 0); x <= math.min(cx + cr, Cfg.GridW - 1); x++)
+                    {
+                        int c = y * Cfg.GridW + x;
+                        for (int k = cellStart[c]; k < cellStart[c + 1]; k++)
+                        {
+                            int j = sortedIndex[k];
+                            if (j >= n || j == i) continue;
+                            Unit u = units[j];
+                            if (u.team != b.team || u.hp <= 0f || math.lengthsq(u.pos - b.pos) > r2) continue;
+                            u.haste = 0.3f;
+                            units[j] = u;
+                        }
+                    }
+                if (rng.NextFloat() < 0.15f)                                           // tia điện lách tách quanh Thor
+                {
+                    float ang = rng.NextFloat(0f, 6.2831853f);
+                    Fx.Spray(particles, counters, ref rng, b.pos + new float2(math.cos(ang), math.sin(ang)) * rng.NextFloat(0.5f, Aug.ThorHasteRadius), 0.3f, 1, PKind.Spark, 1f, 3f);
+                }
             }
-            else if (t == UnitType.Fenrir)
+            else if (t == UnitType.Berserker)
             {
-                counters[C.CcHits] += Cc.Area(units, cellStart, sortedIndex, n, b.pos, radius, foe, CC.Fear, Aug.HowlFear);
-                Fx.Ring(particles, counters, b.pos, radius * 0.6f, 16, PKind.Dust);
-                Fx.Ring(particles, counters, b.pos, radius, 24, PKind.Smoke);
-                every = Aug.HowlEvery;
+                if (b.hp >= Aug.BerserkRage * b.maxHp) return;
+                // hoá sói: tru lên, quân địch quanh mình hoảng sợ bỏ chạy (1 lần), từ giờ đánh nhanh hơn (chỉ số của Fenrir)
+                b.type = UnitType.Fenrir;
+                b.cc = 0f; b.ccImmune = 2f; b.flash = 1f; b.cooldown = 0f;
+                units[i] = b;
+                counters[C.CcHits] += Cc.Area(units, cellStart, sortedIndex, n, b.pos, Aug.RageFearRadius, foe, CC.Fear, Aug.RageFear);
+                Fx.Ring(particles, counters, b.pos, Aug.RageFearRadius * 0.6f, 18, PKind.Smoke);
+                Fx.Ring(particles, counters, b.pos, Aug.RageFearRadius, 26, PKind.Dust);
+                Fx.Spray(particles, counters, ref rng, b.pos, 0.8f, 16, PKind.Blood, 3f, 6f);
+                counters[C.BossSkills]++;
             }
-            else
+            else if (t == UnitType.Broodmother)
             {
-                // ánh nhìn: choáng quanh quân ta gần nhất; bầy Voidling chui ra quanh boss
-                float2 gaze = units[near].pos;
-                counters[C.CcHits] += Cc.Area(units, cellStart, sortedIndex, n, gaze, radius, foe, CC.Stun, Aug.SpawnStun);
-                Fx.Ring(particles, counters, gaze, radius, 20, PKind.VoidGoo);
-                for (int k = 0; k < Aug.SpawnCount; k++)
+                if (b.skillT > 0f || Cc.NearestEnemy(units, cellStart, sortedIndex, n, b.pos, 0f, Aug.BroodSight, foe) < 0) return;
+                for (int k = 0; k < Aug.BroodCount; k++)
                 {
                     int m = counters[C.Units];
                     if (m >= units.Length) break;
-                    float hp = stats[UnitType.Voidling].maxHp * b.dmgMul;
+                    float hp = stats[UnitType.Spiderling].maxHp * b.dmgMul;
                     units[m] = Clamp(new Unit
                     {
-                        pos = b.pos + rng.NextFloat2Direction() * rng.NextFloat(1.2f, 2.4f),
-                        hp = hp, maxHp = hp, dmgMul = b.dmgMul, type = UnitType.Voidling, team = b.team,
+                        pos = b.pos + new float2(b.faceLeft != 0 ? 1.2f : -1.2f, 0f) + rng.NextFloat2Direction() * rng.NextFloat(0.4f, 1.4f),   // chui ra từ bụng sau
+                        hp = hp, maxHp = hp, dmgMul = b.dmgMul, type = UnitType.Spiderling, team = b.team,
                         faceLeft = b.faceLeft, animT = rng.NextFloat()
                     });
                     counters[C.Units] = m + 1;
                 }
-                Fx.Ring(particles, counters, b.pos, radius, 24, PKind.VoidGoo);
-                Fx.Spray(particles, counters, ref rng, b.pos, 1f, 14, PKind.VoidGoo, 3f, 6f);
-                every = Aug.SpawnEvery;
+                Fx.Spray(particles, counters, ref rng, b.pos, 0.8f, 12, PKind.VoidGoo, 3f, 5f);
+                b = units[i]; b.skillT = Aug.BroodEvery; units[i] = b;
+                counters[C.BossSkills]++;
             }
-            b = units[i];
-            b.skillT = every;
-            units[i] = b;
-            counters[C.BossSkills]++;
+        }
+
+        /// <summary>Đòn chém của boss vừa trúng mục tiêu <paramref name="t"/>: hút máu (Berserker), sét lan (Thor), cắn độc (Broodmother).</summary>
+        void GiantHit(int i, int t, float dmg, int hits, int n, ref Random rng)
+        {
+            Unit a = units[i];
+            if (a.type == UnitType.Berserker)
+            {
+                a.hp = math.min(a.maxHp, a.hp + dmg * Aug.BerserkLifesteal * math.max(1, math.min(hits, 3)));
+                units[i] = a;
+                Fx.Spray(particles, counters, ref rng, a.pos, 0.6f, 2, PKind.Blood, 1.5f, 3f);
+            }
+            else if (a.type == UnitType.Broodmother)
+            {
+                Unit v = units[t]; v.poison = Aug.PoisonTime; units[t] = v;
+                Fx.Spray(particles, counters, ref rng, v.pos, 0.3f, 4, PKind.GreenSpark, 2f, 3f);
+            }
+            else if (a.type == UnitType.Thor)
+            {
+                // sét lan: nhảy từ mục tiêu sang địch gần nhất chưa bị đánh, tối đa ThorChain lần
+                int foe = 1 - a.team, cur = t, h1 = -1, h2 = -1, h3 = -1;
+                float r2 = Aug.ThorChainRange * Aug.ThorChainRange, zap = dmg * Aug.ThorChainDmg;
+                int cr = (int)math.ceil(Aug.ThorChainRange / Cfg.CellSize);
+                for (int jump = 0; jump < Aug.ThorChain; jump++)
+                {
+                    float2 p = units[cur].pos;
+                    int cx = Cfg.CellX(p.x), cy = Cfg.CellY(p.y), best = -1;
+                    float bd = r2;
+                    for (int y = math.max(cy - cr, 0); y <= math.min(cy + cr, Cfg.GridH - 1); y++)
+                        for (int x = math.max(cx - cr, 0); x <= math.min(cx + cr, Cfg.GridW - 1); x++)
+                        {
+                            int c = y * Cfg.GridW + x;
+                            for (int k = cellStart[c]; k < cellStart[c + 1]; k++)
+                            {
+                                int j = sortedIndex[k];
+                                if (j >= n || j == cur || j == t || j == h1 || j == h2 || j == h3) continue;
+                                Unit u = units[j];
+                                if (u.team != foe || u.hp <= 0f) continue;
+                                float d2 = math.lengthsq(u.pos - p);
+                                if (d2 < bd) { bd = d2; best = j; }
+                            }
+                        }
+                    if (best < 0) break;
+                    Unit v = units[best];
+                    v.hp -= zap; v.flash = 1f;
+                    units[best] = v;
+                    // tia sét: chuỗi tia sáng dọc đường nhảy
+                    for (int q = 1; q <= 4; q++)
+                    {
+                        float2 at = math.lerp(p, v.pos, q / 4f) + rng.NextFloat2(-0.25f, 0.25f);
+                        Fx.Emit(particles, counters, new Particle { pos = at, vel = rng.NextFloat2(-1f, 1f), h = 0.9f + rng.NextFloat(0f, 0.6f), vh = 1f, maxLife = 0.35f, kind = (q & 1) == 0 ? PKind.Holy : PKind.Spark });
+                    }
+                    if (jump == 0) h1 = best; else if (jump == 1) h2 = best; else if (jump == 2) h3 = best;
+                    cur = best;
+                }
+                counters[C.BossSkills]++;
+            }
         }
 
         void Emperor(int i, int n, ref Random rng)
@@ -733,6 +832,7 @@ namespace HordeLab
         {
             var rng = new Random(seed);
             int n = counters[C.Units];
+            counters[C.TreeTeam] = 0;
             for (int i = 0; i < n; i++)
             {
                 int gt = units[i].type;
@@ -795,6 +895,7 @@ namespace HordeLab
                         // đòn quét: mọi địch quanh mục tiêu đều dính (kỵ binh xuyên hàng cũng vậy)
                         int hits = Fx.Splash(units, cellStart, sortedIndex, n, v.pos, breakthrough ? Aug.ChargePierceRadius : sa.splash, 1 - a.team, dmg, sa.slow);
                         Fx.Spray(particles, counters, ref rng, hit, 0.5f, 3, sv.blood, 2.5f, 5f);
+                        if (a.type >= UnitType.Emperor) { GiantHit(i, t, dmg, hits, n, ref rng); a = units[i]; }
                         if (augA && a.type == UnitType.Shade)
                         {
                             a = units[i];
@@ -833,6 +934,7 @@ namespace HordeLab
                             v.pos += d / math.max(math.length(d), 1e-4f) * knock;   // hất văng
                             Fx.Spray(particles, counters, ref rng, hit, 0.2f, 3, PKind.Dust, 3f, 3f);
                         }
+                        if (a.type == UnitType.Spiderling) v.poison = Aug.PoisonTime;          // nhện con cắn độc
                         units[t] = v;
                         Fx.Spray(particles, counters, ref rng, hit, 0.5f, 2, sv.blood, 2.5f, 5f);
                         Fx.Spray(particles, counters, ref rng, hit, 0.6f, 1, PKind.Spark, 3f, 3f);
@@ -1320,8 +1422,22 @@ namespace HordeLab
                 if (u.hp > 0f) continue;
                 UnitStats s = stats[u.type];
 
+                // Boss Hoàng đế vàng: chết thì đứng dậy 1 lần với 50% máu, cột sáng vàng phóng lên trời
+                if (u.type == UnitType.Emperor && u.team == 1 && u.revived == 0)
+                {
+                    u.hp = u.maxHp * Aug.EmperorRevive; u.revived = 1; u.flash = 1f; u.cc = 0f; u.burn = 0f; u.poison = 0f; u.ccImmune = 3f;
+                    units[i] = u;
+                    for (int k = 0; k < 30; k++)
+                        Fx.Emit(particles, counters, new Particle { pos = u.pos + rng.NextFloat2(-0.5f, 0.5f), vel = rng.NextFloat2(-0.4f, 0.4f),
+                                                                     h = 0.2f + k * 0.18f, vh = rng.NextFloat(4f, 9f), maxLife = 1.8f, kind = PKind.Holy });
+                    Fx.Ring(particles, counters, u.pos, 3f, 20, PKind.Holy);
+                    Fx.Ring(particles, counters, u.pos, 5.5f, 28, PKind.Spark);
+                    counters[C.Revives]++;
+                    continue;
+                }
+
                 // Hồi sinh: lính ta chết gần tu sĩ trưởng đạo (mỗi lính 1 lần)
-                if (revive && u.team == 0 && u.revived == 0 && u.type != UnitType.Voidling && rng.NextFloat() < Aug.ReviveChance)
+                if (revive && u.team == 0 && u.revived == 0 && u.type != UnitType.Voidling && u.type != UnitType.Spiderling && rng.NextFloat() < Aug.ReviveChance)
                 {
                     int mi = FindMonk(u.pos, n0);
                     if (mi >= 0)
