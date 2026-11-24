@@ -164,6 +164,7 @@ namespace HordeLab
             {
                 if (game.phase == Phase.Reward)
                 {
+                    log.AppendLine($"    tinh thể: thưởng +{game.lastCrystals}, lãi +{game.lastInterest} → còn {game.crystals}");
                     if (played == 1 && !Headless)
                     {
                         yield return new WaitForSecondsRealtime(0.45f); Shot("05a_san_dang_toi.png");      // giữa lúc dọn sân
@@ -197,6 +198,7 @@ namespace HordeLab
                         foreach (var t in tiers) t.stars = 1;
                         game.city.Recompute();
                     }
+                    game.crystals = 15;                    // giữ 15 Tinh thể qua đợt 1 → hết đợt phải được lãi +3
                     // Cầm 1 thẻ 2 sao trên tay để thử lưu cả số sao của thẻ
                     Vector2Int held = default; bool holding = false;
                     foreach (var kv in game.city.cells)

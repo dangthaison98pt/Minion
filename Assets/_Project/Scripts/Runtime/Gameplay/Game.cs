@@ -17,7 +17,7 @@ namespace HordeLab
         public bool[] shopLocked;
         public string eventNote;
         public bool lastWon;
-        public int lastWave, lastCrystals;
+        public int lastWave, lastCrystals, lastInterest;
         public float pop, food, wood, gold;
         public int[] cellX, cellY, cellDef, cellStars;   // cellDef = -1: ô đã mở nhưng còn trống
     }
@@ -56,6 +56,7 @@ namespace HordeLab
         public string eventNote;         // sự kiện đổi phe thù địch, báo sau khi đánh xong một đợt
         public bool lastWon;
         public int lastWave, lastCrystals;
+        public int lastInterest;         // lãi Tinh thể nhận ở cuối đợt vừa xong (tính trên số đang giữ, trước khi cộng thưởng)
 
         // ---- Đợt đang đánh ----
         public int castleHp;
@@ -153,7 +154,7 @@ namespace HordeLab
             {
                 faction = faction, hearts = hearts, wave = wave, crystals = crystals, attacker = attacker, phase = (int)phase,
                 hostile = hostile.ToArray(), hand = hand.ToArray(), handStars = handStars.ToArray(), shop = (int[])shop.Clone(), reward = (int[])reward.Clone(),
-                shopLocked = (bool[])shopLocked.Clone(), eventNote = eventNote, lastWon = lastWon, lastWave = lastWave, lastCrystals = lastCrystals,
+                shopLocked = (bool[])shopLocked.Clone(), eventNote = eventNote, lastWon = lastWon, lastWave = lastWave, lastCrystals = lastCrystals, lastInterest = lastInterest,
                 pop = city.res.pop, food = city.res.food, wood = city.res.wood, gold = city.res.gold
             };
             int n = city.cells.Count, k = 0;
@@ -196,7 +197,7 @@ namespace HordeLab
             d.shop.CopyTo(shop, 0); d.reward.CopyTo(reward, 0);
             System.Array.Clear(shopLocked, 0, shopLocked.Length);
             if (d.shopLocked != null && d.shopLocked.Length == shopLocked.Length) d.shopLocked.CopyTo(shopLocked, 0);
-            eventNote = d.eventNote; lastWon = d.lastWon; lastWave = d.lastWave; lastCrystals = d.lastCrystals;
+            eventNote = d.eventNote; lastWon = d.lastWon; lastWave = d.lastWave; lastCrystals = d.lastCrystals; lastInterest = d.lastInterest;
 
             city.Init(faction);
             city.cells.Clear();
@@ -523,8 +524,9 @@ namespace HordeLab
             if (wave >= Tuning.Waves) { phase = Phase.Won; DeleteSave(); return; }
 
             // Thua một đợt (còn tim) vẫn sang đợt sau và vẫn nhận đủ phần thưởng
+            lastInterest = Tuning.Interest(crystals);          // lãi tính trên số đang giữ, trước khi cộng thưởng
             lastCrystals = Tuning.CrystalReward(wave);
-            crystals += lastCrystals;
+            crystals += lastCrystals + lastInterest;
             for (int i = 0; i < reward.Length; i++) reward[i] = RandomCard();
 
             eventNote = RollHostileEvent();
