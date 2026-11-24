@@ -75,7 +75,7 @@ namespace HordeLab
                 Application.targetFrameRate = -1;
                 battle.fixedDt = 1f / 30f;
             }
-            log.AppendLine($"screen {Screen.width}x{Screen.height}, pixel scale {battle.View.Scale}, gfx {SystemInfo.graphicsDeviceType} ({SystemInfo.graphicsDeviceName}), " +
+            log.AppendLine($"screen {Screen.width}x{Screen.height}, pixel scale {battle.View.Scale} (x{battle.View.Eff:0.##}), gfx {SystemInfo.graphicsDeviceType} ({SystemInfo.graphicsDeviceName}), " +
                            $"cpu cores {SystemInfo.processorCount}, vsync {QualitySettings.vSyncCount}, burst {Unity.Burst.BurstCompiler.IsEnabled}");
 
             if (stress > 0) yield return StressRun();

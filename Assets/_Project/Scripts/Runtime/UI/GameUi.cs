@@ -21,7 +21,7 @@ namespace HordeLab
         Game g;
         Battle battle;
         City city;
-        float scale = 1f, VW = 1920f;
+        float scale = 1f, VW = 1920f, VHa = 1080f;   // kích thước canvas thật (đơn vị giao diện): ít nhất 1920x1080, màn hẹp / rộng thì dư 1 chiều
 
         /// <summary>Công cụ chụp hình dùng để giả vị trí chuột (toạ độ ảo, gốc trên-trái) cho tooltip hiện ra.</summary>
         [System.NonSerialized] public Vector2? fakeMouse;
@@ -253,8 +253,7 @@ namespace HordeLab
                 var s = go.AddComponent<CanvasScaler>();
                 s.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
                 s.referenceResolution = new Vector2(1920f, VH);
-                s.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
-                s.matchWidthOrHeight = 1f;                      // mọi thứ tính theo chiều cao 1080
+                s.screenMatchMode = CanvasScaler.ScreenMatchMode.Expand;   // mọi cỡ màn: giao diện luôn đủ 1920x1080, không bị bóp chiều nào
                 go.AddComponent<GraphicRaycaster>();
             }
             return c;
@@ -804,18 +803,26 @@ namespace HordeLab
         void LateUpdate()
         {
             if (g == null) return;
-            scale = Screen.height / VH;
+            scale = Mathf.Min(Screen.width / 1920f, Screen.height / VH);   // khớp CanvasScaler Expand
             VW = Screen.width / scale;
+            VHa = Screen.height / scale;
             mouse = fakeMouse.HasValue ? new Vector2(fakeMouse.Value.x * scale, Screen.height - fakeMouse.Value.y * scale) : (Vector2)Input.mousePosition;
             if (EventSystem.current != null && EventSystem.current.currentSelectedGameObject != null) EventSystem.current.SetSelectedGameObject(null);   // Space / Enter không bấm nhầm nút vừa click
 
             // ảnh chiến trường
             var view = battle.View;
-            view.TopInsetPx = InWorld ? TopH * Screen.height / VH : 0f;   // trong game: chiến trường nằm dưới thanh trên cùng, không chui xuống dưới
+            view.TopInsetPx = InWorld ? TopH * scale : 0f;   // trong game: chiến trường nằm dưới thanh trên cùng, không chui xuống dưới
             if (view.Target != null)
             {
                 viewImage.texture = view.Target;
-                viewImage.rectTransform.sizeDelta = new Vector2(view.Target.width * view.Scale, view.Target.height * view.Scale);
+                // chỉ hiện đúng phần bản đồ (cắt phần ngoài mép: chỗ địch đứng chờ vào trận, nền trống)
+                float tw = view.Target.width, th = view.Target.height, e = view.Eff;
+                var cp = view.CamPos;
+                float x0 = Mathf.Clamp((-Cfg.HalfW - cp.x) * Cfg.PPU + tw * 0.5f, 0f, tw), x1 = Mathf.Clamp((Cfg.HalfW - cp.x) * Cfg.PPU + tw * 0.5f, 0f, tw);
+                float y0 = Mathf.Clamp((-Cfg.HalfH - cp.y) * Cfg.PPU + th * 0.5f, 0f, th), y1 = Mathf.Clamp((Cfg.HalfH - cp.y) * Cfg.PPU + th * 0.5f, 0f, th);
+                viewImage.uvRect = new Rect(x0 / tw, y0 / th, (x1 - x0) / tw, (y1 - y0) / th);
+                viewImage.rectTransform.anchoredPosition = new Vector2(x0 * e, y0 * e);
+                viewImage.rectTransform.sizeDelta = new Vector2((x1 - x0) * e, (y1 - y0) * e);
             }
 
             var phase = g.phase;
@@ -875,7 +882,7 @@ namespace HordeLab
             else y += 88f;
             menuSettingsBtn.At(60f, y, 400f, 64f); y += 88f;
             quitBtn.At(60f, y, 400f, 64f); y += 64f + 40f;
-            menuPanel.At(120f, Mathf.Round((VH - y) * 0.5f), 520f, y);
+            menuPanel.At(120f, Mathf.Round((VHa - y) * 0.5f), 520f, y);
         }
 
         void RefreshTopBar()
@@ -1557,7 +1564,7 @@ namespace HordeLab
             float mx = mouse.x / scale, my = (Screen.height - mouse.y) / scale;
             float x = mx + 24f, y = my + 14f;
             if (x + w > VW - 6f) x = mx - w - 14f;
-            y = Mathf.Clamp(y, TopH + 4f, VH - h - 6f);
+            y = Mathf.Clamp(y, TopH + 4f, VHa - h - 6f);
             tip.At(x, y, w, h);
             tip.SetAsLastSibling();
             if (pause.gameObject.activeSelf) pause.SetAsLastSibling();
