@@ -34,6 +34,11 @@ namespace HordeLab
         /// <summary>Chiều cao (pixel màn hình) của thanh giao diện phía trên: chiến trường chỉ vẽ trong phần còn lại bên dưới.</summary>
         public float TopInsetPx;
         /// <summary>
+        /// Phủ kín khung (cắt bớt mép bản đồ) thay vì lọt trọn bản đồ. Dùng cho nền menu: không có thanh trên cùng nên
+        /// "lọt trọn" sẽ dư một dải tối dưới đáy.
+        /// </summary>
+        public bool Cover;
+        /// <summary>
         /// Hệ số phóng thật lên màn hình = mức zoom nguyên × hệ số vừa khít. Ở 1080p vừa đúng x2 (hệ số 1 → pixel đều);
         /// cửa sổ cỡ lẻ (1600x900...) thì phóng lẻ cho chiến trường lấp đầy thay vì tụt xuống x1 trống 40% màn hình.
         /// </summary>
@@ -43,6 +48,7 @@ namespace HordeLab
 
         Camera screenCam;
         int lastW, lastH, lastScale, lastInset;
+        bool lastCover;
         bool dragging;
         Vector3 dragStart;
         float2 dragCenter;
@@ -81,7 +87,8 @@ namespace HordeLab
         /// <summary>Mức phóng lớn nhất mà cả chiến trường vẫn lọt vùng hiển thị (dưới thanh giao diện).</summary>
         void ComputeFit()
         {
-            float fit = math.min(ScreenFrame.W / (float)Cfg.GroundW, ViewHeight / (float)Cfg.GroundH);
+            float fx = ScreenFrame.W / (float)Cfg.GroundW, fy = ViewHeight / (float)Cfg.GroundH;
+            float fit = Cover ? math.max(fx, fy) : math.min(fx, fy);
             MinScale = math.max(1, (int)math.floor(fit + 1e-4f));
             fitK = fit / MinScale;                               // >= 1 khi có dư; < 1 khi cửa sổ quá nhỏ (thu nhỏ cho vừa)
         }
@@ -90,8 +97,8 @@ namespace HordeLab
         void EnsureTarget()
         {
             int inset = Mathf.RoundToInt(TopInsetPx);
-            if (Target != null && lastW == ScreenFrame.W && lastH == ScreenFrame.H && lastScale == Scale && lastInset == inset) return;
-            if (lastW != ScreenFrame.W || lastH != ScreenFrame.H || lastInset != inset)
+            if (Target != null && lastW == ScreenFrame.W && lastH == ScreenFrame.H && lastScale == Scale && lastInset == inset && lastCover == Cover) return;
+            if (lastW != ScreenFrame.W || lastH != ScreenFrame.H || lastInset != inset || lastCover != Cover)
             {
                 ComputeFit();                                // đổi cỡ cửa sổ / thanh giao diện: tính lại mức vừa khít
                 Scale = math.clamp(Scale, MinScale, MinScale + 5);
@@ -100,6 +107,7 @@ namespace HordeLab
             lastH = ScreenFrame.H;
             lastScale = Scale;
             lastInset = inset;
+            lastCover = Cover;
 
             int w = Mathf.CeilToInt(ScreenFrame.W / Eff);
             int h = Mathf.CeilToInt(ViewHeight / Eff);
@@ -168,6 +176,7 @@ namespace HordeLab
             float2 half = new float2(Target.width, Target.height) / (2f * Cfg.PPU);
             float2 lim = math.max(0f, new float2(Cfg.HalfW, Cfg.HalfH) - half);
             Center = math.clamp(Center, -lim, lim);
+            if (Cover) Center = new float2(-lim.x, 0f);              // nền menu: bám mép trái (thấy tường thành), giữa theo chiều dọc
             // màn siêu rộng (bản đồ hẹp hơn màn): bám mép trái để phần trong thành luôn nằm dưới bảng bên trái
             if (half.x > Cfg.HalfW) Center.x = half.x - Cfg.HalfW;
             // màn cao (4:3, 5:4): bám ngay dưới thanh trên cùng, phần dư dồn xuống dưới (chỗ cửa hàng)

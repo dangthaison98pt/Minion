@@ -820,6 +820,7 @@ namespace HordeLab
 
             // ảnh chiến trường
             var view = battle.View;
+            view.Cover = !InWorld && g.phase != Phase.Sandbox;   // nền menu / chọn phe: phủ kín màn, không dư dải tối
             view.TopInsetPx = InWorld ? TopH * scale : 0f;   // trong game: chiến trường nằm dưới thanh trên cùng, không chui xuống dưới
             if (view.Target != null)
             {
