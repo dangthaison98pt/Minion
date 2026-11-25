@@ -216,6 +216,15 @@ namespace HordeLab
                             t.Set(x, y + 1, SoilDark);
                         }
                     t.Set(24, 9, Leather); t.Set(24, 10, Leather); t.Set(24, 11, Leather); Box(t, 22, 8, 26, 8, Leather); Box(t, 23, 6, 25, 7, Cloth); t.Set(24, 5, Wheat);   // bù nhìn
+                    Pix(t, 19, 22, "owWpcCbh", new[] { Outline, Rgb(196, 146, 92), Rgb(150, 104, 60), Rgb(214, 96, 130), Rgb(214, 178, 150), Rgb(170, 136, 110), Rgb(70, 110, 170), Rgb(60, 40, 30) },   // tri ân It Takes Two: búp bê gỗ và đất sét nắm tay
+                        ".ooo.ooo.",
+                        "ohwwooCco",
+                        "owwwoocco",
+                        ".opoo.ob.",
+                        "oppppbbbo",
+                        ".opo.obo.",
+                        ".owo.oCo.",
+                        ".ooo.ooo.");
                     return t;
 
                 case B.Barn:
@@ -444,6 +453,14 @@ namespace HordeLab
                     Box(t, 14, 23, 17, 27, Outline); Box(t, 15, 24, 16, 27, Rgb(70, 46, 34)); t.Set(15, 23, Outline);
                     Box(t, 12, 28, 19, 28, S3); Box(t, 11, 29, 20, 29, S1);
                     // cửa sổ kính màu hai bên
+                    Pix(t, 13, 15, "onygd", new[] { Outline, Rgb(30, 34, 74), Rgb(255, 240, 160), Rgb(255, 214, 90), Rgb(196, 140, 40) },   // tri ân Elden Ring: cây vàng trong cửa sổ hoa hồng
+                        ".ooooo.",
+                        "onygyno",
+                        "oyggygo",
+                        "ogyggdo",
+                        "onndnno",
+                        "onndnno",
+                        ".ooooo.");
                     for (int i = 0; i < 2; i++) { Box(t, 7 + i * 16, 16, 8 + i * 16, 21, Outline); t.Set(7 + i * 16, 17, Cloth); t.Set(8 + i * 16, 18, Tunic); t.Set(7 + i * 16, 19, Gold); t.Set(8 + i * 16, 20, ElfGreen); }
                     return t;
 
@@ -541,7 +558,16 @@ namespace HordeLab
                     // đường ray + xe goòng chở mithril
                     for (int y = 24; y < 31; y++) { t.Set(14, y, S2); t.Set(17, y, S2); if (y % 2 == 0) Box(t, 14, y, 17, y, Leather); }
                     Box(t, 22, 24, 28, 28, Outline); Box(t, 23, 25, 27, 27, SteelDark); Box(t, 23, 24, 27, 24, mith); t.Set(24, 23, Rgb(235, 250, 255)); t.Set(26, 23, mithD);
-                    Box(t, 3, 25, 7, 26, Wood); t.Set(4, 24, Steel); t.Set(5, 23, Steel);       // cuốc chim
+                    Pix(t, 1, 21, "owrkibhs", new[] { Outline, Rgb(150, 108, 70), Rgb(112, 78, 50), Rgb(78, 52, 36), Rgb(170, 230, 255), Rgb(90, 160, 220), Rgb(116, 76, 44), Rgb(220, 246, 255) },   // tri ân God of War: rìu băng cắm vào gốc cây
+                        "...ooo..",
+                        "..oisbo.",
+                        ".oisbbo.",
+                        ".oibbo..",
+                        "..ooho..",
+                        "oooooho.",
+                        "owwwwkro",
+                        "orkrkrro",
+                        "oooooooo");
                     return t;
                 }
 
@@ -598,6 +624,12 @@ namespace HordeLab
                     Box(t, 5, 9, 6, 12, Void1); t.Set(5, 9, VoidGlow); Box(t, 25, 7, 26, 10, Void1); t.Set(26, 7, VoidGlow);
                     Box(t, 4, 20, 5, 22, Void2); t.Set(4, 20, VoidGlow); Box(t, 27, 19, 28, 21, Void2); t.Set(28, 19, VoidGlow);
                     t.Set(9, 5, VoidGlow); t.Set(22, 3, VoidEye); t.Set(8, 28, VoidGlow); t.Set(24, 29, VoidEye);
+                    Pix(t, 13, 23, "r", new[] { Rgb(220, 70, 80) },                           // tri ân Clair Obscur: Expedition 33: số 33 sơn đỏ
+                        "rrr.rrr",
+                        "..r...r",
+                        ".rr..rr",
+                        "..r...r",
+                        "rrr.rrr");
                     return t;
 
                 case B.ScrapForge:                                                         // Orc: lò rèn sắt vụn, mái da, đống phế liệu
@@ -616,6 +648,17 @@ namespace HordeLab
                     Box(t, 11, 25, 16, 26, OrcIronL); t.Set(12, 24, OrcIron); t.Set(15, 24, OrcIron); Box(t, 12, 27, 17, 28, Leather);
                     Box(t, 3, 28, 9, 29, OrcIron); t.Set(4, 27, OrcIronL); t.Set(18, 29, Rgb(255, 96, 10)); t.Set(19, 28, Rgb(255, 96, 10));
                     t.Set(14, 21, Rgb(255, 142, 30)); t.Set(20, 16, Rgb(255, 142, 30));           // tia lửa
+                    Pix(t, 24, 1, "owgvb", new[] { Outline, Rgb(240, 244, 250), Rgb(170, 180, 196), Rgb(24, 26, 40), Rgb(90, 200, 255) },   // tri ân Astro Bot: robot trắng tí hon
+                        ".ooooo.",
+                        "owwwwwo",
+                        "ovvvvvo",
+                        "ovbvbvo",
+                        "owwwwwo",
+                        ".owwwo.",
+                        "ogwwwgo",
+                        ".owowo.",
+                        ".ogogo.",
+                        ".oo.oo.");
                     return t;
 
                 case B.Expand:
@@ -637,6 +680,17 @@ namespace HordeLab
                     return t;
             }
             return DrawBarracksTile(GameData.Buildings[id].unit);
+        }
+
+        /// <summary>Vẽ hình nhỏ theo các dòng ký tự: mỗi ký tự trong <paramref name="keys"/> ứng với 1 màu, '.' để trống.</summary>
+        static void Pix(Canvas t, int x0, int y0, string keys, Color32[] cols, params string[] rows)
+        {
+            for (int dy = 0; dy < rows.Length; dy++)
+                for (int dx = 0; dx < rows[dy].Length; dx++)
+                {
+                    int k = keys.IndexOf(rows[dy][dx]);
+                    if (k >= 0) t.Set(x0 + dx, y0 + dy, cols[k]);
+                }
         }
 
         static void Cow(Canvas t, int x, int y)
@@ -674,6 +728,14 @@ namespace HordeLab
                     House(t, 3, 5, 18, 14, RoofBlue, RoofBlueD, WallStone);
                     for (int x = 3; x < 21; x += 4) Box(t, x, 3, x + 1, 4, WallStone);        // lỗ châu mai
                     Flag(t, 24, 12, Tunic, 9);
+                    t.Set(28, 13, Rgb(150, 150, 160));                                         // tri ân The Witcher 3: mặt dây chuyền đầu sói bạc
+                    Pix(t, 25, 14, "osdr", new[] { Outline, Rgb(210, 216, 226), Rgb(120, 126, 140), Rgb(230, 60, 60) },
+                        "o....o",
+                        "oso.os",
+                        "osssso",
+                        "orssro",
+                        ".osdo.",
+                        "..oo..");
                     break;
                 case Faction.Elf:
                     t = Grass(60 + unit);
@@ -698,6 +760,17 @@ namespace HordeLab
                     t.Set(12, 2, Bone); t.Set(11, 3, Bone); t.Set(13, 3, Bone);
                     Box(t, 26, 4, 27, 14, Wood); Box(t, 25, 5, 28, 6, Cloth); Box(t, 25, 9, 28, 10, Bone); t.Set(26, 3, Bone); t.Set(27, 3, Bone);   // cột totem
                     t.Set(4, 20, Bone); t.Set(5, 21, Bone); t.Set(6, 20, BoneDark);
+                    Pix(t, 2, 19, "owkrR", new[] { Outline, Wood, Rgb(78, 52, 36), Rgb(210, 40, 40), Rgb(150, 24, 30) },   // tri ân Sekiro: cọc gỗ buộc khăn đỏ
+                        "owo.....",
+                        "owo.....",
+                        "orrrro..",
+                        "oRrrRro.",
+                        "owo.Rro.",
+                        "owo..Ro.",
+                        "owo.....",
+                        "owo.....",
+                        "oko.....",
+                        "ooo.....");
                     break;
                 case Faction.Orc:
                     // trại Orc: hàng rào cọc nhọn, lều da, cột cắm sọ, cờ đỏ
