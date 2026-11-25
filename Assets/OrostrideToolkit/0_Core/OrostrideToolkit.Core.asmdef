@@ -1,0 +1,14 @@
+{
+    "name": "OrostrideToolkit.Core",
+    "rootNamespace": "OrostrideToolkit.Core",
+    "references": [],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

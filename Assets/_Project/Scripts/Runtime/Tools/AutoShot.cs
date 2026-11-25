@@ -18,6 +18,10 @@ namespace HordeLab
     /// </summary>
     public class AutoShot : MonoBehaviour
     {
+        // đo rác bộ nhớ (GC) lúc đang đánh
+        Unity.Profiling.ProfilerRecorder gcAlloc;
+        long sumGcBytes, maxGcBytes;
+        int gcLast = -1, gcCollections;
         string dir;
         bool saveTest;
         int stress, botFaction, maxWaves = 5;
@@ -67,6 +71,7 @@ namespace HordeLab
             saveTest = System.Array.IndexOf(System.Environment.GetCommandLineArgs(), "-savetest") >= 0;
             Game.saveFile = "run_autotest.json";
             game.savingEnabled = saveTest;
+            gcAlloc = Unity.Profiling.ProfilerRecorder.StartNew(Unity.Profiling.ProfilerCategory.Memory, "GC Allocated In Frame");
             if (Headless)
             {
                 log.AppendLine("Chạy ngầm (-batchmode): không chụp màn hình, không đo GPU — xuất atlas sprite ra PNG thay thế");
@@ -84,7 +89,9 @@ namespace HordeLab
             int m = math.max(1, sumSamples);
             log.AppendLine($"TỔNG KẾT HIỆU NĂNG: fps tb={sumFps / m:0.0} thấp nhất={minFps:0} | sim tb={sumSim / m:0.00}ms cao nhất={maxSim:0.00}ms | " +
                            $"frame tb={totalFrame / m:0.0}ms cao nhất={worstFrame:0.0}ms | lính tb={sumUnits / m:0} cao nhất={maxUnits} | " +
-                           $"đạn cao nhất={maxArrows} | hạt cao nhất={maxParticles}");
+                           $"đạn cao nhất={maxArrows} | hạt cao nhất={maxParticles} | " +
+                           $"rác GC tb={(gcAlloc.Valid ? $"{sumGcBytes / (double)m / 1024.0:0.00}KB/frame" : "?")} cao nhất={maxGcBytes / 1024.0:0.0}KB, dọn rác {gcCollections} lần trong {m} frame đánh");
+            gcAlloc.Dispose();
             File.WriteAllText(Path.Combine(dir, "stats.txt"), log.ToString());
             Application.Quit();
         }
@@ -635,7 +642,12 @@ namespace HordeLab
                 sumUnits += units; maxUnits = math.max(maxUnits, units);
                 maxArrows = math.max(maxArrows, battle.Counter(C.Arrows));
                 maxParticles = math.max(maxParticles, battle.Counter(C.Particles));
+                if (gcAlloc.Valid) { long a = gcAlloc.LastValue; sumGcBytes += a; maxGcBytes = math.max(maxGcBytes, a); }
+                int gcNow = System.GC.CollectionCount(0);
+                if (gcLast >= 0) gcCollections += gcNow - gcLast;
+                gcLast = gcNow;
             }
+            else gcLast = -1;
 
             if (Time.time < nextLog) return;
             nextLog += stress > 0 ? 1f : 5f;
