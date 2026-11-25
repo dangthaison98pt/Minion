@@ -414,32 +414,6 @@ namespace HordeLab
                             log.AppendLine($"MARKET TEST: đặt={placed}, hiện bảng chọn={pending}, đã chọn={game.city.Get(empty.Value)?.trade == ResId.Wood}");
                         }
                     }
-                    if (System.Array.IndexOf(cl, "-eggs") >= 0 && !Headless)
-                    {
-                        // easter egg: đặt Elder Tree + Void Spire vào ô trống, chụp mèo Cheshire và mắt nhìn theo chuột
-                        var empties = new List<Vector2Int>();
-                        foreach (var kv in game.city.cells) if (kv.Value == null) empties.Add(kv.Key);
-                        while (empties.Count < 2) { game.AddCard(B.Expand); game.BotPlaceAndShop(); empties.Clear(); foreach (var kv in game.city.cells) if (kv.Value == null) empties.Add(kv.Key); if (empties.Count < 2 && game.LandLeft == 0) break; }
-                        if (empties.Count >= 2)
-                        {
-                            game.AddCard(B.ElderTree); game.PlayCard(game.hand.Count - 1, empties[0]);
-                            game.AddCard(B.VoidSpire); game.PlayCard(game.hand.Count - 1, empties[1]);
-                            game.ui.eggNow = true;
-                            yield return Frames(3);
-                            var sp = game.ui.CellUiPos(empties[1]) ?? new Vector2(200f, 300f);
-                            var look = new System.Text.StringBuilder();
-                            Vector2[] dirs = { new Vector2(-200f, 0f), new Vector2(200f, 0f), new Vector2(0f, -200f), new Vector2(0f, 200f) };
-                            string[] names = { "trái", "phải", "trên", "dưới" };
-                            for (int k = 0; k < 4; k++) { game.ui.fakeMouse = sp + dirs[k]; yield return Frames(3); look.Append($"{names[k]}={game.ui.eggLook} "); }
-                            game.ui.fakeMouse = sp + new Vector2(-200f, 0f);
-                            yield return new WaitForSecondsRealtime(1.6f); Shot("03e_egg_cheshire.png");
-                            game.ui.fakeMouse = sp + new Vector2(260f, 0f);
-                            yield return new WaitForSecondsRealtime(2.0f); Shot("03e_egg_cheshire_tan.png");
-                            log.AppendLine($"EGG LOOK: {look}");
-                            game.ui.fakeMouse = null; game.ui.eggNow = false;
-                            log.AppendLine($"EGG TEST: đặt Elder Tree {empties[0]} + Void Spire {empties[1]}");
-                        }
-                    }
                     if (System.Array.IndexOf(cl, "-laststand") >= 0 && !game.Has(Aug.LastStand)) game.Augments.Add(Aug.LastStand);   // thử riêng Last Stand
                     if (System.Array.IndexOf(cl, "-prismatic") >= 0)                                 // thử 8 lõi Prismatic thêm
                     {
