@@ -74,7 +74,7 @@ Phần mô phỏng vẫn là lõi "vạn quân" cũ: **Job System + Burst + GPU 
 - **11 nhà buff** với 4 hình vùng buff (chữ thập, vòng quanh, ô bên dưới, cả hàng), cộng dồn có trần, lên sao buff mạnh hơn.
 - **6 phe × 5 nhà lính = 30 loại quân**, mỗi loại có cơ chế đúng vai trò: xung phong, hồi máu, đạn nổ lan, né đòn, làm chậm,
   vừa chạy vừa bắn, hất văng, đánh vòng ra sau lưng, tăng sức mạnh bầy, nổ khi chết, đi xuyên hàng, sinh quân con, sóng âm.
-- **Đặc trưng phe** (bảng "Các phe"), kể cả đợt trăng tròn của Người hoá thú và tiểu đội 4×4 của Tiên.
+- **Đặc trưng phe** (bảng "Các phe"), kể cả tiểu đội 4×4 của Tiên.
 - **Số liệu thô bằng ScriptableObject (cho GD):** chỉnh trong Inspector, không cần sửa code. Asset ở `Assets/_Project/Resources/Balance/`:
   - `Units/<phe>/NN_Tên.asset` (40 loại: quân 6 phe, quân con, rồng, boss): **máu, sát thương, chi phí gọi (Dân / Lương / Gỗ / Vàng), thời gian gọi nhập thẳng con số ở từng mốc sao nhà lính 1★..4★**; hồi đòn, tầm, tốc độ; đợt xuất hiện + tỉ lệ khi làm địch (quân địch / quân con / boss dùng số 1★). Vào game còn nhân đặc trưng phe, `Tuning.SpeedScale` / `RangeScale`, hệ số đợt.
   - `Buildings/NN_Tên.asset` (nhà tài nguyên + nhà buff): chu kỳ, **sản lượng ở từng mốc sao 1★..4★** (Market: số Vàng đổi = số nhận), hệ số độ mạnh buff theo sao.
@@ -125,7 +125,7 @@ class `Aug` và `GameData.BuildAugments()` trong [`GameData.cs`](Assets/_Project
 | Prismatic | Golden Age | Mọi nhà tài nguyên sản xuất gấp đôi |
 | Prismatic | Iron Fortress | Thành +500 máu, địch đập tường mất 15 máu mỗi đòn (nhân theo đợt) |
 | Prismatic | Dragon Hoard | Nhận ngay 30 tinh thể, lãi tối đa +5 |
-| Bí mật (mỗi phe 1 lõi) | Boss của phe mình đánh cho mình | Không bao giờ ra theo kiểu thường; đạt điều kiện ẩn thì lần chọn lõi kế tiếp chắc chắn có (ô giữa, kèm câu báo riêng). Human: **The Golden Emperor** — giữ thành không mất máu 5 đợt liên tiếp. Elf: **The World Tree** — có 4 nhà Gỗ trên lưới. Dwarf: **Thor** — có 4 nhà Vàng. Beastfolk: **The Berserker** — thắng 3 đợt trăng tròn. Void: **The Broodmother** — diệt tổng cộng 1500 quân địch. Bản phe mình mạnh hơn bản boss gốc: máu x2,8, sát thương x1,6, vùng chém +0,8, giảm 75% sát thương tên, miễn khống chế, hồi sinh 1 lần/đợt với 50% máu (chết lần 2 thì chờ đợt sau). Chiêu giống bản boss (xem dòng Trùm). Bot: `-secret` (có sẵn lõi bí mật của phe, cần `-savetest`), `-secretpick` (coi như vừa mở khoá) |
+| Bí mật (mỗi phe 1 lõi) | Boss của phe mình đánh cho mình | Không bao giờ ra theo kiểu thường; đạt điều kiện ẩn thì lần chọn lõi kế tiếp chắc chắn có (ô giữa, kèm câu báo riêng). Human: **The Golden Emperor** — giữ thành không mất máu 5 đợt liên tiếp. Elf: **The World Tree** — có 4 nhà Gỗ trên lưới. Dwarf: **Thor** — có 4 nhà Vàng. Beastfolk: **The Berserker** — thắng tổng cộng 9 đợt. Void: **The Broodmother** — diệt tổng cộng 1500 quân địch. Bản phe mình mạnh hơn bản boss gốc: máu x2,8, sát thương x1,6, vùng chém +0,8, giảm 75% sát thương tên, miễn khống chế, hồi sinh 1 lần/đợt với 50% máu (chết lần 2 thì chờ đợt sau). Chiêu giống bản boss (xem dòng Trùm). Bot: `-secret` (có sẵn lõi bí mật của phe, cần `-savetest`), `-secretpick` (coi như vừa mở khoá) |
 
 Sức mạnh rồng, thiên thạch, nỏ và lính thuê nhân theo `Tuning.EnemyPower(đợt)` để không bị tụt hậu về cuối game.
 
@@ -159,7 +159,7 @@ màn chọn lõi nghiêng hẳn về lõi chuyên quân (70%), 2 ô sau 25%. Mã
 | Hoá thú | Người gấu | 👑 Terrifying Roar | Mỗi 12 giây gầm: địch quanh mình sợ hãi bỏ chạy 1 giây |
 | Hoá thú | Người sói | Pack Hunters | +8% sát thương mỗi sói đứng gần, tối đa +40% |
 | Hoá thú | Người báo | Predator | Ưu tiên quân đánh xa; đánh sau lưng x3 sát thương |
-| Hoá thú | Pháp sư bộ lạc | Blood Moon | Đợt trăng tròn vùng buff còn hồi máu |
+| Hoá thú | Pháp sư bộ lạc | Spirit Mend | Vùng buff còn hồi máu |
 | Hoá thú | Người chim ưng | 👑 Dive Bomb | Mỗi 15 giây phát lao kế tiếp x3 sát thương, nổ lan |
 | Void | Kẻ dị dạng | Mitosis | Chết thì tách 2 Voidling |
 | Void | Bóng hư | Soul Drain | Hút 20% sát thương thành máu |

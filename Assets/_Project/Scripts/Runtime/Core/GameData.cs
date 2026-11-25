@@ -18,7 +18,6 @@ namespace HordeLab
         public const int MaxGridSide = 7;               // mở đất tối đa trong vùng 7x7
         public const int MaxStars = 4;
         public const int RewardChoices = 3;
-        public const int FullMoonEvery = 3;             // Người hoá thú: cứ 3 đợt có 1 đợt trăng tròn
 
         // ---- Chưa chốt trong GDD → số tạm ----
         public const bool DiagonalAdjacency = false;    // "sát cạnh" tạm tính 4 hướng
@@ -77,7 +76,6 @@ namespace HordeLab
         public static float BossSize = 1.25f, BossPower = 1f;                // đợt trùm: đông hơn chút, sức như thường — điểm nhấn là con boss
         public static float BossHp = 3f;                                     // máu boss nhân thêm (ngoài hệ số theo đợt)
         public static float BossDelay = 4f;                                  // boss vào trận sau 4 giây
-        public static float FullMoonPower = 1.4f;
         public static float WaveTimeout = 150f;          // quá ngần này giây sau khi địch đến hết mà chưa xong thì coi như địch rút
     }
 
@@ -250,7 +248,7 @@ namespace HordeLab
         public const int EmperorStreak = 5;        // Người: giữ thành không mất máu 5 đợt liên tiếp
         public const int TreeWoodBuildings = 4;    // Tiên: có 4 nhà Gỗ trên lưới
         public const int ThorGoldBuildings = 4;    // Lùn: có 4 nhà Vàng trên lưới
-        public const int BerserkMoonWins = 3;      // Thú: thắng 3 đợt trăng tròn
+        public const int BerserkWins = 9;          // Thú: thắng tổng cộng 9 đợt
         public const int BroodKills = 1500;        // Hư không: diệt tổng cộng 1500 quân địch
 
         // Boss đánh cho người chơi: mạnh hơn hẳn bản gốc (bản boss phe địch dùng Tuning.BossHp)
@@ -332,7 +330,7 @@ namespace HordeLab
             new FactionDef { name = "Dwarf", color = new Color(0.90f, 0.62f, 0.25f), speedMul = 0.8f,
                 strength = "Gold Mines dig 30% faster", weakness = "Troops move 20% slower and troop buildings call 20% slower" },
             new FactionDef { name = "Beastfolk", color = new Color(0.78f, 0.50f, 0.34f),
-                strength = "Food buildings work 30% faster. Full moon (every 3rd wave): troops are much stronger", weakness = "Houses produce Pop 25% slower" },
+                strength = "Food buildings work 30% faster", weakness = "Houses produce Pop 25% slower" },
             new FactionDef { name = "The Void", color = new Color(0.68f, 0.40f, 0.92f), hpMul = 1.3f, dmgMul = 1.3f, popCostMul = 2f,
                 strength = "Troops are 30% stronger", weakness = "Every call costs double Pop" },
             new FactionDef { name = "Orc", color = new Color(0.46f, 0.74f, 0.28f), hpMul = 1.2f, rangeMul = 0.75f,
@@ -437,7 +435,7 @@ namespace HordeLab
             SU(UnitType.Bear, true, "Terrifying Roar", $"every {Aug.RoarEvery:0}s roar: nearby enemies flee in fear for {Aug.RoarFear:0}s.");
             SU(UnitType.Wolf, false, "Pack Hunters", $"+{pct(Aug.PackBonus)}% damage for every wolf nearby (up to +{pct(Aug.PackMax)}%).");
             SU(UnitType.Leopard, false, "Predator", $"hunt enemy ranged troops first; attacks from behind deal {Aug.Backstab:0}x damage.");
-            SU(UnitType.Shaman, false, "Blood Moon", "on full-moon waves the shaman's aura also heals the pack.");
+            SU(UnitType.Shaman, false, "Spirit Mend", "the shaman's aura also heals the pack.");
             SU(UnitType.Eagle, true, "Dive Bomb", $"every {Aug.DiveEvery:0}s the next javelin is a dive: {Aug.DiveDamage:0}x damage in a wide area.");
             SU(UnitType.Aberration, false, "Mitosis", "on death, split into 2 Voidlings (Voidlings do not split again).");
             SU(UnitType.Shade, false, "Soul Drain", $"heal for {pct(Aug.Lifesteal)}% of the damage dealt.");
@@ -513,7 +511,7 @@ namespace HordeLab
             VU(UnitType.Bear, $"{Aug.RoarFear:0}s", "Leader's roar makes foes flee");
             VU(UnitType.Wolf, $"+{pct(Aug.PackMax)}%", "Stronger in packs");
             VU(UnitType.Leopard, $"x{Aug.Backstab:0}", "Hunts archers, backstabs");
-            VU(UnitType.Shaman, "Heal", "Full moon: aura also heals");
+            VU(UnitType.Shaman, "Heal", "Aura also heals");
             VU(UnitType.Eagle, $"x{Aug.DiveDamage:0}", "Leader's dive hits an area");
             VU(UnitType.Aberration, "+2", "Splits into Voidlings");
             VU(UnitType.Shade, $"{pct(Aug.Lifesteal)}%", "Lifesteal");

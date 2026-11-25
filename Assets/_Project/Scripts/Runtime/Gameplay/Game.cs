@@ -21,7 +21,7 @@ namespace HordeLab
         public int augTier;                              // bậc của lần chọn lõi đang chờ (AugTier)
         public int flawless;                             // số đợt liên tiếp giữ thành không mất máu (mở khoá The Golden Emperor)
         public bool emperorUnlocked, emperorPending;     // lõi bí mật CỦA PHE NGƯỜI CHƠI (tên giữ từ bản cũ chỉ có Hoàng đế)
-        public int secretCount;                          // tiến độ mở khoá của Thú (đợt trăng tròn thắng) / Hư không (tổng quân địch đã diệt)
+        public int secretCount;                          // tiến độ mở khoá của Thú (tổng số đợt thắng) / Hư không (tổng quân địch đã diệt) / Orc (chuỗi thắng)
         public bool[] shopLocked;
         public string eventNote;
         public int envoyKind;                            // sự kiện phe đang chờ người chơi chọn (Game.EnvoyWar / EnvoyPeace, 0 = không có)
@@ -83,7 +83,7 @@ namespace HordeLab
         public int bossesCalled, bossType = -1;   // boss của đợt đang / vừa đánh (-1 = không phải đợt trùm)
         // ---- Lõi bí mật của phe người chơi (Aug.SecretOf(faction)) ----
         public int flawless;             // Người: số đợt liên tiếp giữ thành không mất máu
-        public int secretCount;          // Thú: số đợt trăng tròn đã thắng; Hư không: tổng quân địch đã diệt
+        public int secretCount;          // Thú: tổng số đợt đã thắng; Hư không: tổng quân địch đã diệt; Orc: chuỗi thắng
         public bool emperorUnlocked;     // đã đạt điều kiện ẩn: từ giờ lõi bí mật có thể ra khi chọn lõi
         public bool emperorPending;      // lần chọn lõi kế tiếp chắc chắn có lõi bí mật
         public int SecretAug => Aug.SecretOf(faction);
@@ -120,7 +120,6 @@ namespace HordeLab
         System.Random rnd = new System.Random();
 
         public bool IsBoss(int w) => w % Tuning.BossEvery == 0;
-        public bool IsFullMoon(int w) => w % Tuning.FullMoonEvery == 0;
         public int EnemiesAlive => battle.Counter(C.Team1);
         public int AlliesAlive => battle.Counter(C.Team0);
         int EnemySquadSize { get { int side = GameData.Factions[attacker].squadSide; return side * side; } }
@@ -608,7 +607,7 @@ namespace HordeLab
                 enemyWeights.Add(GameData.Units[t].waveWeight);
             }
 
-            battle.ApplyUnitAugments(t => Has(Aug.ForUnit(t)), IsFullMoon(wave), faction, Has(Aug.WarDrums) ? Aug.WarDrumsSpeed : 1f);
+            battle.ApplyUnitAugments(t => Has(Aug.ForUnit(t)), faction, Has(Aug.WarDrums) ? Aug.WarDrumsSpeed : 1f);
             battle.undying = Has(Aug.Undying);
             battle.wallThorns = Has(Aug.IronFortress) ? Aug.FortressThorns * Tuning.EnemyPower(wave) : 0f;
             lanceT = 2f; lancesFired = 0;
@@ -617,9 +616,6 @@ namespace HordeLab
             battle.paused = false;
             phase = Phase.Battle;
         }
-
-        float MoonMul(int unitType) =>
-            Faction.Of(unitType) == Faction.Beast && IsFullMoon(wave) ? Tuning.FullMoonPower : 1f;
 
         /// <summary>Chạy ngay trước mỗi bước mô phỏng: kinh tế, nhà lính gọi quân, quân địch kéo đến.</summary>
         void OnStep(float dt)
@@ -657,7 +653,6 @@ namespace HordeLab
         void CallSquads(Building b)
         {
             int type = b.Def.unit;
-            float moon = MoonMul(type);                         // trăng tròn
             float starHp = city.TroopHp(b), starDmg = city.TroopDmg(b);   // số sao của nhà lính
             int side = GameData.Factions[b.Def.faction >= 0 ? b.Def.faction : faction].squadSide;   // nhà lính phe khác: đội hình phe gốc
             bool leader = HasLeaderSkill(type);
@@ -665,8 +660,8 @@ namespace HordeLab
             for (int k = 0; k < city.Squads(b); k++)
             {
                 var pos = new float2(Cfg.PlayerSpawnX + rng.NextFloat(0f, 5f), rng.NextFloat(-Cfg.HalfH + 5f, Cfg.HalfH - 5f));
-                battle.SpawnSquad(type, 0, pos, side, b.hp * moon * starHp * (Has(Aug.IronSkin) ? 1f + Aug.IronSkinHp : 1f) * (Has(Aug.TitanBlood) ? 1f + Aug.TitanHp : 1f),
-                                  b.dmg * moon * starDmg * (Has(Aug.Sharpened) ? 1f + Aug.SharpenedDmg : 1f) * (Has(Aug.TitanBlood) ? 1f + Aug.TitanDmg : 1f),
+                battle.SpawnSquad(type, 0, pos, side, b.hp * starHp * (Has(Aug.IronSkin) ? 1f + Aug.IronSkinHp : 1f) * (Has(Aug.TitanBlood) ? 1f + Aug.TitanHp : 1f),
+                                  b.dmg * starDmg * (Has(Aug.Sharpened) ? 1f + Aug.SharpenedDmg : 1f) * (Has(Aug.TitanBlood) ? 1f + Aug.TitanDmg : 1f),
                                   b.regen + (Has(Aug.Medics) ? Aug.MedicsRegen : 0f), leader);   // chỉ có trưởng đạo khi có lõi kỹ năng trưởng đạo
             }
         }
@@ -683,7 +678,7 @@ namespace HordeLab
                 if (r < enemyWeights[i]) { type = enemyTypes[i]; break; }
                 r -= enemyWeights[i];
             }
-            float power = enemyPower * MoonMul(type);
+            float power = enemyPower;
             var pos = new float2(Cfg.EnemySpawnX + rng.NextFloat(0f, 6f), rng.NextFloat(-Cfg.HalfH + 5f, Cfg.HalfH - 5f));
             battle.SpawnSquad(type, 1, pos, GameData.Factions[attacker].squadSide, power, power);
         }
@@ -698,7 +693,7 @@ namespace HordeLab
             if (!won) hearts--;
             // Lõi bí mật của phe người chơi: mỗi phe 1 điều kiện ẩn
             flawless = won && battle.Counter(C.Breach) == 0 ? flawless + 1 : 0;
-            if (faction == Faction.Beast && won && IsFullMoon(wave)) secretCount++;
+            if (faction == Faction.Beast && won) secretCount++;                              // tổng số đợt thắng
             if (faction == Faction.Void) secretCount += battle.Counter(C.Dead1);
             if (faction == Faction.Orc) secretCount = won ? secretCount + 1 : 0;              // chuỗi thắng liên tiếp
             if (!emperorUnlocked && SecretConditionMet()) emperorUnlocked = emperorPending = true;
@@ -932,7 +927,7 @@ namespace HordeLab
                 case Faction.Human: return flawless >= Aug.EmperorStreak;
                 case Faction.Elf: return Count(Cat.Wood) >= Aug.TreeWoodBuildings;
                 case Faction.Dwarf: return Count(Cat.Gold) >= Aug.ThorGoldBuildings;
-                case Faction.Beast: return secretCount >= Aug.BerserkMoonWins;
+                case Faction.Beast: return secretCount >= Aug.BerserkWins;
                 case Faction.Orc: return secretCount >= Aug.WarbossStreak;
                 default: return secretCount >= Aug.BroodKills;
             }

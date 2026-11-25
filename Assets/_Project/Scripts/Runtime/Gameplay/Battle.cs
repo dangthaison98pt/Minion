@@ -389,7 +389,7 @@ namespace HordeLab
         [System.NonSerialized] public bool undying;        // lõi Undying Legion: lính ta chết có cơ hội đứng dậy
         [System.NonSerialized] public float wallThorns;    // lõi Iron Fortress: địch đập tường mất máu mỗi đòn
 
-        public void ApplyUnitAugments(System.Func<int, bool> has, bool fullMoon, int playerFaction = -1, float troopSpeed = 1f)
+        public void ApplyUnitAugments(System.Func<int, bool> has, int playerFaction = -1, float troopSpeed = 1f)
         {
             simHandle.Complete();
             for (int t = 0; t < UnitType.Count; t++)
@@ -400,7 +400,7 @@ namespace HordeLab
                 st.augOn = on ? 1 : 0;
                 if (on && t == UnitType.Swordsman) st.arrowResist += Aug.ShieldWallResist;            // Tường khiên
                 if (on && t == UnitType.SpearThrower) st.damage *= Aug.SpearDmg;                       // Heavy Spears
-                if (on && t == UnitType.Shaman && fullMoon) st.flags |= UFlag.HealAura;              // Trăng máu
+                if (on && t == UnitType.Shaman) st.flags |= UFlag.HealAura;                         // Spirit Mend: vùng buff còn hồi máu
                 stats[t] = st;
             }
         }

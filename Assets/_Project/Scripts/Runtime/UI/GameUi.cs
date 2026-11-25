@@ -750,7 +750,7 @@ namespace HordeLab
             Faction.Human => "The walls never fell. The Emperor has noticed.",
             Faction.Elf => "The forest has grown deep. The World Tree awakens.",
             Faction.Dwarf => "Your mines run deep. Thunder rumbles in the mountains.",
-            Faction.Beast => "Three moons of victory. The Berserker answers the howl.",
+            Faction.Beast => "Nine hunts won. The Berserker answers the howl.",
             Faction.Orc => "Five victories in a row. The Warboss smells a good fight.",
             _ => "So many have fallen. Something stirs in the dark.",
         };
@@ -1104,8 +1104,7 @@ namespace HordeLab
         void RefreshTopBar()
         {
             for (int i = 0; i < hearts.Length; i++) hearts[i].color = new Color(1f, 1f, 1f, i < g.hearts ? 1f : 0.18f);
-            string tag = (g.IsBoss(g.wave) ? "  <color=#ff8f6a>Boss</color>" : "") +
-                         (g.IsFullMoon(g.wave) && (g.attacker == Faction.Beast || g.faction == Faction.Beast) ? "  <color=#e8e6ff>Full moon</color>" : "");
+            string tag = g.IsBoss(g.wave) ? "  <color=#ff8f6a>Boss</color>" : "";
             waveText.Set($"Wave <color=#ffffff>{g.wave}</color>/{Tuning.Waves}    Enemy");
             var wr = waveText.rectTransform;
             float ex = wr.anchoredPosition.x + waveText.GetPreferredValues(waveText.text).x + 10f;
