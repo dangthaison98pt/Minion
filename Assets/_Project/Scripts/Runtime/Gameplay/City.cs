@@ -246,7 +246,7 @@ namespace HordeLab
                 if (faction == Faction.Beast && cat == Cat.Food) f = 1.3f;
                 if (faction == Faction.Beast && cat == Cat.Pop) f = 0.75f;
                 if (faction == Faction.Dwarf && b.def == B.GoldMine) f = 1.3f;
-                if (faction == Faction.Dwarf && cat == Cat.Barracks) f = 1f / 1.2f;
+                if (cat == Cat.Barracks && (b.Def.faction >= 0 ? b.Def.faction : faction) == Faction.Dwarf) f = 1f / 1.2f;   // đặc trưng theo phe gốc của nhà lính
                 if (cat == Cat.Barracks && Has(Aug.Drill)) f *= 1f + Aug.DrillSpeed;
 
                 b.speed = Mathf.Max(0.4f, 1f + Mathf.Min(b.speedB, Tuning.BuffCap)) * f;
@@ -309,7 +309,7 @@ namespace HordeLab
             var u = GameData.Units[b.Def.unit];
             Res raw = u.costAt != null ? u.costAt[b.stars - 1] : u.cost * u.starCost[b.stars - 1];   // chi phí ở đúng mốc sao
             Res c = raw * (b.costMul * (Has(Aug.Supply) ? 1f - Aug.SupplyCut : 1f));
-            c.pop *= GameData.Factions[faction].popCostMul;
+            c.pop *= GameData.Factions[b.Def.faction >= 0 ? b.Def.faction : faction].popCostMul;   // nhà lính phe khác: giá Dân theo phe gốc
             return c;
         }
 

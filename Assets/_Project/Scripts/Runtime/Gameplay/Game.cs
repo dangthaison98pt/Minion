@@ -28,6 +28,7 @@ namespace HordeLab
         public int[] envoyChoices;                       // các phe đang hiện để chọn
         public bool lastWon;
         public int lastWave, lastCrystals, lastInterest, lastWinBonus;
+        public int lastFoe = -1;                         // phe vừa đánh thắng (phần thưởng có nhà lính của phe đó); -1 = thua / bản lưu cũ
         public float pop, food, wood, gold;
         public int[] cellX, cellY, cellDef, cellStars;
         public int[] cellTrade;                          // Market: tài nguyên đã chọn để đổi Vàng   // cellDef = -1: ô đã mở nhưng còn trống
@@ -99,6 +100,7 @@ namespace HordeLab
         public int lastWave, lastCrystals;
         public int lastWinBonus;         // thưởng thêm khi giữ được thành (thua = 0)
         public int lastInterest;         // lãi Tinh thể nhận ở cuối đợt vừa xong (tính trên số đang giữ, trước khi cộng thưởng)
+        public int lastFoe = -1;         // phe vừa bị đánh bại ở đợt trước (-1 = thua đợt đó)
 
         // ---- Đợt đang đánh ----
         public int castleHp;
@@ -197,7 +199,7 @@ namespace HordeLab
             {
                 faction = faction, hearts = hearts, wave = wave, crystals = crystals, attacker = attacker, phase = (int)phase, difficulty = difficulty,
                 hostile = hostile.ToArray(), hand = hand.ToArray(), handStars = handStars.ToArray(), shop = (int[])shop.Clone(), reward = (int[])reward.Clone(),
-                shopLocked = (bool[])shopLocked.Clone(), eventNote = eventNote, envoyKind = envoyKind, envoyChoices = envoyChoices.ToArray(), lastWon = lastWon, lastWave = lastWave, lastCrystals = lastCrystals, lastInterest = lastInterest, lastWinBonus = lastWinBonus,
+                shopLocked = (bool[])shopLocked.Clone(), eventNote = eventNote, envoyKind = envoyKind, envoyChoices = envoyChoices.ToArray(), lastWon = lastWon, lastWave = lastWave, lastCrystals = lastCrystals, lastInterest = lastInterest, lastWinBonus = lastWinBonus, lastFoe = lastFoe,
                 pop = city.res.pop, food = city.res.food, wood = city.res.wood, gold = city.res.gold,
                 augments = city.augments.ToArray(), augChoices = (int[])augChoices.Clone(), augRerolled = (bool[])augRerolled.Clone(), augTier = (int)augTier, augShown = augShown.ToArray(),
                 flawless = flawless, emperorUnlocked = emperorUnlocked, emperorPending = emperorPending, secretCount = secretCount
@@ -247,7 +249,7 @@ namespace HordeLab
             System.Array.Clear(shopLocked, 0, shopLocked.Length);
             if (d.shopLocked != null) for (int i = 0; i < Mathf.Min(d.shopLocked.Length, shopLocked.Length); i++) shopLocked[i] = d.shopLocked[i];
             flawless = d.flawless; emperorUnlocked = d.emperorUnlocked; emperorPending = d.emperorPending; secretCount = d.secretCount;
-            eventNote = d.eventNote; lastWon = d.lastWon; lastWave = d.lastWave; lastCrystals = d.lastCrystals; lastInterest = d.lastInterest; lastWinBonus = d.lastWinBonus;
+            eventNote = d.eventNote; lastWon = d.lastWon; lastWave = d.lastWave; lastCrystals = d.lastCrystals; lastInterest = d.lastInterest; lastWinBonus = d.lastWinBonus; lastFoe = d.lastFoe >= 0 && d.lastFoe < Faction.Count ? d.lastFoe : -1;
 
             city.Init(faction);
             city.cells.Clear();
@@ -371,6 +373,14 @@ namespace HordeLab
         {
             int c = RawCard(forShop);
             for (int k = 0; k < 30 && !CardUseful(c); k++) c = RawCard(forShop);
+            return c;
+        }
+
+        /// <summary>1 nhà chung (tài nguyên / buff, không phải nhà lính), bỏ qua nhà buff không có gì để buff.</summary>
+        int SharedCard()
+        {
+            int c = rnd.Next(B.Barracks);
+            for (int k = 0; k < 30 && !CardUseful(c); k++) c = rnd.Next(B.Barracks);
             return c;
         }
 
@@ -654,7 +664,7 @@ namespace HordeLab
             int type = b.Def.unit;
             float moon = MoonMul(type);                         // trăng tròn
             float starHp = city.TroopHp(b), starDmg = city.TroopDmg(b);   // số sao của nhà lính
-            int side = GameData.Factions[faction].squadSide;
+            int side = GameData.Factions[b.Def.faction >= 0 ? b.Def.faction : faction].squadSide;   // nhà lính phe khác: đội hình phe gốc
             bool leader = HasLeaderSkill(type);
             ref var rng = ref battle.Rng;
             for (int k = 0; k < city.Squads(b); k++)
@@ -705,11 +715,15 @@ namespace HordeLab
             lastCrystals = Tuning.CrystalReward;
             lastWinBonus = won ? Tuning.WinBonus : 0;
             crystals += lastCrystals + lastWinBonus + lastInterest;
-            // phần thưởng chỉ được chọn 1 lá: các lá phải khác nhau
-            for (int i = 0; i < reward.Length; i++)
+            // Phần thưởng: Mở rộng đất + 1 nhà chung + nhà lính của phe vừa bị đánh bại (thua thì thêm 1 nhà chung). Các lá khác nhau.
+            lastFoe = won ? attacker : -1;
+            for (int i = 0; i < reward.Length; i++) reward[i] = -1;
+            if (reward.Length > 0) reward[0] = LandLeft > 0 ? B.Expand : SharedCard();
+            for (int i = 1; i < reward.Length; i++)
             {
-                int c = RandomCard();
-                for (int k = 0; k < 30 && System.Array.IndexOf(reward, c, 0, i) >= 0; k++) c = RandomCard();
+                bool spoils = i == reward.Length - 1 && lastFoe >= 0;
+                int c = spoils ? B.BarracksOf(lastFoe * 5 + rnd.Next(5)) : SharedCard();
+                for (int k = 0; k < 30 && System.Array.IndexOf(reward, c, 0, i) >= 0; k++) c = spoils ? B.BarracksOf(lastFoe * 5 + rnd.Next(5)) : SharedCard();
                 reward[i] = c;
             }
 

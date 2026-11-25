@@ -425,6 +425,20 @@ namespace HordeLab
                     foreach (int sc in game.shop) if (sc >= 0 && !game.CardUseful(sc)) useless++;
                     cardChecks++; if (dup > 0 || useless > 0) cardFails++;
                     log.AppendLine($"CARD TEST: {(dup == 0 && useless == 0 ? "OK" : "FAIL")} (phần thưởng trùng {dup}, thẻ buff vô dụng {useless})");
+                    if (game.wave > 1)
+                    {
+                        // phần thưởng: lá đầu là đất (khi còn đất), không có nhà lính phe mình, thắng thì có đúng 1 nhà lính phe vừa đánh bại
+                        int own = 0, spoils = 0, other = 0;
+                        foreach (int c in game.reward)
+                        {
+                            var bd = GameData.Buildings[c];
+                            if (bd.cat != Cat.Barracks) continue;
+                            if (bd.faction == game.faction) own++; else if (bd.faction == game.lastFoe) spoils++; else other++;
+                        }
+                        bool spOk = own == 0 && other == 0 && spoils == (game.lastFoe >= 0 ? 1 : 0);
+                        if (!spOk) cardFails++;
+                        log.AppendLine($"SPOILS TEST: {(spOk ? "OK" : "FAIL")} (thưởng: {string.Join(", ", System.Array.ConvertAll(game.reward, c => GameData.Buildings[c].name))}; phe bị đánh bại {(game.lastFoe >= 0 ? GameData.Factions[game.lastFoe].name : "-")})");
+                    }
                 }
                 if (System.Array.IndexOf(System.Environment.GetCommandLineArgs(), "-envoy") >= 0) Tuning.EventChance = 1f;   // -envoy: sứ giả sau mỗi đợt
                 // -boss F: mọi đợt đều là đợt trùm của phe F (thử boss)
