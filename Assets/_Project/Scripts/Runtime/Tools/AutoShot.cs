@@ -427,7 +427,7 @@ namespace HordeLab
                     log.AppendLine($"CARD TEST: {(dup == 0 && useless == 0 ? "OK" : "FAIL")} (phần thưởng trùng {dup}, thẻ buff vô dụng {useless})");
                     if (game.wave > 1)
                     {
-                        // phần thưởng: lá đầu là đất (khi còn đất), không có nhà lính phe mình, thắng thì có đúng 1 nhà lính phe vừa đánh bại
+                        // phần thưởng: không có nhà lính phe mình; nhà lính (nếu có) chỉ của phe vừa đánh bại, thua thì không có
                         int own = 0, spoils = 0, other = 0;
                         foreach (int c in game.reward)
                         {
@@ -435,7 +435,10 @@ namespace HordeLab
                             if (bd.cat != Cat.Barracks) continue;
                             if (bd.faction == game.faction) own++; else if (bd.faction == game.lastFoe) spoils++; else other++;
                         }
-                        bool spOk = own == 0 && other == 0 && spoils == (game.lastFoe >= 0 ? 1 : 0);
+                        bool spOk = own == 0 && other == 0 && (game.lastFoe >= 0 || spoils == 0);
+                        bool shopOwn = true;
+                        foreach (int c in game.shop) if (c >= 0 && GameData.Buildings[c].cat == Cat.Barracks && GameData.Buildings[c].faction != game.faction) shopOwn = false;
+                        spOk &= shopOwn;
                         if (!spOk) cardFails++;
                         log.AppendLine($"SPOILS TEST: {(spOk ? "OK" : "FAIL")} (thưởng: {string.Join(", ", System.Array.ConvertAll(game.reward, c => GameData.Buildings[c].name))}; phe bị đánh bại {(game.lastFoe >= 0 ? GameData.Factions[game.lastFoe].name : "-")})");
                     }

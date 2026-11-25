@@ -1659,7 +1659,7 @@ namespace HordeLab
                 rewardSub.Set($"You gain <color=#8fe8ff>+{g.lastCrystals + g.lastWinBonus + g.lastInterest} Energy Crystals</color>" +
                               $" <color=#aaaaaa>({parts})</color>" +
                               $". Pick 1 of {g.reward.Length} cards" +
-                              (g.lastFoe >= 0 ? $", including spoils from {FactionTag(g.lastFoe)}:" : ":"));
+                              (g.lastFoe >= 0 ? $" <color=#aaaaaa>(troops: spoils from</color> {FactionTag(g.lastFoe)}<color=#aaaaaa>)</color>:" : ":"));
                 rewardEvent.Set(g.envoyKind == Game.EnvoyWar ? "Event: an envoy arrives — you must declare war on a new faction."
                                : g.envoyKind == Game.EnvoyPeace ? "Event: an envoy arrives — you may make peace with one enemy."
                                : string.IsNullOrEmpty(g.eventNote) ? "" : $"Event: {g.eventNote}");

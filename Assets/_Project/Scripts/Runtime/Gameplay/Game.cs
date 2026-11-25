@@ -368,32 +368,27 @@ namespace HordeLab
             }
         }
 
-        /// <summary>Rút 1 thẻ ngẫu nhiên, bỏ qua nhà buff không có gì để buff.</summary>
-        public int RandomCard(bool forShop = false)
+        /// <summary>Rút 1 thẻ ngẫu nhiên, bỏ qua nhà buff không có gì để buff.
+        /// Cửa hàng: nhà lính phe mình. Phần thưởng: nhà lính của phe <paramref name="barracksFaction"/> (-1 = không có nhà lính).</summary>
+        public int RandomCard(bool forShop = false, int barracksFaction = -2)
         {
-            int c = RawCard(forShop);
-            for (int k = 0; k < 30 && !CardUseful(c); k++) c = RawCard(forShop);
+            if (forShop || barracksFaction == -2) barracksFaction = faction;
+            int c = RawCard(forShop, barracksFaction);
+            for (int k = 0; k < 30 && !CardUseful(c); k++) c = RawCard(forShop, barracksFaction);
             return c;
         }
 
-        /// <summary>1 nhà chung (tài nguyên / buff, không phải nhà lính), bỏ qua nhà buff không có gì để buff.</summary>
-        int SharedCard()
-        {
-            int c = rnd.Next(B.Barracks);
-            for (int k = 0; k < 30 && !CardUseful(c); k++) c = rnd.Next(B.Barracks);
-            return c;
-        }
-
-        int RawCard(bool forShop)
+        int RawCard(bool forShop, int barracksFaction)
         {
             const int shared = B.Barracks;            // 0..22: nhà tài nguyên + nhà buff
             const float barracksW = 1.6f;
             float expandW = forShop ? 0f : 2.5f;
-            float total = shared + 5 * barracksW + expandW;
+            float troopW = barracksFaction >= 0 ? 5 * barracksW : 0f;
+            float total = shared + troopW + expandW;
             float r = (float)rnd.NextDouble() * total;
-            if (r < shared) return (int)r;
+            if (r < shared) return Mathf.Min(shared - 1, (int)r);
             r -= shared;
-            if (r < 5 * barracksW) return B.BarracksOf(faction * 5 + Mathf.Min(4, (int)(r / barracksW)));
+            if (r < troopW) return B.BarracksOf(barracksFaction * 5 + Mathf.Min(4, (int)(r / barracksW)));
             return B.Expand;
         }
 
@@ -715,15 +710,13 @@ namespace HordeLab
             lastCrystals = Tuning.CrystalReward;
             lastWinBonus = won ? Tuning.WinBonus : 0;
             crystals += lastCrystals + lastWinBonus + lastInterest;
-            // Phần thưởng: Mở rộng đất + 1 nhà chung + nhà lính của phe vừa bị đánh bại (thua thì thêm 1 nhà chung). Các lá khác nhau.
+            // Phần thưởng: rút ngẫu nhiên như cửa hàng nhưng bể thẻ là đất + nhà chung + nhà lính của phe vừa bị đánh bại
+            // (thua thì không có nhà lính). Các lá phải khác nhau.
             lastFoe = won ? attacker : -1;
-            for (int i = 0; i < reward.Length; i++) reward[i] = -1;
-            if (reward.Length > 0) reward[0] = LandLeft > 0 ? B.Expand : SharedCard();
-            for (int i = 1; i < reward.Length; i++)
+            for (int i = 0; i < reward.Length; i++)
             {
-                bool spoils = i == reward.Length - 1 && lastFoe >= 0;
-                int c = spoils ? B.BarracksOf(lastFoe * 5 + rnd.Next(5)) : SharedCard();
-                for (int k = 0; k < 30 && System.Array.IndexOf(reward, c, 0, i) >= 0; k++) c = spoils ? B.BarracksOf(lastFoe * 5 + rnd.Next(5)) : SharedCard();
+                int c = RandomCard(false, lastFoe);
+                for (int k = 0; k < 30 && System.Array.IndexOf(reward, c, 0, i) >= 0; k++) c = RandomCard(false, lastFoe);
                 reward[i] = c;
             }
 
