@@ -728,8 +728,8 @@ namespace HordeLab
                     House(t, 3, 5, 18, 14, RoofBlue, RoofBlueD, WallStone);
                     for (int x = 3; x < 21; x += 4) Box(t, x, 3, x + 1, 4, WallStone);        // lỗ châu mai
                     Flag(t, 24, 12, Tunic, 9);
-                    t.Set(28, 13, Rgb(150, 150, 160));                                         // tri ân The Witcher 3: mặt dây chuyền đầu sói bạc
-                    Pix(t, 25, 14, "osdr", new[] { Outline, Rgb(210, 216, 226), Rgb(120, 126, 140), Rgb(230, 60, 60) },
+                    t.Set(12, 4, Rgb(150, 150, 160)); t.Set(12, 5, Rgb(150, 150, 160));        // tri ân The Witcher 3: mặt dây chuyền đầu sói bạc treo trên mái
+                    Pix(t, 9, 6, "osdr", new[] { Outline, Rgb(210, 216, 226), Rgb(120, 126, 140), Rgb(230, 60, 60) },
                         "o....o",
                         "oso.os",
                         "osssso",
