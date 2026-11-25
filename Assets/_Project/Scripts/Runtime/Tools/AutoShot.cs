@@ -195,7 +195,8 @@ namespace HordeLab
 
         IEnumerator BotRun()
         {
-            log.AppendLine($"BOT CHƠI THỬ: phe {GameData.Factions[botFaction].name}, tối đa {maxWaves} đợt");
+            var bf = GameData.Factions[botFaction];
+            log.AppendLine($"BOT CHƠI THỬ: phe {bf.name} (mỗi lần gọi {bf.squadSide * bf.squadSide} lính, máu x{bf.hpMul:0.##}, sát thương x{bf.dmgMul:0.##}, tầm x{bf.rangeMul:0.##}), tối đa {maxWaves} đợt");
             for (int i = 0; i < 30; i++) yield return null;
             Shot("00_menu.png");
             yield return Frames(3);
