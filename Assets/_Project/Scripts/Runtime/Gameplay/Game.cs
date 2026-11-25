@@ -39,7 +39,7 @@ namespace HordeLab
     /// Giữ thẻ trên tay, cửa hàng, tim, danh sách phe thù địch; gọi <see cref="City"/> để chạy kinh tế
     /// và <see cref="Battle"/> để sinh quân. Giao diện nằm ở UI/GameUi.cs, chỉ đọc trạng thái ở đây và gọi các hàm public.
     /// </summary>
-    [DefaultExecutionOrder(-100)]   // chạy TRƯỚC Battle.Update: lúc đó chưa có job nào được xếp lịch nên sửa dữ liệu thoải mái
+    [DefaultExecutionOrder(-100)]   // Awake / Start trước Battle; mỗi frame Tick chạy TRƯỚC Battle.Tick (GameLoop) khi chưa có job nào được xếp lịch
     public class Game : MonoBehaviour
     {
         public static Game I { get; private set; }
@@ -151,6 +151,8 @@ namespace HordeLab
             Settings.Load();
             ui = gameObject.AddComponent<GameUi>();
             ui.Init(this);
+            loop = new GameLoop(this, battle, ui);       // Update / LateUpdate chạy qua UpdateManager, đúng thứ tự
+            OrostrideToolkit.Core.UpdateManager.Register(loop);
             if (phase == Phase.Menu) EnterMenu();
         }
 
@@ -630,7 +632,8 @@ namespace HordeLab
             if (phase != Phase.Battle) return;
             waveTime += dt;
 
-            city.Tick(dt, AlliesAlive < Tuning.PlayerUnitCap, CallSquads);
+            callSquads ??= CallSquads;                  // giữ 1 delegate: truyền thẳng tên hàm sẽ tạo delegate mới mỗi bước mô phỏng (rác bộ nhớ)
+            city.Tick(dt, AlliesAlive < Tuning.PlayerUnitCap, callSquads);
             LegendaryStep(dt);
 
             // đợt trùm: boss của phe tấn công vào trận (1 con, máu nhân thêm)
@@ -655,6 +658,8 @@ namespace HordeLab
                 if (squadsLeft == 0) allSpawnedAt = waveTime;
             }
         }
+
+        System.Action<Building> callSquads;
 
         void CallSquads(Building b)
         {
@@ -1024,8 +1029,16 @@ namespace HordeLab
             SaveRun();
         }
 
+        GameLoop loop;
+
+        void OnDestroy()
+        {
+            if (loop != null && OrostrideToolkit.Core.UpdateManager.HasInstance) OrostrideToolkit.Core.UpdateManager.Unregister(loop);
+        }
+
         // ------------------------------------------------------------------
-        void Update()
+        /// <summary>Mỗi frame, trước Battle.Tick (GameLoop gọi).</summary>
+        internal void Tick()
         {
             // Hết đợt: dọn sạch sân ngay (lính, xác, máu), không chờ tới lúc bắt đầu đợt sau
             if (endedAt >= 0f && !fieldCleared && Time.unscaledTime - endedAt >= ClearAt)

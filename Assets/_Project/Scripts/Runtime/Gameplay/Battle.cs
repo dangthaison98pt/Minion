@@ -431,7 +431,8 @@ namespace HordeLab
         // ------------------------------------------------------------------
         // Vòng lặp
         // ------------------------------------------------------------------
-        void Update()
+        /// <summary>Mỗi frame, sau Game.Tick (GameLoop gọi): xếp lịch các bước mô phỏng.</summary>
+        internal void Tick()
         {
             view.Update();
 
@@ -518,7 +519,8 @@ namespace HordeLab
 
         int drawUnits, drawArrows, drawParticles;   // số phần tử đã đóng gói lần gần nhất (vẫn vẽ được khi mô phỏng đứng yên)
 
-        void LateUpdate()
+        /// <summary>Cuối frame, trước GameUi.LateTick (GameLoop gọi): chờ job xong, đẩy dữ liệu lên GPU, vẽ.</summary>
+        internal void LateTick()
         {
             if (simScheduled)
             {

@@ -16,11 +16,14 @@ namespace HordeLab
     ///   -batchmode      chạy ngầm, không chụp màn hình, thời gian game chạy nhanh hết mức
     /// Chơi bình thường thì công cụ này không làm gì cả.
     /// </summary>
-    public class AutoShot : MonoBehaviour
+    public class AutoShot : MonoBehaviour, OrostrideToolkit.Core.IUpdatable   // Update chạy qua UpdateManager (thứ tự không quan trọng)
     {
+        void OnEnable() => OrostrideToolkit.Core.UpdateManager.Register(this);
+        void OnDisable() { if (OrostrideToolkit.Core.UpdateManager.HasInstance) OrostrideToolkit.Core.UpdateManager.Unregister(this); }
+        public void OnUpdate(float dt) => Sample();
+
         // đo rác bộ nhớ (GC) lúc đang đánh
-        Unity.Profiling.ProfilerRecorder gcAlloc;
-        long sumGcBytes, maxGcBytes;
+        long sumGcBytes, maxGcBytes, monoLast;
         int gcLast = -1, gcCollections;
         string dir;
         bool saveTest;
@@ -71,7 +74,6 @@ namespace HordeLab
             saveTest = System.Array.IndexOf(System.Environment.GetCommandLineArgs(), "-savetest") >= 0;
             Game.saveFile = "run_autotest.json";
             game.savingEnabled = saveTest;
-            gcAlloc = Unity.Profiling.ProfilerRecorder.StartNew(Unity.Profiling.ProfilerCategory.Memory, "GC Allocated In Frame");
             if (Headless)
             {
                 log.AppendLine("Chạy ngầm (-batchmode): không chụp màn hình, không đo GPU — xuất atlas sprite ra PNG thay thế");
@@ -90,8 +92,9 @@ namespace HordeLab
             log.AppendLine($"TỔNG KẾT HIỆU NĂNG: fps tb={sumFps / m:0.0} thấp nhất={minFps:0} | sim tb={sumSim / m:0.00}ms cao nhất={maxSim:0.00}ms | " +
                            $"frame tb={totalFrame / m:0.0}ms cao nhất={worstFrame:0.0}ms | lính tb={sumUnits / m:0} cao nhất={maxUnits} | " +
                            $"đạn cao nhất={maxArrows} | hạt cao nhất={maxParticles} | " +
-                           $"rác GC tb={(gcAlloc.Valid ? $"{sumGcBytes / (double)m / 1024.0:0.00}KB/frame" : "?")} cao nhất={maxGcBytes / 1024.0:0.0}KB, dọn rác {gcCollections} lần trong {m} frame đánh");
-            gcAlloc.Dispose();
+                           $"rác GC (cả bot đo) tb={sumGcBytes / (double)m / 1024.0:0.00}KB/frame cao nhất={maxGcBytes / 1024.0:0.0}KB, dọn rác {gcCollections} lần trong {m} frame đánh" +
+                           $" | rác theo bước (KB/frame): Game {GameLoop.allocBytes[0] / (double)m / 1024.0:0.00}, Battle {GameLoop.allocBytes[1] / (double)m / 1024.0:0.00}, vẽ {GameLoop.allocBytes[2] / (double)m / 1024.0:0.00}, giao diện {GameLoop.allocBytes[3] / (double)m / 1024.0:0.00}");
+
             File.WriteAllText(Path.Combine(dir, "stats.txt"), log.ToString());
             Application.Quit();
         }
@@ -615,7 +618,7 @@ namespace HordeLab
         double sumFps, sumSim, totalFrame, worstFrame, sumUnits, maxSim;
         float minFps = float.MaxValue;
 
-        void Update()
+        void Sample()
         {
             if (battle == null || game == null) return;
             FrameTimingManager.CaptureFrameTimings();
@@ -632,6 +635,7 @@ namespace HordeLab
 
             // Tổng kết: chỉ tính lúc đang đánh, bỏ 300 frame đầu (Burst/shader còn đang khởi động)
             bool fighting = game.phase == Phase.Battle || game.phase == Phase.Sandbox;
+            GameLoop.measureAlloc = fighting && Time.frameCount > 300;
             if (fighting && Time.frameCount > 300)
             {
                 sumSamples++;
@@ -642,12 +646,14 @@ namespace HordeLab
                 sumUnits += units; maxUnits = math.max(maxUnits, units);
                 maxArrows = math.max(maxArrows, battle.Counter(C.Arrows));
                 maxParticles = math.max(maxParticles, battle.Counter(C.Particles));
-                if (gcAlloc.Valid) { long a = gcAlloc.LastValue; sumGcBytes += a; maxGcBytes = math.max(maxGcBytes, a); }
+                long mono = UnityEngine.Profiling.Profiler.GetMonoUsedSizeLong();   // bộ nhớ C# đang dùng: tăng bao nhiêu = rác frame này tạo ra (frame có dọn rác thì bỏ qua)
+                if (monoLast > 0 && mono > monoLast) { long a = mono - monoLast; sumGcBytes += a; maxGcBytes = math.max(maxGcBytes, a); }
+                monoLast = mono;
                 int gcNow = System.GC.CollectionCount(0);
                 if (gcLast >= 0) gcCollections += gcNow - gcLast;
                 gcLast = gcNow;
             }
-            else gcLast = -1;
+            else { gcLast = -1; monoLast = 0; }
 
             if (Time.time < nextLog) return;
             nextLog += stress > 0 ? 1f : 5f;

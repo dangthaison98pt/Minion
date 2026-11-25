@@ -1,4 +1,5 @@
 using TMPro;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -294,6 +295,21 @@ namespace HordeLab
             b.interactable = on;
             b.GetComponent<CanvasGroup>().alpha = on ? 1f : 0.45f;
         }
+
+        // ---- Chống tạo rác mỗi frame: chỉ dựng lại chuỗi khi số liệu đổi ----
+        static readonly Dictionary<TextMeshProUGUI, long> textKeys = new Dictionary<TextMeshProUGUI, long>(64);
+
+        /// <summary>true nếu <paramref name="key"/> khác lần trước của ô chữ này (lần đầu luôn true). Dùng: if (t.Changed(Key(a, b))) t.Set($"...");</summary>
+        public static bool Changed(this TextMeshProUGUI t, long key)
+        {
+            if (textKeys.TryGetValue(t, out long k) && k == key) return false;
+            textKeys[t] = key;
+            return true;
+        }
+
+        /// <summary>Gộp vài số thành 1 khoá cho <see cref="Changed"/>.</summary>
+        public static long Key(long a, long b = 0, long c = 0, long d = 0, long e = 0, long f = 0) =>
+            (((((a * 1000003L + b) * 1000003L + c) * 1000003L + d) * 1000003L + e) * 1000003L) + f;
 
         public static void Set(this TextMeshProUGUI t, string text)
         {

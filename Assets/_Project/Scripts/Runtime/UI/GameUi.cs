@@ -13,7 +13,7 @@ namespace HordeLab
     /// Bố cục: thanh trên · bảng thành bên trái (lưới + tay bài + ô bán) · dải dưới chiến trường (cửa hàng + nút bắt đầu đợt).
     /// Thao tác: kéo-thả HOẶC bấm chọn thẻ rồi bấm ô. Esc = menu tạm dừng.
     /// </summary>
-    [DefaultExecutionOrder(100)]   // chạy SAU Battle.LateUpdate: lúc đó job mô phỏng đã xong, đọc số liệu an toàn
+    [DefaultExecutionOrder(100)]   // LateTick chạy SAU Battle.LateTick (GameLoop): lúc đó job mô phỏng đã xong, đọc số liệu an toàn
     public class GameUi : MonoBehaviour
     {
         public const float VH = 1080f, TopH = 72f, PanelW = 520f, DockH = 206f;   // đủ cao cho hình thẻ cửa hàng x3
@@ -99,6 +99,9 @@ namespace HordeLab
         /// <summary>Màu bậc lõi; Prismatic đổi màu cầu vồng chầm chậm.</summary>
         static Color TierTint(AugTier t, float phase = 0f) =>
             t == AugTier.Prismatic ? Color.HSVToRGB(Mathf.Repeat(Time.unscaledTime * 0.25f + phase, 1f), 0.45f, 1f) : TierColor[(int)t];
+        float waveTextW;                  // bề rộng chữ "Wave n/30 Enemy" (đo lại khi đổi đợt)
+        float liveTextAt;                 // các dòng số chạy liên tục (số địch, thống kê, FPS) chỉ dựng lại 10 lần/giây: đỡ tạo chuỗi mỗi frame
+        bool liveTick;
         TextMeshProUGUI rewardTitle, rewardSub, rewardEvent, endTitle, endText, continueInfo, newGameNote;
         readonly RewardView[] rewardCards = new RewardView[Tuning.RewardChoices];
         Button continueBtn;
@@ -1011,7 +1014,8 @@ namespace HordeLab
         int InterestExtra => g.InterestExtra;
         static float Smooth(float t) => t * t * (3f - 2f * t);
 
-        void LateUpdate()
+        /// <summary>Cuối frame, sau Battle.LateTick (GameLoop gọi).</summary>
+        internal void LateTick()
         {
             if (g == null) return;
             scale = Mathf.Min(Screen.width / 1920f, Screen.height / VH);   // khớp CanvasScaler Expand
@@ -1056,6 +1060,8 @@ namespace HordeLab
             hud.Show(InWorld);
             if (phase == Phase.Menu) RefreshMenu();
 
+            liveTick = Time.unscaledTime >= liveTextAt;
+            if (liveTick) liveTextAt = Time.unscaledTime + 0.1f;
             infoDef = -1; infoStars = 1; infoBuilding = null; tipText = null; replaceTip = null; hoverCellValid = false;
             bool modal = PauseOpen || phase == Phase.Reward || phase == Phase.Augment || phase == Phase.Envoy || phase == Phase.Lost || phase == Phase.Won;
 
@@ -1106,13 +1112,16 @@ namespace HordeLab
         void RefreshTopBar()
         {
             for (int i = 0; i < hearts.Length; i++) hearts[i].color = new Color(1f, 1f, 1f, i < g.hearts ? 1f : 0.18f);
-            string tag = g.IsBoss(g.wave) ? "  <color=#ff8f6a>Boss</color>" : "";
-            waveText.Set($"Wave <color=#ffffff>{g.wave}</color>/{Tuning.Waves}    Enemy");
+            if (waveText.Changed(g.wave))
+            {
+                waveText.Set($"Wave <color=#ffffff>{g.wave}</color>/{Tuning.Waves}    Enemy");
+                waveTextW = waveText.GetPreferredValues(waveText.text).x;
+            }
             var wr = waveText.rectTransform;
-            float ex = wr.anchoredPosition.x + waveText.GetPreferredValues(waveText.text).x + 10f;
+            float ex = wr.anchoredPosition.x + waveTextW + 10f;
             enemyEmblem.sprite = Emblems[g.attacker];
             enemyEmblem.At(ex, 12f + (TopH - 14f - 36f) * 0.5f, 36f, 36f);
-            waveTag.Set(tag.Trim());
+            waveTag.Set(g.IsBoss(g.wave) ? "<color=#ff8f6a>Boss</color>" : "");
             waveTag.At(ex + 44f, 12f, 200f, TopH - 14f);
             if (Over(enemyEmblem.rectTransform)) tipText = FactionTip(g.attacker);
 
@@ -1121,20 +1130,24 @@ namespace HordeLab
             if (fight)
             {
                 castleFill.anchorMax = new Vector2(Mathf.Clamp01(g.castleHp / (float)g.MaxCastleHp), 1f);
-                castleText.Set($"Castle {g.castleHp}/{g.MaxCastleHp}" + (g.lastStandUsed ? "  <color=#d79bff>Last Stand!</color>" : ""));
-                enemiesText.Set($"<size=13><color=#aaaaaa>Enemies left</color></size>\n<color=#ff8f8f>{g.EnemiesRemaining:N0}</color>/{g.EnemiesTotal:N0}");
-                speedBtn.Label().Set($"x{battle.speed}");
+                if (castleText.Changed(Key(g.castleHp, g.MaxCastleHp, g.lastStandUsed ? 1 : 0)))
+                    castleText.Set($"Castle {g.castleHp}/{g.MaxCastleHp}" + (g.lastStandUsed ? "  <color=#d79bff>Last Stand!</color>" : ""));
+                if (liveTick && enemiesText.Changed(Key(g.EnemiesRemaining, g.EnemiesTotal)))
+                    enemiesText.Set($"<size=13><color=#aaaaaa>Enemies left</color></size>\n<color=#ff8f8f>{g.EnemiesRemaining:N0}</color>/{g.EnemiesTotal:N0}");
+                var speedLabel = speedBtn.Label();
+                if (speedLabel.Changed(battle.speed)) speedLabel.Set($"x{battle.speed}");
                 pauseBtn.Label().Set(battle.paused ? ">" : "II");
             }
 
-            crystalText.Set(g.crystals.ToString());
+            if (crystalText.Changed(g.crystals)) crystalText.Set(g.crystals.ToString());
             if (Over(crystalHot)) tipText = "<b>Energy Crystal</b>\nBuy cards and land, and reroll the shop (also during battle)." +
                 $"\n\nEach wave: +{Tuning.CrystalReward}, +{Tuning.WinBonus} more if the castle holds." +
                 $"\n<b>Interest</b>: at the end of each wave you get +1 for every {Tuning.InterestStep} you hold (max +{Tuning.InterestMax + InterestExtra})." +
                 $"\nYou hold {g.crystals} now: <color=#8fe8ff>+{Tuning.Interest(g.crystals, InterestExtra)}</color>";
             for (int i = 0; i < ResId.Count; i++)
             {
-                resText[i].Set(Mathf.FloorToInt(city.res[i]).ToString("N0"));
+                int rv = Mathf.FloorToInt(city.res[i]);
+                if (resText[i].Changed(rv)) resText[i].Set(rv.ToString("N0"));
                 if (Over(resHot[i])) tipText = $"<b>{ResId.Name[i]}</b>\n{ResId.Hint[i]}";
             }
         }
@@ -1176,7 +1189,9 @@ namespace HordeLab
             // đợt tới (lúc đánh: đợt đang đánh)
             attackerEmblem.sprite = Emblems[g.attacker];
             if (!modal && Over(attackerEmblem.rectTransform)) tipText = FactionTip(g.attacker);
-            waveInfo.Set($"x{g.EnemyPreviewCount():N0}" + (g.IsBoss(g.wave) ? "\n<size=13><color=#ff8f6a>Boss</color></size>" : ""));
+            int preview = g.EnemyPreviewCount();
+            if (waveInfo.Changed(Key(preview, g.IsBoss(g.wave) ? 1 : 0)))
+                waveInfo.Set($"x{preview:N0}" + (g.IsBoss(g.wave) ? "\n<size=13><color=#ff8f6a>Boss</color></size>" : ""));
             for (int i = 0; i < previewIcons.Length; i++) previewIcons[i].transform.parent.Show(false);
             int k = 0;
             for (int s = 0; s < 6; s++)
@@ -1197,7 +1212,10 @@ namespace HordeLab
             }
 
             // lõi đang có
-            if (g.Augments.Count == 0) augOwned.Set("<color=#aaaaaa>Augments: none yet</color>");
+            long augKey = g.Augments.Count;
+            for (int i = 0; i < g.Augments.Count; i++) augKey = augKey * 131 + g.Augments[i] + 1;
+            if (!augOwned.Changed(augKey)) { }
+            else if (g.Augments.Count == 0) augOwned.Set("<color=#aaaaaa>Augments: none yet</color>");
             else
             {
                 var ab = new StringBuilder("<color=#aaaaaa>Augments:</color> ");
@@ -1218,7 +1236,7 @@ namespace HordeLab
 
             if (shopPhase)
             {
-                handLabel.Set($"Hand <color=#ffffff>{g.hand.Count}</color>/{Tuning.HandLimit}");
+                if (handLabel.Changed(g.hand.Count)) handLabel.Set($"Hand <color=#ffffff>{g.hand.Count}</color>/{Tuning.HandLimit}");
                 if (selectedCard >= g.hand.Count) selectedCard = -1;
                 for (int i = 0; i < cards.Length; i++)
                 {
@@ -1250,7 +1268,8 @@ namespace HordeLab
                 bool overSell = !modal && Over(sellZone);
                 sellGlow.Show(overSell && (card || db != null));
                 int sellStars = db != null ? db.stars : dragCard >= 0 ? g.HandStars(dragCard) : selectedCard >= 0 ? g.HandStars(selectedCard) : 1;
-                sellText.Set(db != null || card ? $"Sell  <color=#8fe8ff>+{g.SellValue(sellStars)}</color>" : "<color=#888888>Sell</color>");
+                int sellV = db != null || card ? g.SellValue(sellStars) : -1;
+                if (sellText.Changed(sellV)) sellText.Set(sellV >= 0 ? $"Sell  <color=#8fe8ff>+{sellV}</color>" : "<color=#888888>Sell</color>");
             }
 
             // bảng thống kê trận (ẩn / hiện bằng nút STATS)
@@ -1260,6 +1279,7 @@ namespace HordeLab
             if (fight && statsOpen)
             {
                 int t = (int)g.waveTime;
+                if (liveTick && statsText.Changed(Key(g.AlliesAlive, g.EnemiesRemaining, g.EnemiesTotal, battle.Counter(C.Dead1), battle.Counter(C.Dead0), t)))
                 statsText.Set($"Troops <color=#8fb8ff>{g.AlliesAlive:N0}</color>    Enemies <color=#ff8f8f>{g.EnemiesRemaining:N0}</color>/{g.EnemiesTotal:N0}\n" +
                               $"Killed <color=#9fe07a>{battle.Counter(C.Dead1):N0}</color>    Lost <color=#ff8f8f>{battle.Counter(C.Dead0):N0}</color>    {t / 60:00}:{t % 60:00}");
             }
@@ -1538,13 +1558,14 @@ namespace HordeLab
             tab.anchoredPosition = new Vector2(PanelW + 52f, 10f + (open ? DockH + 2f : 0f));   // ngay trên viền cửa hàng
             tab.sizeDelta = new Vector2(216f, 48f);
             shopBtn.Label().Set(open ? "Shop  -" : "Shop  +");
-            shopCrystals.Set(g.crystals.ToString());
+            if (shopCrystals.Changed(g.crystals)) shopCrystals.Set(g.crystals.ToString());
 
             // nút Wave: góc dưới phải (trong cột phải của cửa hàng khi mở)
             float rightCol = prep && open ? 172f : 0f;   // nút Wave nhỏ lại, nhường chỗ cho 5 thẻ
             sb.anchoredPosition = new Vector2(-10f - DockInset, open ? 10f + DockInset : 14f);       // trong viền phải của cửa hàng
             sb.sizeDelta = new Vector2(160f, open ? DockH - DockInset * 2f : 56f);
-            startBtn.Label().Set($"Wave {g.wave}");
+            var startLabel = startBtn.Label();
+            if (startLabel.Changed(g.wave)) startLabel.Set($"Wave {g.wave}");
             if (prep && !modal && Over(sb))
             {
                 if (g.hand.Count >= Tuning.HandLimit) tipText = "<color=#ff8f8f>Hand is full</color>";
@@ -1555,11 +1576,12 @@ namespace HordeLab
             // mua đất + đổi lại: chỉ icon + giá
             bool landMax = g.LandLeft <= 0;
             landIcon.sprite = Tiles[B.Expand];
-            landCost.Set(landMax ? "<color=#888888>-</color>" : g.Price(B.Expand).ToString());
+            int landP = landMax ? -1 : g.Price(B.Expand);
+            if (landCost.Changed(landP)) landCost.Set(landP < 0 ? "<color=#888888>-</color>" : landP.ToString());
             landCrystal.Show(!landMax);
             landBtn.SetOn(g.CanBuyLand);
             if (!modal && Over(landBtn.GetComponent<RectTransform>())) infoDef = B.Expand;
-            rollCost.Set(g.RollCost == 0 ? "<color=#9fe07a>0</color>" : g.RollCost.ToString());
+            if (rollCost.Changed(g.RollCost)) rollCost.Set(g.RollCost == 0 ? "<color=#9fe07a>0</color>" : g.RollCost.ToString());
             rollBtn.SetOn(g.CanRoll);
 
             // 4 thẻ
@@ -1596,7 +1618,8 @@ namespace HordeLab
                 v.name.At(8f, h - footH, slotW - 60f, footH - 4f);
                 v.name.Set(d.name);
                 v.price.At(slotW - 52f, h - footH, 22f, footH - 4f);
-                v.price.Set(g.Price(card).ToString());
+                int price = g.Price(card);
+                if (v.price.Changed(price)) v.price.Set(price.ToString());
                 v.priceIcon.At(slotW - 28f, h - footH + 5f, 20f, 20f);
                 v.look.alpha = g.CanBuy(i) ? 1f : 0.45f;
 
@@ -1982,6 +2005,7 @@ namespace HordeLab
             perfText.transform.SetParent(g.phase == Phase.Sandbox ? root : hud, false);
             perfText.Show(show);
             if (show)
+                if (liveTick && perfText.Changed(Key(Mathf.RoundToInt(battle.Fps), Mathf.RoundToInt(battle.SimMs * 100f), battle.Counter(C.Units), battle.Counter(C.Arrows), battle.Counter(C.Particles))))
                 perfText.Set($"FPS {battle.Fps:0} · sim {battle.SimMs:0.00} ms · {battle.Counter(C.Units):N0} units · {battle.Counter(C.Arrows):N0} projectiles · {battle.Counter(C.Particles):N0} particles");
         }
     }

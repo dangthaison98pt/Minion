@@ -5,7 +5,8 @@
         "Unity.Burst",
         "Unity.Mathematics",
         "Unity.TextMeshPro",
-        "UnityEngine.UI"
+        "UnityEngine.UI",
+        "OrostrideToolkit.Core"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],
