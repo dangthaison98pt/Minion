@@ -114,6 +114,7 @@ namespace HordeLab
         public const int HealAura = 16;  // hồi máu đồng đội đứng gần
         public const int PowerAura = 32; // tăng sát thương đồng đội đứng gần
         public const int Giant = 64;     // sprite 32x32, chiếm 2x2 ô atlas (chỉ các loại quân CUỐI bảng, từ UnitType.FirstGiant)
+        public const int Frenzy = 128;   // Beastfolk: máu thấp thì đánh nhanh + chạy nhanh (Aug.FrenzyHp / FrenzyBoost)
     }
 
     /// <summary>Hình dạng viên đạn (hàng trong texture đạn).</summary>

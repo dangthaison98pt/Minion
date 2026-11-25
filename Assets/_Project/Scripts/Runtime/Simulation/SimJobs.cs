@@ -504,7 +504,8 @@ namespace HordeLab
             }
 
             // --- Di chuyển ---
-            float speed = s.speed * (u.slow > 0f ? Fx.SlowFactor : 1f);
+            bool frenzy = (s.flags & UFlag.Frenzy) != 0 && u.hp < u.maxHp * Aug.FrenzyHp;   // Beastfolk máu thấp: cuồng nộ
+            float speed = s.speed * (u.slow > 0f ? Fx.SlowFactor : 1f) * (frenzy ? Aug.FrenzyBoost : 1f);
             float2 vel = desired * speed + sep * SepStrength;
             float maxV = speed * 1.6f;
             float vl = math.length(vel);
@@ -518,7 +519,7 @@ namespace HordeLab
 
             u.state = attacking && !kite ? 1 : 0;
             u.animT += dt;
-            u.cooldown -= u.haste > 0f ? dt * Aug.Haste : dt;                       // Thor tiếp sức: đánh nhanh hơn
+            u.cooldown -= dt * (u.haste > 0f ? Aug.Haste : 1f) * (frenzy ? Aug.FrenzyBoost : 1f);   // Thor / trống trận: đánh nhanh; Beastfolk cuồng nộ
             u.flash = math.max(0f, u.flash - dt * 8f);
             u.slow = math.max(0f, u.slow - dt);
             if (aug && u.type == UnitType.Treant) u.still = vl < 0.3f ? u.still + dt : 0f;   // Bén rễ: đứng yên đủ lâu

@@ -262,6 +262,7 @@ namespace HordeLab
         public const float TreeRegen = 3f;                                      // ... mọi Treant cùng phe hồi 3 máu/s, ở đâu cũng được
         public const float PunchEvery = 7f, PunchRange = 7f, PunchDamage = 20f, PunchPush = 3.5f, PunchCone = 0.45f;   // cú đấm: sóng đẩy lùi phía trước
         public const int ThorChain = 4; public const float ThorChainRange = 3.5f, ThorChainDmg = 0.6f;   // Thor: mỗi nhát búa phóng sét lan qua 4 địch
+        public const float FrenzyHp = 0.25f, FrenzyBoost = 1.3f;             // Beastfolk: dưới 25% máu thì đánh nhanh + chạy nhanh x1.3
         public const float ThorHasteRadius = 5f, Haste = 1.6f;                  // ... quân cùng phe đứng gần đánh nhanh x1.6
         public const float BerserkLifesteal = 0.1f, BerserkRage = 0.25f, RageFearRadius = 6f, RageFear = 2f;   // Berserker: hút máu 10%; dưới 25% máu hoá Fenrir
         public const float BroodEvery = 10f, BroodSight = 12f, PoisonTime = 5f, PoisonDps = 4f; public const int BroodCount = 4;   // Broodmother
@@ -330,7 +331,7 @@ namespace HordeLab
             new FactionDef { name = "Dwarf", color = new Color(0.90f, 0.62f, 0.25f), speedMul = 0.8f,
                 strength = "Gold Mines dig 30% faster", weakness = "Troops move 20% slower and troop buildings call 20% slower" },
             new FactionDef { name = "Beastfolk", color = new Color(0.78f, 0.50f, 0.34f),
-                strength = "Food buildings work 30% faster", weakness = "Houses produce Pop 25% slower" },
+                strength = "Food buildings work 30% faster. Troops below 25% HP attack and move 30% faster", weakness = "Houses produce Pop 25% slower" },
             new FactionDef { name = "The Void", color = new Color(0.68f, 0.40f, 0.92f), hpMul = 1.3f, dmgMul = 1.3f, popCostMul = 2f,
                 strength = "Troops are 30% stronger", weakness = "Every call costs double Pop" },
             new FactionDef { name = "Orc", color = new Color(0.46f, 0.74f, 0.28f), hpMul = 1.2f, rangeMul = 0.75f,
@@ -551,6 +552,7 @@ namespace HordeLab
                 u[t].stats.damage *= f.dmgMul;
                 u[t].stats.speed *= f.speedMul * Tuning.SpeedScale;
                 if (u[t].stats.mode != Mode.Melee) u[t].stats.range *= f.rangeMul * Tuning.RangeScale;
+                if (fi == Faction.Beast) u[t].stats.flags |= UFlag.Frenzy;   // cuồng nộ khi máu thấp
                 u[t].stats.radius = Cfg.RadiusOf(u[t].stats.flags);
             }
             return u;
