@@ -447,19 +447,57 @@ namespace HordeLab
                     for (int i = 0; i < 2; i++) { Box(t, 7 + i * 16, 16, 8 + i * 16, 21, Outline); t.Set(7 + i * 16, 17, Cloth); t.Set(8 + i * 16, 18, Tunic); t.Set(7 + i * 16, 19, Gold); t.Set(8 + i * 16, 20, ElfGreen); }
                     return t;
 
-                case B.ElderTree:                                                          // Elf: cây cổ thụ khổng lồ, đom đóm sáng
+                case B.ElderTree:                                                          // Elf: cây cổ thụ, tán lá thành từng chùm có khối, đèn lồng tiên
+                {
                     t = Grass(57);
-                    Patch(t, 16, 25, 12, 5, LeafDark, G2);
-                    // rễ
-                    for (int k = 0; k < 4; k++) { int dx = (k - 1) * 4 - 2; Line(t, 15, 23, 15 + dx * 2, 29, BarkDark); }
-                    Box(t, 13, 16, 18, 27, Outline); Box(t, 14, 16, 17, 27, Bark); Box(t, 14, 16, 14, 27, BarkDark); t.Set(16, 22, BarkDark); t.Set(15, 19, BarkDark);
-                    // tán lá nhiều tầng
-                    Disk(t, 16, 11, 10.5f, LeafDark, LeafDark);
-                    Disk(t, 10, 12, 5.5f, Leaf, LeafDark); Disk(t, 22, 12, 5.5f, Leaf, LeafDark); Disk(t, 16, 7, 6.5f, Leaf, LeafDark);
-                    Disk(t, 13, 6, 3f, LeafLight, Leaf); Disk(t, 21, 9, 2.5f, LeafLight, Leaf); Disk(t, 9, 11, 2f, LeafLight, Leaf);
-                    // đom đóm / tinh linh
-                    t.Set(5, 20, Glow); t.Set(26, 18, Glow); t.Set(8, 26, Rgb(200, 255, 170)); t.Set(25, 26, Rgb(200, 255, 170)); t.Set(19, 4, Rgb(255, 250, 210)); t.Set(11, 9, Rgb(255, 250, 210));
+                    var moss = Rgb(76, 132, 66);
+                    Patch(t, 16, 26, 13, 5, moss, G2);
+                    // rễ to toả ra trên mặt đất
+                    int[,] roots = { { 13, 25, 6, 29 }, { 18, 25, 26, 29 }, { 14, 26, 11, 30 }, { 17, 26, 20, 30 } };
+                    for (int r = 0; r < roots.GetLength(0); r++)
+                    {
+                        Line(t, roots[r, 0], roots[r, 1] + 1, roots[r, 2], roots[r, 3] + 1, Outline);
+                        Line(t, roots[r, 0], roots[r, 1], roots[r, 2], roots[r, 3], Bark);
+                    }
+                    // thân cây: to, vỏ có vân, sáng bên trái
+                    Box(t, 12, 15, 19, 27, Outline);
+                    for (int y = 15; y <= 26; y++)
+                        for (int x = 13; x <= 18; x++)
+                            t.Set(x, y, x == 13 ? Rgb(150, 108, 70) : x >= 17 ? BarkDark : (IHash(x, y * 3) % 5 == 0 ? BarkDark : Bark));
+                    Box(t, 15, 20, 15, 23, BarkDark); t.Set(16, 18, BarkDark); Box(t, 14, 24, 15, 24, moss);
+                    // tán lá: hợp của nhiều chùm tròn, mỗi chùm tự có khối (sáng trên-trái, tối dưới-phải), chỉ 1 đường viền ngoài
+                    float[,] cl = { { 16, 11.5f, 8.5f }, { 8.5f, 14, 5.5f }, { 23.5f, 14, 5.5f }, { 11, 8, 5.5f }, { 21, 8, 5.5f }, { 16, 6.5f, 4.8f }, { 12, 16, 4.5f }, { 20, 16, 4.5f } };   // đỉnh tán cách mép trên 1 ô để còn viền
+                    var hi = Rgb(168, 222, 104); var mid = Leaf; var lo = LeafDark; var deep = Rgb(34, 76, 44);
+                    bool In(int x, int y)
+                    {
+                        for (int k = 0; k < cl.GetLength(0); k++) { float dx = x - cl[k, 0], dy = y - cl[k, 1]; if (dx * dx + dy * dy <= cl[k, 2] * cl[k, 2]) return true; }
+                        return false;
+                    }
+                    for (int y = 0; y < TilePx; y++)
+                        for (int x = 0; x < TilePx; x++)
+                        {
+                            if (!In(x, y)) { if (In(x - 1, y) || In(x + 1, y) || In(x, y - 1) || In(x, y + 1)) t.Set(x, y, Outline); continue; }
+                            // chùm "trên cùng" chứa điểm này = chùm vẽ sau cùng (thứ tự trong bảng: sau đè trước)
+                            int top = 0;
+                            for (int k = 0; k < cl.GetLength(0); k++) { float dx = x - cl[k, 0], dy = y - cl[k, 1]; if (dx * dx + dy * dy <= cl[k, 2] * cl[k, 2]) top = k; }
+                            float lx = (x - cl[top, 0]) / cl[top, 2], ly = (y - cl[top, 1]) / cl[top, 2];
+                            float shade = (lx + ly) * 0.55f + (y - 6f) / 26f;               // tối dần về dưới-phải + về phía đáy tán
+                            shade += (IHash(x * 7, y * 13) % 100) / 100f * 0.28f - 0.14f;   // lá lổn nhổn
+                            bool rim = lx * lx + ly * ly > 0.72f && lx + ly > 0.3f;         // mép dưới-phải mỗi chùm: tối hẳn để tách chùm
+                            t.Set(x, y, rim ? deep : shade < -0.35f ? hi : shade < 0.2f ? mid : shade < 0.65f ? lo : deep);
+                        }
+                    // bóng tán đổ xuống thân
+                    for (int x = 13; x <= 18; x++) { Shade(t, x, 21, 0.6f); Shade(t, x, 22, 0.75f); }
+                    // hoa trắng bạc + đèn lồng tiên treo dưới tán
+                    int[,] blossoms = { { 10, 7 }, { 18, 4 }, { 22, 10 }, { 7, 14 }, { 14, 11 }, { 25, 14 }, { 19, 14 } };
+                    for (int i = 0; i < blossoms.GetLength(0); i++) t.Set(blossoms[i, 0], blossoms[i, 1], Rgb(236, 248, 226));
+                    var lamp = Rgb(250, 236, 150);
+                    t.Set(8, 20, LeafDark); t.Set(8, 21, Outline); t.Set(8, 22, lamp); t.Set(8, 23, Glow);
+                    t.Set(24, 20, LeafDark); t.Set(24, 21, Outline); t.Set(24, 22, lamp); t.Set(24, 23, Glow);
+                    // đom đóm
+                    t.Set(4, 24, Rgb(210, 255, 170)); t.Set(27, 25, Rgb(210, 255, 170)); t.Set(3, 9, Rgb(255, 250, 210)); t.Set(29, 5, Rgb(255, 250, 210));
                     return t;
+                }
 
                 case B.MithrilMine:                                                        // Dwarf: mỏ đá có vân mithril xanh bạc, cổng đá khắc rune
                 {
@@ -481,24 +519,42 @@ namespace HordeLab
                     return t;
                 }
 
-                case B.TotemPole:                                                          // Beastfolk: cột vật tổ chạm mặt thú, cánh đại bàng trên đỉnh
+                case B.TotemPole:                                                          // Beastfolk: cột vật tổ 3 mặt thú Cỏ / Lửa / Nước (easter egg: bộ ba khởi đầu, không phải nhân vật có sẵn)
+                {
                     t = Grass(61);
-                    Patch(t, 16, 24, 10, 6, D1, D2);
-                    Disk(t, 16, 27, 3f, S3, S2);
-                    Box(t, 12, 4, 19, 27, Outline);
-                    Box(t, 13, 5, 18, 26, Bark);
-                    // 3 mặt thú chồng nhau
-                    Box(t, 13, 18, 18, 26, FurBrown); t.Set(14, 20, Outline); t.Set(17, 20, Outline); Box(t, 15, 23, 16, 24, Cloth); t.Set(14, 25, White); t.Set(17, 25, White);   // gấu
-                    Box(t, 13, 11, 18, 17, Leo); t.Set(14, 13, Outline); t.Set(17, 13, Outline); Box(t, 15, 15, 16, 15, LeoDark); t.Set(13, 11, LeoDark); t.Set(18, 11, LeoDark);  // báo
-                    Box(t, 13, 5, 18, 10, Fur); t.Set(14, 7, Glow); t.Set(17, 7, Glow); Box(t, 15, 9, 16, 9, FurDark);                                                              // sói
-                    // cánh đại bàng
-                    for (int k = 0; k < 6; k++) { Box(t, 7 + k, 6 - k / 2, 12, 6 - k / 2, k % 2 == 0 ? Feather : FeatherDark); Box(t, 19, 6 - k / 2, 24 - k, 6 - k / 2, k % 2 == 0 ? Feather : FeatherDark); }
-                    t.Set(6, 7, Outline); t.Set(25, 7, Outline);
-                    // lông vũ treo + đống lửa
-                    t.Set(12, 15, Cloth); t.Set(19, 15, Cloth); t.Set(12, 16, Feather); t.Set(19, 16, Feather);
-                    Box(t, 4, 25, 7, 26, S2); t.Set(5, 24, Glow); t.Set(6, 23, Rgb(255, 142, 30));
-                    t.Set(25, 23, Bone); t.Set(26, 24, Bone); t.Set(27, 23, Bone);
+                    Patch(t, 16, 25, 11, 6, D1, D2);
+                    Disk(t, 16, 28, 3.2f, S3, S2);
+                    Box(t, 10, 3, 21, 28, Outline);
+                    Box(t, 11, 4, 20, 27, Bark);
+                    // --- dưới: rùa nước (xanh biển, mai nâu viền kem) ---
+                    var wa = Rgb(96, 170, 226); var waD = Rgb(56, 118, 178); var shell = Rgb(164, 108, 58); var cream = Rgb(240, 222, 168);
+                    Box(t, 11, 20, 20, 27, wa); Box(t, 11, 25, 20, 27, waD);
+                    Box(t, 9, 23, 10, 27, shell); Box(t, 21, 23, 22, 27, shell); Box(t, 9, 22, 10, 22, cream); Box(t, 21, 22, 22, 22, cream);   // mép mai 2 bên
+                    t.Set(8, 23, Outline); t.Set(23, 23, Outline); Box(t, 8, 24, 8, 27, Outline); Box(t, 23, 24, 23, 27, Outline);
+                    Box(t, 12, 21, 13, 22, White); t.Set(13, 22, Outline); Box(t, 18, 21, 19, 22, White); t.Set(18, 22, Outline);              // mắt to
+                    Box(t, 14, 25, 17, 25, Outline); t.Set(13, 24, Outline); t.Set(18, 24, Outline);                                         // miệng cười
+                    // --- giữa: thằn lằn lửa (cam, má kem, ngọn lửa ở bên) ---
+                    var fi = Rgb(240, 136, 56); var fiD = Rgb(196, 92, 40);
+                    Box(t, 11, 12, 20, 19, fi); Box(t, 11, 17, 20, 19, fiD); Box(t, 13, 17, 18, 18, cream);
+                    Box(t, 12, 13, 13, 14, White); t.Set(13, 14, Outline); t.Set(12, 13, Outline); Box(t, 18, 13, 19, 14, White); t.Set(18, 14, Outline); t.Set(19, 13, Outline);
+                    t.Set(14, 16, Outline); t.Set(17, 16, Outline);
+                    // ngọn lửa trên đuôi cong ra bên phải
+                    Box(t, 21, 16, 23, 16, fi); t.Set(23, 15, fi); t.Set(24, 14, fiD);
+                    t.Set(24, 13, Rgb(255, 196, 60)); t.Set(25, 12, Rgb(255, 142, 30)); t.Set(24, 12, Rgb(255, 230, 120)); t.Set(25, 11, Rgb(255, 96, 10)); t.Set(24, 11, Rgb(255, 196, 60)); t.Set(25, 13, Outline); t.Set(23, 13, Outline);
+                    // --- trên: cóc cỏ (xanh ngọc, đốm, mầm lá trên lưng) ---
+                    var gr = Rgb(120, 196, 156); var grD = Rgb(72, 146, 112);
+                    Box(t, 11, 4, 20, 11, gr); Box(t, 11, 9, 20, 11, grD); t.Set(12, 5, grD); t.Set(19, 6, grD); t.Set(15, 4, grD);
+                    Box(t, 12, 6, 13, 7, White); t.Set(13, 7, Cloth); t.Set(12, 6, Outline); Box(t, 18, 6, 19, 7, White); t.Set(18, 7, Cloth); t.Set(19, 6, Outline);   // mắt đỏ
+                    Box(t, 14, 9, 17, 9, Outline);
+                    t.Set(10, 3, Outline); t.Set(21, 3, Outline); t.Set(11, 3, gr); t.Set(20, 3, gr);                                         // tai nhọn
+                    // mầm lá xanh trên đỉnh
+                    Box(t, 13, 1, 18, 3, Outline); Box(t, 14, 2, 17, 3, Leaf); t.Set(15, 2, LeafLight); t.Set(16, 3, LeafDark); t.Set(14, 3, LeafLight);   // cách mép trên 1 ô để còn viền
+                    // lông vũ + đống lửa + xương
+                    t.Set(9, 14, Feather); t.Set(9, 15, Cloth); t.Set(9, 16, Feather);
+                    Box(t, 3, 26, 6, 27, S2); t.Set(4, 25, Glow); t.Set(5, 24, Rgb(255, 142, 30));
+                    t.Set(26, 25, Bone); t.Set(27, 26, Bone); t.Set(28, 25, Bone);
                     return t;
+                }
 
                 case B.VoidSpire:                                                          // The Void: tháp pha lê hư không, mảnh vỡ lơ lửng
                     t = Ground(Void3, Rgb(52, 30, 80), Rgb(30, 16, 50), 63, 14);

@@ -318,11 +318,13 @@ namespace HordeLab
             ClearHand();
             AddCard(B.BarracksOf(faction * 5));
             AddCard(B.BarracksOf(faction * 5 + 1));
-            AddCard(B.Cabin);
-            AddCard(B.Cabin);
-            AddCard(B.Field);
-            AddCard(B.LumberCamp);
-            AddCard(B.GoldMine);
+            // nhà tài nguyên khởi đầu; 1 lá cùng loại tài nguyên được thay bằng nhà kinh tế riêng của phe
+            // (Human / Void thay 1 trong 2 Cabin, Elf / Orc thay Lumber Camp, Dwarf thay Gold Mine, Beastfolk thay Wheat Field)
+            var start = new List<int> { B.Cabin, B.Cabin, B.Field, B.LumberCamp, B.GoldMine };
+            var eco = GameData.Buildings[B.EcoOf(faction)];
+            for (int i = 0; i < start.Count; i++)
+                if (GameData.Buildings[start[i]].res == eco.res) { start[i] = B.EcoOf(faction); break; }
+            foreach (int c in start) AddCard(c);
 
             System.Array.Clear(shopLocked, 0, shopLocked.Length);
             RollShop();
