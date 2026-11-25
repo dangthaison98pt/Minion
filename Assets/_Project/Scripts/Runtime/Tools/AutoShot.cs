@@ -140,7 +140,7 @@ namespace HordeLab
             log.AppendLine($"SWAP TEST: {(swapped && back && kept && intact ? "OK" : "FAIL")} (đổi={swapped}, đổi ngược={back}, về tay giữ sao={kept}, không mất nhà={intact})");
         }
 
-        bool augShot, ownedShot, augRollTested;
+        bool augShot, ownedShot, augRollTested; int envoyShots = 0;
         int cardChecks, cardFails;
         float marketGold0 = -1f, marketWood0;
         static readonly bool allAugs = System.Array.IndexOf(System.Environment.GetCommandLineArgs(), "-allaugs") >= 0;
@@ -252,6 +252,31 @@ namespace HordeLab
                     }
                     game.BotAct(botFaction);
                     log.AppendLine($"    lõi: chọn {GameData.Augments[game.Augments[game.Augments.Count - 1]].name}");
+                    yield return null;
+                    continue;
+                }
+                if (game.phase == Phase.Envoy)
+                {
+                    // -envoy: sứ giả sau mỗi đợt. Thử đổi bộ phe (tuyên chiến) rồi chọn; kiểm tra danh sách thù địch đổi đúng 1 phe
+                    bool war = game.envoyKind == Game.EnvoyWar;
+                    int before = game.hostile.Count, cr = game.crystals;
+                    var shown = new List<int>(game.envoyChoices);
+                    if (!Headless && (envoyShots < 2 || (war && game.EnvoyRerollUseful))) { yield return new WaitForSecondsRealtime(1.7f); Shot((war ? "05g_tuyen_chien" : "05h_lam_hoa") + (war && game.EnvoyRerollUseful ? "_reroll" : "") + "_" + game.wave + ".png"); yield return Frames(3); envoyShots++; }
+                    bool rolled = false, rollOk = true;
+                    if (war && game.CanRerollEnvoy)
+                    {
+                        game.RerollEnvoy();
+                        rolled = true;
+                        bool changed = shown.Count != game.envoyChoices.Count;
+                        for (int i = 0; !changed && i < shown.Count; i++) changed = shown[i] != game.envoyChoices[i];
+                        rollOk = changed && game.crystals == cr - game.EnvoyRollCost;
+                        foreach (int f in game.envoyChoices) rollOk &= f != game.faction && !game.hostile.Contains(f);
+                    }
+                    int pickF = game.envoyChoices[0];
+                    game.BotAct(botFaction);
+                    bool ok = game.phase == Phase.Prep && game.envoyKind == 0 && game.hostile.Contains(game.attacker) && !game.hostile.Contains(game.faction)
+                              && game.hostile.Count == before + (war ? 1 : -1) && rollOk && (!war || game.attacker == pickF);
+                    log.AppendLine($"ENVOY TEST: {(ok ? "OK" : "FAIL")} ({(war ? "tuyên chiến" : "làm hoà")}, hiện {shown.Count} phe, đổi bộ={rolled}, thù địch {before} → {game.hostile.Count}, đánh đợt sau: {GameData.Factions[game.attacker].name})");
                     yield return null;
                     continue;
                 }
@@ -401,6 +426,7 @@ namespace HordeLab
                     cardChecks++; if (dup > 0 || useless > 0) cardFails++;
                     log.AppendLine($"CARD TEST: {(dup == 0 && useless == 0 ? "OK" : "FAIL")} (phần thưởng trùng {dup}, thẻ buff vô dụng {useless})");
                 }
+                if (System.Array.IndexOf(System.Environment.GetCommandLineArgs(), "-envoy") >= 0) Tuning.EventChance = 1f;   // -envoy: sứ giả sau mỗi đợt
                 // -boss F: mọi đợt đều là đợt trùm của phe F (thử boss)
                 int bossArg = IntArg(System.Environment.GetCommandLineArgs(), "-boss", -1);
                 if (System.Array.IndexOf(System.Environment.GetCommandLineArgs(), "-bossweak") >= 0) game.bossHpMul = 0.4f;   // boss yếu: dễ thấy hoá sói / hồi sinh

@@ -73,6 +73,14 @@ namespace HordeLab
         readonly Image[] tipStars = new Image[Tuning.MaxStars];
         CanvasGroup rewardGroup, endGroup, augGroup;
         RectTransform augScreen;
+        // ---- sứ giả: chọn phe để tuyên chiến / làm hoà ----
+        RectTransform envoyScreen, envoyPanel;
+        CanvasGroup envoyGroup;
+        TextMeshProUGUI envoyTitle, envoySub;
+        Button envoyRoll;
+        readonly EnvoyCard[] envoyCards = new EnvoyCard[Tuning.MaxHostile];
+        class EnvoyCard { public RectTransform rt; public Image band, emblem; public TextMeshProUGUI name, strength, weakness; public Image[] units = new Image[6]; public Button btn; }
+        const float EnvoyW = 250f, EnvoyStep = 265f, EnvoyH = 334f;
         TextMeshProUGUI augTitle, augSub, augOwned;
         readonly TextMeshProUGUI[] augCards = new TextMeshProUGUI[Tuning.AugmentChoices];   // dòng nhóm (trên cùng)
         readonly TextMeshProUGUI[] augBig = new TextMeshProUGUI[Tuning.AugmentChoices], augName = new TextMeshProUGUI[Tuning.AugmentChoices],
@@ -206,6 +214,7 @@ namespace HordeLab
             BuildTooltip();
             BuildReward();
             BuildAugment();
+            BuildEnvoy();
             BuildEnd();
             BuildFactionScreen();
             BuildMenu();
@@ -568,6 +577,88 @@ namespace HordeLab
             return list.Count > 0 ? cy + chipH : y0;
         }
 
+        void BuildEnvoy()
+        {
+            envoyScreen = Modal("Envoy", 0.55f, out envoyPanel, 840f, 520f);
+            envoyGroup = envoyScreen.gameObject.AddComponent<CanvasGroup>();
+            envoyTitle = Txt(envoyPanel, "", 26f, TextAlignmentOptions.Center, true).At(0f, 22f, 840f, 40f);
+            envoySub = Txt(envoyPanel, "", 16f, TextAlignmentOptions.Center, false, false, Grey).At(0f, 64f, 840f, 28f);
+            for (int i = 0; i < envoyCards.Length; i++)
+            {
+                int pick = i;
+                var c = new EnvoyCard();
+                var card = Panel(envoyPanel, true, "Envoy card");
+                c.rt = card.rectTransform;
+                c.band = Img(c.rt, White, Color.white).At(14f, 14f, EnvoyW - 28f, 6f);
+                c.emblem = Img(c.rt, null, Color.white).At((EnvoyW - 64f) * 0.5f, 28f, 64f, 64f);
+                c.name = FitLine(Txt(c.rt, "", 22f, TextAlignmentOptions.Center, true).At(10f, 96f, EnvoyW - 20f, 30f), 14f);
+                c.strength = Txt(c.rt, "", 14f, TextAlignmentOptions.TopLeft, false, true).At(18f, 130f, EnvoyW - 36f, 58f);
+                c.weakness = Txt(c.rt, "", 14f, TextAlignmentOptions.TopLeft, false, true).At(18f, 190f, EnvoyW - 36f, 42f);
+                for (int u = 0; u < c.units.Length; u++)
+                {
+                    var bg = Img(c.rt, White, Slot).At(17f + u * 36.5f, 236f, 34f, 34f);   // 5 quân + boss
+                    c.units[u] = Img(bg.transform, null, Color.white).At(1f, 1f, 32f, 32f);
+                }
+                c.btn = Btn(c.rt, "", () => g.ChooseEnvoy(pick));
+                c.btn.At(18f, 280f, EnvoyW - 36f, 42f);
+                envoyCards[i] = c;
+            }
+            envoyRoll = Btn(envoyPanel, "", () => g.RerollEnvoy(), 16f);
+        }
+
+        void RefreshEnvoy(float pop)
+        {
+            bool show = g.phase == Phase.Envoy && pop > 0f;
+            envoyScreen.Show(show);
+            if (!show) return;
+            envoyGroup.alpha = pop;
+            envoyGroup.interactable = pop >= 1f && !PauseOpen;
+            bool war = g.envoyKind == Game.EnvoyWar;
+            int n = Mathf.Min(g.envoyChoices.Count, envoyCards.Length);
+            float w = Mathf.Max(840f, 30f * 2f + n * EnvoyStep - (EnvoyStep - EnvoyW));
+            bool roll = war && g.EnvoyRerollUseful;
+            float h = roll ? 520f : 468f;
+            envoyPanel.sizeDelta = new Vector2(w, h);
+            envoyPanel.anchoredPosition = new Vector2(0f, -(1f - pop) * 50f);
+            envoyTitle.At(0f, 22f, w, 40f);
+            envoySub.At(0f, 64f, w, 28f);
+            envoyTitle.Set(war ? "<color=#ff8f6a>An envoy demands war</color>" : "<color=#9fe07a>An envoy offers peace</color>");
+            envoySub.Set(war ? "Choose a faction to declare war on. It attacks next wave."
+                             : "Choose an enemy faction to make peace with. It stops attacking you.");
+            float x0 = (w - (n * EnvoyStep - (EnvoyStep - EnvoyW))) * 0.5f;
+            for (int i = 0; i < envoyCards.Length; i++)
+            {
+                var c = envoyCards[i];
+                c.rt.Show(i < n);
+                if (i >= n) continue;
+                int f = g.envoyChoices[i];
+                var fd = GameData.Factions[f];
+                c.rt.At(x0 + i * EnvoyStep, 104f, EnvoyW, EnvoyH);
+                c.band.color = fd.color;
+                c.emblem.sprite = Emblems[f];
+                c.name.Set($"<color=#{Hex(fd.color)}>{fd.name}</color>");
+                c.strength.Set($"<color=#9fe07a>Strength:</color> {fd.strength}");
+                c.weakness.Set($"<color=#ff8f8f>Weakness:</color> {fd.weakness}");
+                for (int u = 0; u < c.units.Length; u++)
+                {
+                    int t = u < 5 ? f * 5 + u : UnitType.BossOf(f);
+                    c.units[u].sprite = UnitIcons[t];
+                    if (!PauseOpen && Over((RectTransform)c.units[u].transform.parent))
+                        tipText = $"<b>{GameData.Units[t].name}</b>" + (u == 5 ? " <color=#ff8f6a>(boss)</color>" : "") + $"\n{GameData.Units[t].role}";
+                }
+                c.btn.Label().Set(war ? "Declare war" : "Make peace");
+            }
+            envoyRoll.Show(roll);
+            if (roll)
+            {
+                envoyRoll.At((w - 200f) * 0.5f, 104f + EnvoyH + 18f, 200f, 42f);
+                envoyRoll.SetOn(g.CanRerollEnvoy);
+                envoyRoll.Label().Set($"Reroll  <color=#8fe8ff>{g.EnvoyRollCost}</color> crystal{(g.EnvoyRollCost == 1 ? "" : "s")}");
+                if (!PauseOpen && Over(envoyRoll.GetComponent<RectTransform>()))
+                    tipText = $"<b>Reroll the envoy</b>\nShow other factions to declare war on. Costs {g.EnvoyRollCost} Energy Crystal{(g.EnvoyRollCost == 1 ? "" : "s")}.";
+            }
+        }
+
         void BuildAugment()
         {
             augScreen = Modal("Augment", 0.55f, out var p, 840f, 430f);
@@ -897,7 +988,7 @@ namespace HordeLab
         void TogglePause()
         {
             if (PauseOpen) { ClosePause(); return; }
-            if (g.phase != Phase.Prep && g.phase != Phase.Battle && g.phase != Phase.Reward && g.phase != Phase.Augment) return;
+            if (g.phase != Phase.Prep && g.phase != Phase.Battle && g.phase != Phase.Reward && g.phase != Phase.Augment && g.phase != Phase.Envoy) return;
             pausedBefore = battle.paused;
             battle.paused = true;
             pause.gameObject.SetActive(true);
@@ -914,7 +1005,7 @@ namespace HordeLab
         // Mỗi frame
         // ==================================================================
         bool Over(RectTransform rt) => rt.gameObject.activeInHierarchy && RectTransformUtility.RectangleContainsScreenPoint(rt, mouse, null);
-        bool InWorld => g.phase == Phase.Prep || g.phase == Phase.Battle || g.phase == Phase.Reward || g.phase == Phase.Augment || g.phase == Phase.Lost || g.phase == Phase.Won;
+        bool InWorld => g.phase == Phase.Prep || g.phase == Phase.Battle || g.phase == Phase.Reward || g.phase == Phase.Augment || g.phase == Phase.Envoy || g.phase == Phase.Lost || g.phase == Phase.Won;
         int InterestExtra => g.InterestExtra;
         static float Smooth(float t) => t * t * (3f - 2f * t);
 
@@ -964,7 +1055,7 @@ namespace HordeLab
             if (phase == Phase.Menu) RefreshMenu();
 
             infoDef = -1; infoStars = 1; infoBuilding = null; tipText = null; replaceTip = null; hoverCellValid = false;
-            bool modal = PauseOpen || phase == Phase.Reward || phase == Phase.Augment || phase == Phase.Lost || phase == Phase.Won;
+            bool modal = PauseOpen || phase == Phase.Reward || phase == Phase.Augment || phase == Phase.Envoy || phase == Phase.Lost || phase == Phase.Won;
 
             if (InWorld)
             {
@@ -977,7 +1068,7 @@ namespace HordeLab
             RefreshVeilAndModals();
             RefreshMarketPick(modal);
             RefreshGhost();
-            RefreshTooltip((modal && !(g.phase == Phase.Augment && !PauseOpen)) || !InWorld);   // màn chọn lõi vẫn hiện tooltip (mô tả đầy đủ)
+            RefreshTooltip((modal && !((g.phase == Phase.Augment || g.phase == Phase.Envoy) && !PauseOpen)) || !InWorld);   // màn chọn lõi vẫn hiện tooltip (mô tả đầy đủ)
             RefreshPerf();
             RefreshSettings();
             if (phase == Phase.Battle && lastPhaseUi != Phase.Battle) shopOpenBattle = Settings.BattleShopOpen;   // mỗi đợt: theo Settings
@@ -1568,7 +1659,9 @@ namespace HordeLab
                 rewardSub.Set($"You gain <color=#8fe8ff>+{g.lastCrystals + g.lastWinBonus + g.lastInterest} Energy Crystals</color>" +
                               $" <color=#aaaaaa>({parts})</color>" +
                               $". Pick 1 of {g.reward.Length} cards:");
-                rewardEvent.Set(string.IsNullOrEmpty(g.eventNote) ? "" : $"Event: {g.eventNote}");
+                rewardEvent.Set(g.envoyKind == Game.EnvoyWar ? "Event: an envoy arrives — you must declare war on a new faction."
+                               : g.envoyKind == Game.EnvoyPeace ? "Event: an envoy arrives — you may make peace with one enemy."
+                               : string.IsNullOrEmpty(g.eventNote) ? "" : $"Event: {g.eventNote}");
                 for (int i = 0; i < rewardCards.Length; i++)
                 {
                     // giống tooltip: tên + loại + 1 dòng mô tả, rồi hàng icon chỉ số
@@ -1621,6 +1714,8 @@ namespace HordeLab
                         tipText = $"<b>{d.name}</b>\n{d.desc}";                                  // mô tả đầy đủ khi rê chuột
                 }
             }
+
+            RefreshEnvoy(pop);
 
             bool over = (g.phase == Phase.Lost || g.phase == Phase.Won) && pop > 0f;
             end.Show(over);

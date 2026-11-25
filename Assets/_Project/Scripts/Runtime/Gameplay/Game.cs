@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace HordeLab
 {
-    public enum Phase { Menu, PickFaction, Prep, Battle, Reward, Lost, Won, Sandbox, Augment }   // thêm vào cuối: file lưu ghi số
+    public enum Phase { Menu, PickFaction, Prep, Battle, Reward, Lost, Won, Sandbox, Augment, Envoy }   // thêm vào cuối: file lưu ghi số
 
     /// <summary>Lượt chơi đang dở, ghi ra file JSON. Chỉ lưu ở pha chuẩn bị / phần thưởng (thoát giữa trận thì quay lại lúc chuẩn bị của đợt đó).</summary>
     [System.Serializable]
@@ -24,6 +24,8 @@ namespace HordeLab
         public int secretCount;                          // tiến độ mở khoá của Thú (đợt trăng tròn thắng) / Hư không (tổng quân địch đã diệt)
         public bool[] shopLocked;
         public string eventNote;
+        public int envoyKind;                            // sự kiện phe đang chờ người chơi chọn (Game.EnvoyWar / EnvoyPeace, 0 = không có)
+        public int[] envoyChoices;                       // các phe đang hiện để chọn
         public bool lastWon;
         public int lastWave, lastCrystals, lastInterest, lastWinBonus;
         public float pop, food, wood, gold;
@@ -89,6 +91,10 @@ namespace HordeLab
         /// <summary>Đếm số lần lõi huyền thoại ra tay trong đợt (công cụ kiểm tra đọc).</summary>
         public int dragonsCalled, meteorsFired, boltsFired, mercSquads, lastStands;
         public string eventNote;         // sự kiện đổi phe thù địch, báo sau khi đánh xong một đợt
+        // ---- Sứ giả: sự kiện đổi phe thù địch, người chơi tự chọn phe (sau màn phần thưởng) ----
+        public const int EnvoyWar = 1, EnvoyPeace = 2;
+        public int envoyKind;            // 0 = không có; EnvoyWar: chọn 1 phe trung lập để tuyên chiến; EnvoyPeace: chọn 1 phe thù địch để làm hoà
+        public readonly List<int> envoyChoices = new List<int>();
         public bool lastWon;
         public int lastWave, lastCrystals;
         public int lastWinBonus;         // thưởng thêm khi giữ được thành (thua = 0)
@@ -186,12 +192,12 @@ namespace HordeLab
         /// <summary>Tự lưu: gọi sau mỗi thay đổi lúc chuẩn bị và khi vừa xong một đợt.</summary>
         public void SaveRun()
         {
-            if (!savingEnabled || (phase != Phase.Prep && phase != Phase.Reward && phase != Phase.Augment)) return;
+            if (!savingEnabled || (phase != Phase.Prep && phase != Phase.Reward && phase != Phase.Augment && phase != Phase.Envoy)) return;
             var d = new SaveData
             {
                 faction = faction, hearts = hearts, wave = wave, crystals = crystals, attacker = attacker, phase = (int)phase, difficulty = difficulty,
                 hostile = hostile.ToArray(), hand = hand.ToArray(), handStars = handStars.ToArray(), shop = (int[])shop.Clone(), reward = (int[])reward.Clone(),
-                shopLocked = (bool[])shopLocked.Clone(), eventNote = eventNote, lastWon = lastWon, lastWave = lastWave, lastCrystals = lastCrystals, lastInterest = lastInterest, lastWinBonus = lastWinBonus,
+                shopLocked = (bool[])shopLocked.Clone(), eventNote = eventNote, envoyKind = envoyKind, envoyChoices = envoyChoices.ToArray(), lastWon = lastWon, lastWave = lastWave, lastCrystals = lastCrystals, lastInterest = lastInterest, lastWinBonus = lastWinBonus,
                 pop = city.res.pop, food = city.res.food, wood = city.res.wood, gold = city.res.gold,
                 augments = city.augments.ToArray(), augChoices = (int[])augChoices.Clone(), augRerolled = (bool[])augRerolled.Clone(), augTier = (int)augTier, augShown = augShown.ToArray(),
                 flawless = flawless, emperorUnlocked = emperorUnlocked, emperorPending = emperorPending, secretCount = secretCount
@@ -258,13 +264,21 @@ namespace HordeLab
             augShown.Clear();
             if (augPending) { augShown.AddRange(augChoices); if (d.augShown != null) foreach (int a in d.augShown) if (!augShown.Contains(a)) augShown.Add(a); }
             city.Recompute();
+            envoyKind = 0; envoyChoices.Clear();
+            if ((d.envoyKind == EnvoyWar || d.envoyKind == EnvoyPeace) && d.envoyChoices != null && d.envoyChoices.Length > 0)
+            {
+                envoyKind = d.envoyKind;
+                foreach (int f in d.envoyChoices) if (f >= 0 && f < Faction.Count && f != faction) envoyChoices.Add(f);
+                if (envoyChoices.Count == 0) envoyKind = 0;
+            }
 
             battle.simulate = false;
             battle.paused = false;
             battle.speed = 1;
             battle.ResetField();
             endedAt = -1f;
-            phase = augPending ? Phase.Augment : d.phase == (int)Phase.Reward ? Phase.Reward : Phase.Prep;
+            phase = augPending ? Phase.Augment : d.phase == (int)Phase.Reward ? Phase.Reward
+                  : d.phase == (int)Phase.Envoy && envoyKind != 0 ? Phase.Envoy : Phase.Prep;
             rollsThisPrep = 0;
             return true;
         }
@@ -283,6 +297,7 @@ namespace HordeLab
             crystals = Tuning.StartCrystals + Tuning.DiffCrystals[difficulty];
             rollsThisPrep = 0;
             eventNote = null;
+            envoyKind = 0; envoyChoices.Clear();
             flawless = 0; secretCount = 0; emperorUnlocked = emperorPending = false;
             city.Init(faction);
 
@@ -550,7 +565,7 @@ namespace HordeLab
         {
             if (phase != Phase.Reward) return;
             AddCard(reward[i]);
-            phase = Phase.Prep;
+            phase = envoyKind != 0 ? Phase.Envoy : Phase.Prep;   // có sứ giả: chọn phe trước khi chuẩn bị
             SaveRun();
         }
 
@@ -698,7 +713,8 @@ namespace HordeLab
                 reward[i] = c;
             }
 
-            eventNote = RollHostileEvent();
+            eventNote = null;
+            RollHostileEvent();
             wave++;
             attacker = hostile[rnd.Next(hostile.Count)];
             RollShop();
@@ -917,30 +933,87 @@ namespace HordeLab
 
         public static string The(int f) { string n = GameData.Factions[f].name; return n.StartsWith("The ") ? n : "The " + n; }
 
-        /// <summary>Sự kiện ngẫu nhiên: một phe thôi thù địch hoặc một phe mới trở thành thù địch (luôn giữ 2..4 phe).</summary>
-        string RollHostileEvent()
+        /// <summary>Sự kiện ngẫu nhiên sau một đợt: sứ giả đến, người chơi phải tuyên chiến với 1 phe mới hoặc được làm hoà với 1 phe
+        /// (luôn giữ 2..4 phe thù địch). Ở đây chỉ chọn LOẠI sự kiện; phe nào là do người chơi chọn ở pha Envoy.</summary>
+        void RollHostileEvent()
         {
-            if (rnd.NextDouble() >= Tuning.EventChance) return null;
-            var neutral = new List<int>();
-            for (int f = 0; f < Faction.Count; f++) if (f != faction && !hostile.Contains(f)) neutral.Add(f);
+            envoyKind = 0; envoyChoices.Clear();
+            if (rnd.NextDouble() >= Tuning.EventChance) return;
+            var neutral = NeutralFactions();
             bool canRemove = hostile.Count > Tuning.MinHostile;
             bool canAdd = hostile.Count < Tuning.MaxHostile && neutral.Count > 0;
-            if (!canRemove && !canAdd) return null;
+            if (!canRemove && !canAdd) return;
 
             if (canAdd && (!canRemove || rnd.Next(2) == 0))
             {
-                int f = neutral[rnd.Next(neutral.Count)];
-                hostile.Add(f);
-                hostile.Sort();
-                return $"{The(f)} have turned hostile!";
+                envoyKind = EnvoyWar;
+                DrawEnvoy(neutral);
             }
             else
             {
-                int k = rnd.Next(hostile.Count);
-                int f = hostile[k];
-                hostile.RemoveAt(k);
-                return $"{The(f)} are no longer hostile.";
+                envoyKind = EnvoyPeace;
+                envoyChoices.AddRange(hostile);           // làm hoà: hiện tất cả phe đang thù địch
             }
+        }
+
+        List<int> NeutralFactions()
+        {
+            var neutral = new List<int>();
+            for (int f = 0; f < Faction.Count; f++) if (f != faction && !hostile.Contains(f)) neutral.Add(f);
+            return neutral;
+        }
+
+        /// <summary>Tuyên chiến: lấy ngẫu nhiên tối đa Tuning.EnvoyChoices phe trung lập, khác bộ đang hiện nếu được.</summary>
+        void DrawEnvoy(List<int> neutral)
+        {
+            var old = new List<int>(envoyChoices);
+            int n = Mathf.Min(Tuning.EnvoyChoices, neutral.Count);
+            for (int tries = 0; tries < 30; tries++)
+            {
+                var pool = new List<int>(neutral);
+                envoyChoices.Clear();
+                while (envoyChoices.Count < n) { int k = rnd.Next(pool.Count); envoyChoices.Add(pool[k]); pool.RemoveAt(k); }
+                envoyChoices.Sort();
+                bool same = old.Count == envoyChoices.Count;
+                for (int i = 0; same && i < old.Count; i++) same = old[i] == envoyChoices[i];
+                if (!same) break;
+            }
+        }
+
+        public int EnvoyRollCost => Tuning.EnvoyRollCost;
+        /// <summary>Đổi bộ phe để tuyên chiến chỉ có nghĩa khi còn phe trung lập chưa hiện.</summary>
+        public bool EnvoyRerollUseful => envoyKind == EnvoyWar && NeutralFactions().Count > envoyChoices.Count;
+        public bool CanRerollEnvoy => phase == Phase.Envoy && EnvoyRerollUseful && crystals >= EnvoyRollCost;
+
+        public void RerollEnvoy()
+        {
+            if (!CanRerollEnvoy) return;
+            crystals -= EnvoyRollCost;
+            DrawEnvoy(NeutralFactions());
+            SaveRun();
+        }
+
+        /// <summary>Chọn phe ở ô i: tuyên chiến (phe đó tấn công ngay đợt sau) hoặc làm hoà (rút khỏi danh sách thù địch).</summary>
+        public void ChooseEnvoy(int i)
+        {
+            if (phase != Phase.Envoy || i < 0 || i >= envoyChoices.Count) return;
+            int f = envoyChoices[i];
+            if (envoyKind == EnvoyWar)
+            {
+                if (!hostile.Contains(f)) hostile.Add(f);
+                hostile.Sort();
+                attacker = f;
+                eventNote = $"You declared war on {The(f)}.";
+            }
+            else
+            {
+                if (hostile.Count > Tuning.MinHostile) hostile.Remove(f);
+                if (!hostile.Contains(attacker)) attacker = hostile[rnd.Next(hostile.Count)];
+                eventNote = $"You made peace with {The(f)}.";
+            }
+            envoyKind = 0; envoyChoices.Clear();
+            phase = Phase.Prep;
+            SaveRun();
         }
 
         // ------------------------------------------------------------------
@@ -1066,6 +1139,14 @@ namespace HordeLab
                         for (int i = 0; i < reward.Length; i++)
                             if (reward[i] == B.Expand) pick = i;
                     PickReward(pick);
+                    break;
+                }
+                case Phase.Envoy:
+                {
+                    // tuyên chiến: lấy ô đầu; làm hoà: bỏ The Void nếu có
+                    int pick = 0;
+                    if (envoyKind == EnvoyPeace) { int v = envoyChoices.IndexOf(Faction.Void); if (v >= 0) pick = v; }
+                    ChooseEnvoy(pick);
                     break;
                 }
                 case Phase.Prep:

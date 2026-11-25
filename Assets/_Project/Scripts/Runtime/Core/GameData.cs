@@ -27,7 +27,9 @@ namespace HordeLab
         public const bool MergeNeedsAdjacent = false;
         public const int ShopSlots = 5;
         public static int RollCost = 1;
-        public static float EventChance = 0.25f;         // xác suất có sự kiện đổi phe thù địch sau mỗi đợt
+        public static float EventChance = 0.25f;         // xác suất có sứ giả (đổi phe thù địch) sau mỗi đợt
+        public static int EnvoyChoices = 2;              // tuyên chiến: số phe trung lập hiện ra để chọn
+        public static int EnvoyRollCost = 1;             // đổi bộ phe tuyên chiến (Tinh thể)
         public static int StartCrystals = 5;
         public static float MarketTrade = 5f;            // Market: mỗi chu kỳ đổi 5 Vàng lấy 5 tài nguyên đã chọn (x số sao)
         // ---- Độ khó (chọn ở màn chọn phe): Easy / Normal / Hard. Hard = cân bằng gốc ----
