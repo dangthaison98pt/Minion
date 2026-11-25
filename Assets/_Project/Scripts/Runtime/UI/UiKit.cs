@@ -39,6 +39,7 @@ namespace HordeLab
             White = Whole(Texture2D.whiteTexture);
             Frame9 = Nine(FrameTexture(), 3);
             Heart = Whole(PixelArt.HeartIcon());
+            BuildEggs();
             var proj = PixelArt.BuildArrowTexture();
             Sprite ProjCell(int kind) => Sprite.Create(proj, new Rect(0f, proj.height - (kind + 1) * PixelArt.ProjH, PixelArt.ProjW, PixelArt.ProjH), new Vector2(0.5f, 0.5f), 100f);
             MeteorIcon = ProjCell(Proj.Meteor);
@@ -82,6 +83,55 @@ namespace HordeLab
 
             Shapes = new Sprite[8];
             for (int s = 1; s < Shapes.Length; s++) Shapes[s] = Whole(ShapeTexture((Shape)s));
+        }
+
+        // Easter egg trên ô nhà (vẽ đè lên tile, 1 pixel sprite = 1 pixel tile)
+        public static Sprite EggGrin, EggCatEyes, EggEye, EggEyeShut, EggPupil;
+
+        /// <summary>Sprite pixel từ các dòng chữ: '.' = trong suốt, ký tự khác tra trong bảng màu.</summary>
+        static Sprite RowsSprite(string[] rows, System.Collections.Generic.Dictionary<char, Color32> pal)
+        {
+            int h = rows.Length, w = rows[0].Length;
+            var t = new Texture2D(w, h, TextureFormat.RGBA32, false) { filterMode = FilterMode.Point, wrapMode = TextureWrapMode.Clamp };
+            var px = new Color32[w * h];
+            for (int y = 0; y < h; y++)
+                for (int x = 0; x < w; x++)
+                {
+                    char c = rows[y][x];
+                    px[(h - 1 - y) * w + x] = c == '.' ? new Color32(0, 0, 0, 0) : pal[c];
+                }
+            t.SetPixels32(px);
+            t.Apply(false, true);
+            return Whole(t);
+        }
+
+        static void BuildEggs()
+        {
+            var pal = new System.Collections.Generic.Dictionary<char, Color32>
+            {
+                ['#'] = new Color32(30, 18, 40, 255), ['W'] = new Color32(250, 248, 240, 255), ['P'] = new Color32(232, 120, 190, 255),
+                ['Y'] = new Color32(250, 220, 80, 255), ['C'] = new Color32(140, 240, 255, 255), ['V'] = new Color32(110, 60, 160, 255),
+            };
+            // nụ cười mèo Cheshire (Alice ở xứ sở thần tiên): cung trăng răng trắng
+            EggGrin = RowsSprite(new[]
+            {
+                "##.........##",
+                "#W#.......#W#",
+                ".#WW#W#W#WW#.",
+                "..#WWWWWWW#..",
+                "...#W#W#W#...",
+                "....#####....",
+            }, pal);
+            EggCatEyes = RowsSprite(new[]
+            {
+                ".###.....###.",
+                "#YY#Y...Y#YY#",
+                ".###.....###.",
+            }, pal);
+            // mắt Void Spire: tròng xanh 3x3, con ngươi 1 pixel dời theo chuột; nhắm mắt = 1 vạch tím
+            EggEye = RowsSprite(new[] { "CCC", "CCC", "CCC" }, pal);
+            EggEyeShut = RowsSprite(new[] { "VVV", "###", "VVV" }, pal);
+            EggPupil = RowsSprite(new[] { "#" }, pal);
         }
 
         static Sprite Whole(Texture2D t) => Sprite.Create(t, new Rect(0, 0, t.width, t.height), new Vector2(0.5f, 0.5f), 100f);

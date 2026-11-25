@@ -123,6 +123,8 @@ namespace HordeLab
             public TextMeshProUGUI name;
             public Image[] stars = new Image[Tuning.MaxStars];
             public Image burst;           // hiệu ứng gộp lên sao: ngôi sao to bật lên giữa ô
+            public Image egg, egg2;       // easter egg vẽ đè lên tile (Elder Tree: mèo Cheshire, Void Spire: mắt nhìn theo chuột)
+            public float eggAt = -1f;     // lúc easter egg kế tiếp bắt đầu (giây, unscaled)
             public float mergedAt = -99f;
         }
 
@@ -1345,6 +1347,8 @@ namespace HordeLab
             v.rt = Node("Cell", gridContent);
             v.tile = Img(v.rt, null, Color.white);
             v.tile.Fill();
+            v.egg = Img(v.rt, null, Color.white); v.egg.raycastTarget = false; v.egg.Show(false);
+            v.egg2 = Img(v.rt, null, Color.white); v.egg2.raycastTarget = false; v.egg2.Show(false);
             v.tint = Img(v.rt, White, Color.clear);
             v.tint.Fill();
             v.strip = Img(v.rt, White, Dark);
@@ -1369,6 +1373,49 @@ namespace HordeLab
             return v;
         }
 
+        /// <summary>Công cụ kiểm tra: easter egg trên ô chạy ngay (không chờ ngẫu nhiên).</summary>
+        public bool eggNow;
+        public Vector2Int eggLook;      // hướng mắt Void Spire đang nhìn (công cụ kiểm tra đọc)
+        readonly Vector3[] eggCorners = new Vector3[4];
+        const float CheshireIn = 1f, CheshireHold = 2.2f, CheshireOut = 2f;
+
+        /// <summary>Easter egg trên tile nhà. Elder Tree: thỉnh thoảng mèo Cheshire hiện trong tán lá (mắt tan trước, nụ cười tan sau cùng).
+        /// Void Spire: con mắt giữa tháp liếc theo con trỏ chuột, thỉnh thoảng chớp.</summary>
+        void DrawEgg(CellView v, Building b, float cell, bool dragged)
+        {
+            float px = cell / PixelArt.TilePx, now = Time.unscaledTime;
+            v.egg.Show(false); v.egg2.Show(false);
+            if (dragged) return;
+            if (b.def == B.ElderTree)
+            {
+                if (v.eggAt < 0f || (eggNow && now > v.eggAt + CheshireIn + CheshireHold + CheshireOut)) v.eggAt = eggNow ? now : now + Random.Range(8f, 25f);
+                float t = now - v.eggAt, total = CheshireIn + CheshireHold + CheshireOut;
+                if (t < 0f) return;
+                if (t > total) { v.eggAt = now + Random.Range(25f, 50f); return; }
+                float grin = t < CheshireIn ? t / CheshireIn : t < CheshireIn + CheshireHold ? 1f : 1f - (t - CheshireIn - CheshireHold) / CheshireOut;
+                float eyes = t < CheshireIn ? t / CheshireIn : Mathf.Clamp01(1f - (t - CheshireIn - CheshireHold * 0.5f) / (CheshireOut * 0.6f));   // mắt tan trước
+                v.egg.Show(true); v.egg.sprite = EggGrin; v.egg.color = new Color(1f, 1f, 1f, grin);
+                v.egg.At(Mathf.Round(10f * px), Mathf.Round(13f * px), 13f * px, 6f * px);
+                v.egg2.Show(eyes > 0f); v.egg2.sprite = EggCatEyes; v.egg2.color = new Color(1f, 1f, 1f, eyes);
+                v.egg2.At(Mathf.Round(10f * px), Mathf.Round(9f * px), 13f * px, 3f * px);
+            }
+            else if (b.def == B.VoidSpire)
+            {
+                // nhìn theo chuột: so vị trí chuột (pixel màn hình) với tâm ô
+                v.rt.GetWorldCorners(eggCorners);
+                Vector2 dir = mouse - (Vector2)((eggCorners[0] + eggCorners[2]) * 0.5f);
+                int dx = Mathf.Abs(dir.x) > cell * 0.25f * scale && Mathf.Abs(dir.x) >= Mathf.Abs(dir.y) * 0.4f ? (int)Mathf.Sign(dir.x) : 0;
+                int dy = Mathf.Abs(dir.y) > cell * 0.25f * scale && Mathf.Abs(dir.y) >= Mathf.Abs(dir.x) * 0.4f ? -(int)Mathf.Sign(dir.y) : 0;   // màn hình: y lên; tile: y xuống
+                eggLook = new Vector2Int(dx, dy);
+                bool blink = !eggNow && Mathf.Repeat(now + v.rt.GetInstanceID() * 0.37f, 4.3f) < 0.13f;
+                v.egg.Show(true); v.egg.color = Color.white;
+                v.egg.sprite = blink ? EggEyeShut : EggEye;
+                v.egg.At(Mathf.Round(15f * px), Mathf.Round(15f * px), 3f * px, 3f * px);
+                v.egg2.Show(!blink); v.egg2.sprite = EggPupil; v.egg2.color = Color.white;
+                v.egg2.At(Mathf.Round((16 + dx) * px), Mathf.Round((16 + dy) * px), px, px);
+            }
+        }
+
         /// <summary>Gộp lên sao: ô nháy trắng, sao to bật ra giữa ô rồi mờ dần, hàng sao nhỏ nảy lên (khoảng 0,9 giây).</summary>
         const float MergeFxTime = 0.9f;
 
@@ -1387,6 +1434,7 @@ namespace HordeLab
             v.burst.Show(merging);
             if (b == null)
             {
+                v.egg.Show(false); v.egg2.Show(false);
                 v.tile.sprite = Tiles[open ? PixelArt.TileEmpty : PixelArt.TileCandidate];
                 v.tile.color = Color.white;
                 v.strip.Show(false); v.starBg.Show(false); v.shape.Show(false); v.bar.Show(false); v.tradeBg.Show(false);
@@ -1403,6 +1451,7 @@ namespace HordeLab
             bool dragged = dragFromCell && dragCell == p;
             v.tile.sprite = Tiles[b.def];
             v.tile.color = new Color(1f, 1f, 1f, dragged ? 0.35f : 1f);
+            DrawEgg(v, b, cell, dragged);
 
             float nameH = !labelled ? 0f : large ? 17f : 13f;
             v.strip.Show(labelled);
