@@ -701,19 +701,20 @@ namespace HordeLab
             Buff(B.Banner, "War Banner", Cat.BuffMil, Shape.RowNear, "Troops from buildings up to 2 tiles left and right have +20% HP.");
             Buff(B.Infirmary, "Infirmary", Cat.BuffMil, Shape.Ring, "Troops from buildings around it regenerate 1 HP per second.");
 
-            // Nhà kinh tế riêng của phe: ra 1 loại tài nguyên + buff nhà lính quanh nó (cửa hàng bán của phe mình, chiến lợi phẩm ra của phe vừa thắng)
+            // Nhà kinh tế riêng của phe: ra 1 loại tài nguyên (bằng nhà thường nó thay trong bài khởi đầu) + buff nhà lính quanh nó
+            // (cửa hàng bán của phe mình, chiến lợi phẩm ra của phe vừa thắng)
             void FEco(int f, string name, Cat cat, int res, float period, float amount, Shape shape, string desc)
             {
                 Eco(B.EcoOf(f), name, cat, res, period, amount, desc);
                 b[B.EcoOf(f)].shape = shape;
                 b[B.EcoOf(f)].faction = f;
             }
-            FEco(Faction.Human, "Cathedral", Cat.Pop, ResId.Pop, 4f, 2f, Shape.Diagonal, $"Produces Pop. Troop buildings on the 4 diagonal tiles: troops have +{Aug.CathedralHp * 100f:0}% HP.");
-            FEco(Faction.Elf, "Elder Tree", Cat.Wood, ResId.Wood, 3f, 2f, Shape.Ring, $"Produces Wood. Troop buildings around it: troops regenerate {Aug.ElderRegen:0} HP per second.");
-            FEco(Faction.Dwarf, "Mithril Mine", Cat.Gold, ResId.Gold, 10f, 9f, Shape.Vertical, $"Produces Gold. Troop buildings directly above and below: troops deal +{Aug.MithrilDmg * 100f:0}% damage.");
-            FEco(Faction.Beast, "Totem Pole", Cat.Food, ResId.Food, 3f, 2f, Shape.Cross, $"Produces Food. Adjacent troop buildings: troops move {Aug.TotemMove * 100f:0}% faster.");
-            FEco(Faction.Void, "Void Spire", Cat.Pop, ResId.Pop, 4f, 2f, Shape.Diagonal, $"Produces Pop. Troop buildings on the 4 diagonal tiles pay {Aug.SpireCostCut * 100f:0}% less per call.");
-            FEco(Faction.Orc, "Scrap Forge", Cat.Wood, ResId.Wood, 3f, 2f, Shape.Cross, $"Produces Wood. Adjacent troop buildings call {Aug.ScrapCallSpeed * 100f:0}% faster.");
+            FEco(Faction.Human, "Cathedral", Cat.Pop, ResId.Pop, 4f, 3f, Shape.Diagonal, $"Produces Pop. Troop buildings on the 4 diagonal tiles: troops have +{Aug.CathedralHp * 100f:0}% HP.");
+            FEco(Faction.Elf, "Elder Tree", Cat.Wood, ResId.Wood, 3f, 3f, Shape.Ring, $"Produces Wood. Troop buildings around it: troops regenerate {Aug.ElderRegen:0} HP per second.");
+            FEco(Faction.Dwarf, "Mithril Mine", Cat.Gold, ResId.Gold, 10f, 12f, Shape.Vertical, $"Produces Gold. Troop buildings directly above and below: troops deal +{Aug.MithrilDmg * 100f:0}% damage.");
+            FEco(Faction.Beast, "Totem Pole", Cat.Food, ResId.Food, 3f, 3f, Shape.Cross, $"Produces Food. Adjacent troop buildings: troops move {Aug.TotemMove * 100f:0}% faster.");
+            FEco(Faction.Void, "Void Spire", Cat.Pop, ResId.Pop, 4f, 3f, Shape.Diagonal, $"Produces Pop. Troop buildings on the 4 diagonal tiles pay {Aug.SpireCostCut * 100f:0}% less per call.");
+            FEco(Faction.Orc, "Scrap Forge", Cat.Wood, ResId.Wood, 3f, 3f, Shape.Cross, $"Produces Wood. Adjacent troop buildings call {Aug.ScrapCallSpeed * 100f:0}% faster.");
 
             for (int t = 0; t < UnitType.Buildable; t++)
             {

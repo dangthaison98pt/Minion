@@ -15,10 +15,10 @@ MonoBehaviour:
   building: 58
   period: 4
   amount:
-    star1: 2
-    star2: 4
-    star3: 8
-    star4: 16
+    star1: 3
+    star2: 6
+    star3: 12
+    star4: 24
   buffPower:
     star1: 1
     star2: 1.5
