@@ -325,6 +325,31 @@ namespace HordeLab
                         bool wall = !test.CanExpand(new Vector2Int(7, 0)) && !test.CanExpand(new Vector2Int(-1, 0)) && test.CanExpand(new Vector2Int(0, 3));
                         log.AppendLine($"LAND TEST: {(noLand && wall ? "OK" : "FAIL")} (cửa hàng không ra đất={noLand}, chặn ngoài 7x7={wall})");
                     }
+                    {
+                        // nhà kinh tế phe: buff đúng ô; War Banner chỉ 2 ô mỗi bên
+                        City Grid(int src, params Vector2Int[] at)
+                        {
+                            var c = new City(); c.Init(game.faction); c.cells.Clear();
+                            for (int x = -3; x <= 3; x++) for (int y = -1; y <= 1; y++) c.cells[new Vector2Int(x, y)] = null;
+                            c.cells[Vector2Int.zero] = new Building { def = src };
+                            foreach (var q in at) c.cells[q] = new Building { def = B.BarracksOf(game.faction * 5) };
+                            c.Recompute();
+                            return c;
+                        }
+                        Building At(City c, int x, int y) => c.Get(new Vector2Int(x, y));
+                        var d1 = new Vector2Int(1, 1); var d2 = new Vector2Int(-1, -1); var side = new Vector2Int(1, 0);
+                        var ca = Grid(B.Cathedral, d1, side);  bool cath = At(ca, 1, 1).hp > 1.09f && At(ca, 1, 0).hp == 1f;
+                        var el = Grid(B.ElderTree, d1, side);  bool elder = At(el, 1, 1).regen >= 1f && At(el, 1, 0).regen >= 1f;
+                        var mi = Grid(B.MithrilMine, new Vector2Int(0, 1), new Vector2Int(0, -1), side);
+                        bool mith = At(mi, 0, 1).dmg > 1.24f && At(mi, 0, -1).dmg > 1.24f && At(mi, 1, 0).dmg == 1f;
+                        var to = Grid(B.TotemPole, side, d1);  bool totem = At(to, 1, 0).move > 0.14f && At(to, 1, 1).move == 0f;
+                        var sp = Grid(B.VoidSpire, d2, side);  bool spire = At(sp, -1, -1).costMul < 0.91f && At(sp, 1, 0).costMul == 1f;
+                        var sc = Grid(B.ScrapForge, side, d1); bool scrap = At(sc, 1, 0).speed > At(sc, 1, 1).speed;
+                        var bn = Grid(B.Banner, new Vector2Int(2, 0), new Vector2Int(3, 0), new Vector2Int(-2, 0));
+                        bool banner = At(bn, 2, 0).hp > 1f && At(bn, -2, 0).hp > 1f && At(bn, 3, 0).hp == 1f;
+                        bool all = cath && elder && mith && totem && spire && scrap && banner;
+                        log.AppendLine($"ECO TEST: {(all ? "OK" : "FAIL")} (Cathedral={cath}, Elder Tree={elder}, Mithril={mith}, Totem={totem}, Void Spire={spire}, Scrap Forge={scrap}, Banner 2 ô={banner})");
+                    }
                     if (!Headless)
                     {
                         // tooltip nhà lính (icon chỉ số) + hiệu ứng gộp lên sao

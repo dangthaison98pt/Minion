@@ -382,11 +382,15 @@ namespace HordeLab
             const int shared = B.Barracks;            // 0..22: nhà tài nguyên + nhà buff
             const float barracksW = 1.6f;
             float expandW = forShop ? 0f : 2.5f;
+            const float ecoW = 1.5f;                  // nhà kinh tế riêng của phe đó
             float troopW = barracksFaction >= 0 ? 5 * barracksW : 0f;
-            float total = shared + troopW + expandW;
+            float factionEcoW = barracksFaction >= 0 ? ecoW : 0f;
+            float total = shared + factionEcoW + troopW + expandW;
             float r = (float)rnd.NextDouble() * total;
             if (r < shared) return Mathf.Min(shared - 1, (int)r);
             r -= shared;
+            if (r < factionEcoW) return B.EcoOf(barracksFaction);
+            r -= factionEcoW;
             if (r < troopW) return B.BarracksOf(barracksFaction * 5 + Mathf.Min(4, (int)(r / barracksW)));
             return B.Expand;
         }
@@ -662,7 +666,7 @@ namespace HordeLab
                 var pos = new float2(Cfg.PlayerSpawnX + rng.NextFloat(0f, 5f), rng.NextFloat(-Cfg.HalfH + 5f, Cfg.HalfH - 5f));
                 battle.SpawnSquad(type, 0, pos, side, b.hp * starHp * (Has(Aug.IronSkin) ? 1f + Aug.IronSkinHp : 1f) * (Has(Aug.TitanBlood) ? 1f + Aug.TitanHp : 1f),
                                   b.dmg * starDmg * (Has(Aug.Sharpened) ? 1f + Aug.SharpenedDmg : 1f) * (Has(Aug.TitanBlood) ? 1f + Aug.TitanDmg : 1f),
-                                  b.regen + (Has(Aug.Medics) ? Aug.MedicsRegen : 0f), leader);   // chỉ có trưởng đạo khi có lõi kỹ năng trưởng đạo
+                                  b.regen + (Has(Aug.Medics) ? Aug.MedicsRegen : 0f), leader, b.move);   // chỉ có trưởng đạo khi có lõi kỹ năng trưởng đạo
             }
         }
 

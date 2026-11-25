@@ -148,7 +148,7 @@ namespace HordeLab
     }
 
     public enum Cat { Food, Wood, Gold, Pop, BuffEco, BuffMil, Barracks, Expand }
-    public enum Shape { None, Cross, Ring, Below, Row }
+    public enum Shape { None, Cross, Ring, Below, Row, Diagonal, Vertical, RowNear }   // thêm vào cuối (Diagonal = 4 ô chéo, Vertical = trên + dưới, RowNear = 2 ô mỗi bên trong hàng)
 
     public class BuildingDef
     {
@@ -178,7 +178,15 @@ namespace HordeLab
         public const int Barracks = 23;                         // 23..47: nhà lính 5 phe đầu (mã cũ, giữ cho bản lưu)
         public const int Expand = Barracks + 25;                // 48: thẻ mở thêm ô trống
         public const int OrcBarracks = Expand + 1;              // 49..53: nhà lính phe Orc (nối sau để bản lưu cũ vẫn đúng)
-        public const int Count = OrcBarracks + 5;
+        public const int FactionEco = OrcBarracks + 5;          // 54..59: nhà kinh tế riêng của từng phe (theo thứ tự Faction)
+        public const int Cathedral = FactionEco + Faction.Human, ElderTree = FactionEco + Faction.Elf, MithrilMine = FactionEco + Faction.Dwarf;
+        public const int TotemPole = FactionEco + Faction.Beast, VoidSpire = FactionEco + Faction.Void, ScrapForge = FactionEco + Faction.Orc;
+        public const int Count = FactionEco + Faction.Count;
+        /// <summary>Nhà kinh tế riêng của phe <paramref name="faction"/>.</summary>
+        public static int EcoOf(int faction) => FactionEco + faction;
+        public static bool IsFactionEco(int id) => id >= FactionEco && id < FactionEco + Faction.Count;
+        /// <summary>Nhà có số liệu trong asset BuildingBalance (nhà tài nguyên, nhà buff, nhà kinh tế phe).</summary>
+        public static bool HasBalance(int id) => id >= 0 && (id < Barracks || IsFactionEco(id));
         /// <summary>Mã nhà lính gọi loại quân <paramref name="unitType"/>.</summary>
         public static int BarracksOf(int unitType) => unitType < 25 ? Barracks + unitType : OrcBarracks + (unitType - 25);
     }
@@ -262,7 +270,9 @@ namespace HordeLab
         public const float TreeRegen = 3f;                                      // ... mọi Treant cùng phe hồi 3 máu/s, ở đâu cũng được
         public const float PunchEvery = 7f, PunchRange = 7f, PunchDamage = 20f, PunchPush = 3.5f, PunchCone = 0.45f;   // cú đấm: sóng đẩy lùi phía trước
         public const int ThorChain = 4; public const float ThorChainRange = 3.5f, ThorChainDmg = 0.6f;   // Thor: mỗi nhát búa phóng sét lan qua 4 địch
-        public const float FrenzyHp = 0.25f, FrenzyBoost = 1.3f;             // Beastfolk: dưới 25% máu thì đánh nhanh + chạy nhanh x1.3
+        public const float FrenzyHp = 0.25f, FrenzyBoost = 1.3f;
+        // Nhà kinh tế riêng của phe (B.Cathedral...): độ mạnh buff ở 1 sao
+        public const float CathedralHp = 0.1f, ElderRegen = 1f, MithrilDmg = 0.25f, TotemMove = 0.15f, SpireCostCut = 0.1f, ScrapCallSpeed = 0.15f;             // Beastfolk: dưới 25% máu thì đánh nhanh + chạy nhanh x1.3
         public const float ThorHasteRadius = 5f, Haste = 1.6f;                  // ... quân cùng phe đứng gần đánh nhanh x1.6
         public const float BerserkLifesteal = 0.1f, BerserkRage = 0.25f, RageFearRadius = 6f, RageFear = 2f;   // Berserker: hút máu 10%; dưới 25% máu hoá Fenrir
         public const float BroodEvery = 10f, BroodSight = 12f, PoisonTime = 5f, PoisonDps = 4f; public const int BroodCount = 4;   // Broodmother
@@ -688,8 +698,22 @@ namespace HordeLab
             Buff(B.Forge, "Forge", Cat.BuffMil, Shape.Below, "Troops from the building below deal +60% damage.");
             Buff(B.TrainingGround, "Training Ground", Cat.BuffMil, Shape.Cross, "Adjacent troop buildings call 25% faster.");
             Buff(B.Depot, "Supply Depot", Cat.BuffMil, Shape.Cross, "Adjacent troop buildings pay 20% less per call.");
-            Buff(B.Banner, "War Banner", Cat.BuffMil, Shape.Row, "Troops from buildings in the row have +20% HP.");
+            Buff(B.Banner, "War Banner", Cat.BuffMil, Shape.RowNear, "Troops from buildings up to 2 tiles left and right have +20% HP.");
             Buff(B.Infirmary, "Infirmary", Cat.BuffMil, Shape.Ring, "Troops from buildings around it regenerate 1 HP per second.");
+
+            // Nhà kinh tế riêng của phe: ra 1 loại tài nguyên + buff nhà lính quanh nó (cửa hàng bán của phe mình, chiến lợi phẩm ra của phe vừa thắng)
+            void FEco(int f, string name, Cat cat, int res, float period, float amount, Shape shape, string desc)
+            {
+                Eco(B.EcoOf(f), name, cat, res, period, amount, desc);
+                b[B.EcoOf(f)].shape = shape;
+                b[B.EcoOf(f)].faction = f;
+            }
+            FEco(Faction.Human, "Cathedral", Cat.Pop, ResId.Pop, 4f, 2f, Shape.Diagonal, $"Produces Pop. Troop buildings on the 4 diagonal tiles: troops have +{Aug.CathedralHp * 100f:0}% HP.");
+            FEco(Faction.Elf, "Elder Tree", Cat.Wood, ResId.Wood, 3f, 2f, Shape.Ring, $"Produces Wood. Troop buildings around it: troops regenerate {Aug.ElderRegen:0} HP per second.");
+            FEco(Faction.Dwarf, "Mithril Mine", Cat.Gold, ResId.Gold, 10f, 9f, Shape.Vertical, $"Produces Gold. Troop buildings directly above and below: troops deal +{Aug.MithrilDmg * 100f:0}% damage.");
+            FEco(Faction.Beast, "Totem Pole", Cat.Food, ResId.Food, 3f, 2f, Shape.Cross, $"Produces Food. Adjacent troop buildings: troops move {Aug.TotemMove * 100f:0}% faster.");
+            FEco(Faction.Void, "Void Spire", Cat.Pop, ResId.Pop, 4f, 2f, Shape.Diagonal, $"Produces Pop. Troop buildings on the 4 diagonal tiles pay {Aug.SpireCostCut * 100f:0}% less per call.");
+            FEco(Faction.Orc, "Scrap Forge", Cat.Wood, ResId.Wood, 3f, 2f, Shape.Cross, $"Produces Wood. Adjacent troop buildings call {Aug.ScrapCallSpeed * 100f:0}% faster.");
 
             for (int t = 0; t < UnitType.Buildable; t++)
             {

@@ -42,9 +42,9 @@ namespace HordeLab.EditorTools
             var buildingDefs = GameData.DefaultBuildings();
             var buildings = Index(Find<BuildingBalance>(), a => a.building);
             Folder($"{Root}/Buildings");
-            for (int id = 0; id < B.Barracks; id++)
+            for (int id = 0; id < B.Count; id++)
             {
-                if (buildingDefs[id] == null) continue;
+                if (!B.HasBalance(id) || buildingDefs[id] == null) continue;
                 if (buildings.ContainsKey(id)) continue;
                 var a = ScriptableObject.CreateInstance<BuildingBalance>();
                 a.CopyFrom(buildingDefs[id]);
@@ -88,8 +88,8 @@ namespace HordeLab.EditorTools
                 if (!ok) { bad++; Debug.LogWarning($"[HordeLab] Balance lệch: {t} {d.name}"); }
             }
             var bdef = GameData.DefaultBuildings();
-            for (int id = 0; id < B.Barracks; id++)
-                if (bdef[id].name != GameData.Buildings[id].name || !Mathf.Approximately(bdef[id].period, GameData.Buildings[id].period) || !Mathf.Approximately(bdef[id].amount, GameData.Buildings[id].amount))
+            for (int id = 0; id < B.Count; id++)
+                if (B.HasBalance(id) && bdef[id].name != GameData.Buildings[id].name || !Mathf.Approximately(bdef[id].period, GameData.Buildings[id].period) || !Mathf.Approximately(bdef[id].amount, GameData.Buildings[id].amount))
                 { bad++; Debug.LogWarning($"[HordeLab] Balance lệch: nhà {id} {bdef[id].name}"); }
             Debug.Log($"[HordeLab] Balance verify: {(bad == 0 ? "KHỚP" : bad + " chỗ lệch")} ({def.Length} quân, {B.Barracks} nhà, Tuning castleHp={Tuning.CastleHp}, speedScale={Tuning.SpeedScale})");
         }

@@ -262,7 +262,7 @@ namespace HordeLab
             simScheduled = false;   // nếu bị gọi sau khi frame này đã xếp lịch: bỏ kết quả cũ, đừng upload
         }
 
-        public void SpawnUnit(int type, int team, float2 pos, float hpMul = 1f, float dmgMul = 1f, float regen = 0f)
+        public void SpawnUnit(int type, int team, float2 pos, float hpMul = 1f, float dmgMul = 1f, float regen = 0f, float moveB = 0f)
         {
             int n = counters[C.Units];
             if (n >= Cfg.MaxUnits) return;
@@ -280,7 +280,8 @@ namespace HordeLab
                 team = team,
                 faceLeft = team,
                 dmgMul = dmgMul,
-                regen = regen
+                regen = regen,
+                moveB = moveB
             };
             counters[C.Units] = n + 1;
             counters[C.Team0 + team]++;
@@ -405,7 +406,7 @@ namespace HordeLab
             }
         }
 
-        public int SpawnSquad(int type, int team, float2 center, int side, float hpMul = 1f, float dmgMul = 1f, float regen = 0f, bool leader = false)
+        public int SpawnSquad(int type, int team, float2 center, int side, float hpMul = 1f, float dmgMul = 1f, float regen = 0f, bool leader = false, float moveB = 0f)
         {
             simHandle.Complete();
             float gap = math.max(0.9f, stats[type].radius * 1.9f);   // xếp hàng theo cỡ thân
@@ -414,7 +415,7 @@ namespace HordeLab
             for (int r = 0; r < side; r++)
                 for (int c = 0; c < side; c++)
                 {
-                    SpawnUnit(type, team, center + new float2((c - half) * gap, (r - half) * gap) + rng.NextFloat2(-0.15f, 0.15f), hpMul, dmgMul, regen);
+                    SpawnUnit(type, team, center + new float2((c - half) * gap, (r - half) * gap) + rng.NextFloat2(-0.15f, 0.15f), hpMul, dmgMul, regen, moveB);
                     if (leader && r == side / 2 && c == side / 2 && counters[C.Units] > 0)
                     {
                         // trưởng đạo: con giữa đạo, +50% máu, viền vàng, dùng kỹ năng của lõi chuyên quân

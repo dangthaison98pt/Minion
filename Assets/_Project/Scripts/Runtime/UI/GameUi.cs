@@ -1809,7 +1809,8 @@ namespace HordeLab
         }
 
         static string ShapeName(Shape s) =>
-            s == Shape.Cross ? "Cross (4 tiles)" : s == Shape.Ring ? "Ring (8 tiles)" : s == Shape.Below ? "The tile below" : "The whole row";
+            s == Shape.Cross ? "Cross (4 tiles)" : s == Shape.Ring ? "Ring (8 tiles)" : s == Shape.Below ? "The tile below"
+            : s == Shape.Diagonal ? "Diagonals (4 tiles)" : s == Shape.Vertical ? "Above and below" : s == Shape.RowNear ? "Row (2 tiles each side)" : "The whole row";
 
         /// <summary>
         /// Tooltip gọn: mô tả ngắn + hàng icon chỉ số (<paramref name="chipsOut"/>) + vài dòng phụ (<paramref name="extra"/>: bonus, gợi ý).

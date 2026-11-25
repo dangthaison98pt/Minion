@@ -427,6 +427,115 @@ namespace HordeLab
                     Box(t, 6, 25, 11, 27, White); t.Set(6, 26, Cloth); Box(t, 20, 25, 25, 27, White); t.Set(20, 26, Cloth);                    // cáng
                     return t;
 
+                // ---- Nhà kinh tế riêng của phe ----
+                case B.Cathedral:                                                          // Human: nhà thờ lớn, tháp chuông + cửa sổ hoa hồng
+                    t = Stone(55);
+                    Shadow(t, 5, 28, 28, 29);
+                    Box(t, 4, 11, 27, 28, Outline); Box(t, 5, 12, 26, 27, WallC);
+                    for (int x = 5; x <= 26; x++) { t.Set(x, 12, Robe); if (x % 4 == 1) Box(t, x, 13, x, 27, RobeDark); }
+                    Box(t, 4, 10, 27, 11, RoofBlue); Box(t, 4, 9, 27, 9, Outline); Box(t, 5, 10, 26, 10, Lighten(RoofBlue));
+                    // tháp chuông giữa
+                    Box(t, 12, 2, 19, 14, Outline); Box(t, 13, 3, 18, 13, WallStone); Box(t, 13, 3, 18, 4, RoofBlue);
+                    Box(t, 15, 6, 16, 8, Outline); t.Set(15, 7, Gold); t.Set(16, 7, Gold);       // chuông
+                    Box(t, 15, -1, 16, 1, Gold); Box(t, 14, 0, 17, 0, Gold);                    // thánh giá vàng
+                    // cửa sổ hoa hồng
+                    Disk(t, 16, 18, 3.4f, Tunic, TunicDark); t.Set(16, 18, Glow); t.Set(15, 17, Cloth); t.Set(17, 19, Cloth); t.Set(17, 17, Gold); t.Set(15, 19, Gold);
+                    // cửa vòm + bậc thềm
+                    Box(t, 14, 23, 17, 27, Outline); Box(t, 15, 24, 16, 27, Rgb(70, 46, 34)); t.Set(15, 23, Outline);
+                    Box(t, 12, 28, 19, 28, S3); Box(t, 11, 29, 20, 29, S1);
+                    // cửa sổ kính màu hai bên
+                    for (int i = 0; i < 2; i++) { Box(t, 7 + i * 16, 16, 8 + i * 16, 21, Outline); t.Set(7 + i * 16, 17, Cloth); t.Set(8 + i * 16, 18, Tunic); t.Set(7 + i * 16, 19, Gold); t.Set(8 + i * 16, 20, ElfGreen); }
+                    return t;
+
+                case B.ElderTree:                                                          // Elf: cây cổ thụ khổng lồ, đom đóm sáng
+                    t = Grass(57);
+                    Patch(t, 16, 25, 12, 5, LeafDark, G2);
+                    // rễ
+                    for (int k = 0; k < 4; k++) { int dx = (k - 1) * 4 - 2; Line(t, 15, 23, 15 + dx * 2, 29, BarkDark); }
+                    Box(t, 13, 16, 18, 27, Outline); Box(t, 14, 16, 17, 27, Bark); Box(t, 14, 16, 14, 27, BarkDark); t.Set(16, 22, BarkDark); t.Set(15, 19, BarkDark);
+                    // tán lá nhiều tầng
+                    Disk(t, 16, 11, 10.5f, LeafDark, LeafDark);
+                    Disk(t, 10, 12, 5.5f, Leaf, LeafDark); Disk(t, 22, 12, 5.5f, Leaf, LeafDark); Disk(t, 16, 7, 6.5f, Leaf, LeafDark);
+                    Disk(t, 13, 6, 3f, LeafLight, Leaf); Disk(t, 21, 9, 2.5f, LeafLight, Leaf); Disk(t, 9, 11, 2f, LeafLight, Leaf);
+                    // đom đóm / tinh linh
+                    t.Set(5, 20, Glow); t.Set(26, 18, Glow); t.Set(8, 26, Rgb(200, 255, 170)); t.Set(25, 26, Rgb(200, 255, 170)); t.Set(19, 4, Rgb(255, 250, 210)); t.Set(11, 9, Rgb(255, 250, 210));
+                    return t;
+
+                case B.MithrilMine:                                                        // Dwarf: mỏ đá có vân mithril xanh bạc, cổng đá khắc rune
+                {
+                    t = Dirt(59);
+                    var mith = Rgb(170, 226, 246); var mithD = Rgb(96, 160, 196);
+                    Patch(t, 16, 12, 15, 11, S2, S1);
+                    Patch(t, 14, 8, 9, 5, S1, S3);
+                    // vân mithril trên vách đá
+                    Line(t, 3, 6, 8, 10, mithD); Line(t, 22, 4, 28, 9, mithD); Line(t, 24, 14, 29, 17, mithD);
+                    t.Set(5, 7, mith); t.Set(7, 9, mith); t.Set(24, 5, mith); t.Set(27, 8, mith); t.Set(26, 15, mith); t.Set(4, 15, mith);
+                    // cổng đá vuông kiểu người lùn
+                    Box(t, 9, 9, 22, 23, Outline); Box(t, 10, 10, 21, 22, S3); Box(t, 12, 13, 19, 23, Outline); Box(t, 13, 14, 18, 23, Rgb(24, 22, 34));
+                    Box(t, 10, 10, 21, 11, WallStone); t.Set(12, 12, mith); t.Set(15, 12, mith); t.Set(16, 12, mith); t.Set(19, 12, mith);   // rune phát sáng
+                    t.Set(15, 18, mithD); t.Set(16, 19, mith);                                  // ánh mithril trong hầm
+                    // đường ray + xe goòng chở mithril
+                    for (int y = 24; y < 31; y++) { t.Set(14, y, S2); t.Set(17, y, S2); if (y % 2 == 0) Box(t, 14, y, 17, y, Leather); }
+                    Box(t, 22, 24, 28, 28, Outline); Box(t, 23, 25, 27, 27, SteelDark); Box(t, 23, 24, 27, 24, mith); t.Set(24, 23, Rgb(235, 250, 255)); t.Set(26, 23, mithD);
+                    Box(t, 3, 25, 7, 26, Wood); t.Set(4, 24, Steel); t.Set(5, 23, Steel);       // cuốc chim
+                    return t;
+                }
+
+                case B.TotemPole:                                                          // Beastfolk: cột vật tổ chạm mặt thú, cánh đại bàng trên đỉnh
+                    t = Grass(61);
+                    Patch(t, 16, 24, 10, 6, D1, D2);
+                    Disk(t, 16, 27, 3f, S3, S2);
+                    Box(t, 12, 4, 19, 27, Outline);
+                    Box(t, 13, 5, 18, 26, Bark);
+                    // 3 mặt thú chồng nhau
+                    Box(t, 13, 18, 18, 26, FurBrown); t.Set(14, 20, Outline); t.Set(17, 20, Outline); Box(t, 15, 23, 16, 24, Cloth); t.Set(14, 25, White); t.Set(17, 25, White);   // gấu
+                    Box(t, 13, 11, 18, 17, Leo); t.Set(14, 13, Outline); t.Set(17, 13, Outline); Box(t, 15, 15, 16, 15, LeoDark); t.Set(13, 11, LeoDark); t.Set(18, 11, LeoDark);  // báo
+                    Box(t, 13, 5, 18, 10, Fur); t.Set(14, 7, Glow); t.Set(17, 7, Glow); Box(t, 15, 9, 16, 9, FurDark);                                                              // sói
+                    // cánh đại bàng
+                    for (int k = 0; k < 6; k++) { Box(t, 7 + k, 6 - k / 2, 12, 6 - k / 2, k % 2 == 0 ? Feather : FeatherDark); Box(t, 19, 6 - k / 2, 24 - k, 6 - k / 2, k % 2 == 0 ? Feather : FeatherDark); }
+                    t.Set(6, 7, Outline); t.Set(25, 7, Outline);
+                    // lông vũ treo + đống lửa
+                    t.Set(12, 15, Cloth); t.Set(19, 15, Cloth); t.Set(12, 16, Feather); t.Set(19, 16, Feather);
+                    Box(t, 4, 25, 7, 26, S2); t.Set(5, 24, Glow); t.Set(6, 23, Rgb(255, 142, 30));
+                    t.Set(25, 23, Bone); t.Set(26, 24, Bone); t.Set(27, 23, Bone);
+                    return t;
+
+                case B.VoidSpire:                                                          // The Void: tháp pha lê hư không, mảnh vỡ lơ lửng
+                    t = Ground(Void3, Rgb(52, 30, 80), Rgb(30, 16, 50), 63, 14);
+                    Patch(t, 16, 24, 11, 6, Void2, Void3);
+                    for (int i = 0; i < 12; i++)                                              // thân tháp nhọn
+                    {
+                        int w = 1 + i / 2, y = 4 + i * 2;
+                        Box(t, 16 - w - 1, y, 16 + w, y + 1, Outline);
+                        Box(t, 16 - w, y, 16 + w - 1, y + 1, i % 3 == 0 ? Void1 : Void2);
+                        t.Set(16 - w, y, VoidGlow);
+                    }
+                    Box(t, 15, 2, 16, 3, VoidGlow); t.Set(15, 1, Rgb(255, 200, 255));
+                    Disk(t, 16, 16, 1.6f, VoidEye, Void1); t.Set(16, 16, White);            // mắt giữa tháp
+                    // mảnh pha lê lơ lửng
+                    Box(t, 5, 9, 6, 12, Void1); t.Set(5, 9, VoidGlow); Box(t, 25, 7, 26, 10, Void1); t.Set(26, 7, VoidGlow);
+                    Box(t, 4, 20, 5, 22, Void2); t.Set(4, 20, VoidGlow); Box(t, 27, 19, 28, 21, Void2); t.Set(28, 19, VoidGlow);
+                    t.Set(9, 5, VoidGlow); t.Set(22, 3, VoidEye); t.Set(8, 28, VoidGlow); t.Set(24, 29, VoidEye);
+                    return t;
+
+                case B.ScrapForge:                                                         // Orc: lò rèn sắt vụn, mái da, đống phế liệu
+                    t = Dirt(65);
+                    // lều mái da căng trên cọc
+                    Box(t, 2, 4, 19, 16, Outline);
+                    for (int y = 5; y <= 12; y++) Box(t, 3, y, 18, y, (y % 3 == 0) ? OrcLeatherD : OrcLeather);
+                    Box(t, 3, 13, 18, 15, OrcIron); for (int x = 3; x <= 18; x += 3) t.Set(x, 14, OrcIronL);
+                    t.Set(2, 3, Bone); t.Set(19, 3, Bone); t.Set(10, 3, OrcRed); t.Set(11, 3, OrcRed);
+                    Box(t, 8, 12, 12, 15, Rgb(255, 120, 20)); t.Set(10, 13, Glow); t.Set(9, 14, Rgb(255, 250, 210));   // miệng lò
+                    // đe sắt thô
+                    Box(t, 21, 19, 28, 20, Outline); Box(t, 22, 18, 27, 19, OrcIron); Box(t, 22, 18, 27, 18, OrcIronL); Box(t, 24, 20, 25, 23, OrcIron); Box(t, 23, 24, 26, 24, Outline);
+                    Box(t, 26, 14, 26, 17, Wood); Box(t, 25, 13, 28, 14, OrcIron);                // búa
+                    // đống phế liệu: khiên, mũ, lưỡi gãy
+                    Disk(t, 7, 24, 3f, OrcIron, Outline); t.Set(7, 24, OrcRed);
+                    Box(t, 11, 25, 16, 26, OrcIronL); t.Set(12, 24, OrcIron); t.Set(15, 24, OrcIron); Box(t, 12, 27, 17, 28, Leather);
+                    Box(t, 3, 28, 9, 29, OrcIron); t.Set(4, 27, OrcIronL); t.Set(18, 29, Rgb(255, 96, 10)); t.Set(19, 28, Rgb(255, 96, 10));
+                    t.Set(14, 21, Rgb(255, 142, 30)); t.Set(20, 16, Rgb(255, 142, 30));           // tia lửa
+                    return t;
+
                 case B.Expand:
                     t = Grass(49);
                     Tree(t, 6, 12); Tree(t, 26, 27); Bush(t, 22, 6, PineLight, G3);

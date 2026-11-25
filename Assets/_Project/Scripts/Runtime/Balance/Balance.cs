@@ -34,7 +34,7 @@ namespace HordeLab
         public static void ApplyBuildings(BuildingDef[] b)
         {
             if (IgnoreAssets || Db == null || Db.buildings == null) return;
-            foreach (var a in Db.buildings) if (a != null && a.building >= 0 && a.building < B.Barracks && b[a.building] != null) a.ApplyTo(b[a.building]);
+            foreach (var a in Db.buildings) if (a != null && B.HasBalance(a.building) && a.building < b.Length && b[a.building] != null) a.ApplyTo(b[a.building]);
         }
     }
 }

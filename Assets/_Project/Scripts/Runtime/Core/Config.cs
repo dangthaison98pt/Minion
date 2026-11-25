@@ -193,6 +193,7 @@ namespace HordeLab
         public int revived;     // đã được hồi sinh 1 lần
         public float haste;     // > 0: đang được Thor tiếp sức, đánh nhanh hơn
         public float poison;    // còn bị trúng độc bao lâu (nhện)
+        public float moveB;     // + tốc chạy từ nhà buff lúc gọi ra (Totem Pole); 0 = bình thường
     }
 
     /// <summary>Khống chế. Hết khống chế thì miễn khống chế <see cref="Immune"/> giây, khống chế không cộng dồn.</summary>

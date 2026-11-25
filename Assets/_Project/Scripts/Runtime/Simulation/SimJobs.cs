@@ -505,7 +505,7 @@ namespace HordeLab
 
             // --- Di chuyển ---
             bool frenzy = (s.flags & UFlag.Frenzy) != 0 && u.hp < u.maxHp * Aug.FrenzyHp;   // Beastfolk máu thấp: cuồng nộ
-            float speed = s.speed * (u.slow > 0f ? Fx.SlowFactor : 1f) * (frenzy ? Aug.FrenzyBoost : 1f);
+            float speed = s.speed * (u.slow > 0f ? Fx.SlowFactor : 1f) * (frenzy ? Aug.FrenzyBoost : 1f) * (1f + u.moveB);   // Totem Pole
             float2 vel = desired * speed + sep * SepStrength;
             float maxV = speed * 1.6f;
             float vl = math.length(vel);

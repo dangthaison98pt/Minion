@@ -16,12 +16,13 @@ namespace HordeLab
 
         // Hệ số sau khi tính buff + kề nhau + đặc trưng phe (City.Recompute)
         public float speed = 1f, amount = 1f, flat, costMul = 1f, dmg = 1f, hp = 1f, regen, grow = 1f;
+        public float move;           // + tốc chạy của quân gọi ra (Totem Pole)
         public bool doubled;         // Chuồng gia súc đứng cạnh Đồng lúa
         public int edges;            // Lều săn: số cạnh giáp vùng chưa mở
         public int around;           // Chợ: số công trình trong 8 ô xung quanh
 
         // biến tạm lúc cộng dồn buff
-        internal float speedB, amountB, costCut, dmgB, hpB, growB;
+        internal float speedB, amountB, costCut, dmgB, hpB, growB, moveB;
 
         public BuildingDef Def => GameData.Buildings[def];
     }
@@ -40,6 +41,7 @@ namespace HordeLab
         public float battleTime;
 
         static readonly Vector2Int[] Dir4 = { new Vector2Int(1, 0), new Vector2Int(-1, 0), new Vector2Int(0, 1), new Vector2Int(0, -1) };
+        static readonly Vector2Int[] Diag4 = { new Vector2Int(1, 1), new Vector2Int(-1, 1), new Vector2Int(1, -1), new Vector2Int(-1, -1) };
         static readonly Vector2Int[] Dir8 =
         {
             new Vector2Int(1, 0), new Vector2Int(-1, 0), new Vector2Int(0, 1), new Vector2Int(0, -1),
@@ -172,6 +174,12 @@ namespace HordeLab
                 case Shape.Ring: foreach (var d in Dir8) if (IsOpen(p + d)) into.Add(p + d); break;
                 case Shape.Below: if (IsOpen(p + Vector2Int.up)) into.Add(p + Vector2Int.up); break;   // y + 1 = bên dưới
                 case Shape.Row: foreach (var q in cells.Keys) if (q.y == p.y && q.x != p.x) into.Add(q); break;
+                case Shape.RowNear: foreach (var q in cells.Keys) if (q.y == p.y && q.x != p.x && Mathf.Abs(q.x - p.x) <= 2) into.Add(q); break;
+                case Shape.Diagonal: foreach (var d in Diag4) if (IsOpen(p + d)) into.Add(p + d); break;
+                case Shape.Vertical:
+                    if (IsOpen(p + Vector2Int.up)) into.Add(p + Vector2Int.up);       // dưới
+                    if (IsOpen(p + Vector2Int.down)) into.Add(p + Vector2Int.down);   // trên
+                    break;
             }
             return into;
         }
@@ -184,7 +192,7 @@ namespace HordeLab
             foreach (var b in cells.Values)
             {
                 if (b == null) continue;
-                b.speedB = b.amountB = b.costCut = b.dmgB = b.hpB = b.growB = 0f;
+                b.speedB = b.amountB = b.costCut = b.dmgB = b.hpB = b.growB = b.moveB = 0f;
                 b.flat = b.regen = 0f;
                 b.doubled = false;
                 b.edges = b.around = 0;
@@ -219,6 +227,13 @@ namespace HordeLab
                             case B.Depot: if (cat == Cat.Barracks) t.costCut += 0.2f * k; break;
                             case B.Banner: if (cat == Cat.Barracks) t.hpB += 0.2f * k; break;
                             case B.Infirmary: if (cat == Cat.Barracks) t.regen += 1f * k; break;
+                            // nhà kinh tế riêng của phe
+                            case B.Cathedral: if (cat == Cat.Barracks) t.hpB += Aug.CathedralHp * k; break;
+                            case B.ElderTree: if (cat == Cat.Barracks) t.regen += Aug.ElderRegen * k; break;
+                            case B.MithrilMine: if (cat == Cat.Barracks) t.dmgB += Aug.MithrilDmg * k; break;
+                            case B.TotemPole: if (cat == Cat.Barracks) t.moveB += Aug.TotemMove * k; break;
+                            case B.VoidSpire: if (cat == Cat.Barracks) t.costCut += Aug.SpireCostCut * k; break;
+                            case B.ScrapForge: if (cat == Cat.Barracks) t.speedB += Aug.ScrapCallSpeed * k; break;
                         }
                     }
                 }
@@ -254,6 +269,7 @@ namespace HordeLab
                 b.grow = 1f + Mathf.Min(b.growB, Tuning.BuffCap * 2f);
                 b.dmg = 1f + Mathf.Min(b.dmgB, Tuning.BuffCap);
                 b.hp = 1f + Mathf.Min(b.hpB, Tuning.BuffCap);
+                b.move = Mathf.Min(b.moveB, Tuning.BuffCap);
                 b.costMul = 1f - Mathf.Min(b.costCut, Tuning.CostCutCap);
                 b.regen = Mathf.Min(b.regen, 5f);
             }

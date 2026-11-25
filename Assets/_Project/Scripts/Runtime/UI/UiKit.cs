@@ -80,7 +80,7 @@ namespace HordeLab
                     : UnitIcons[t];
             }
 
-            Shapes = new Sprite[5];
+            Shapes = new Sprite[8];
             for (int s = 1; s < Shapes.Length; s++) Shapes[s] = Whole(ShapeTexture((Shape)s));
         }
 
@@ -119,7 +119,9 @@ namespace HordeLab
                     bool hit = shape == Shape.Ring ? !center
                              : shape == Shape.Cross ? (x == 1) != (y == 1)
                              : shape == Shape.Below ? x == 1 && y == 2
-                             : shape == Shape.Row && y == 1 && !center;
+                             : shape == Shape.Diagonal ? x != 1 && y != 1
+                             : shape == Shape.Vertical ? x == 1 && !center
+                             : (shape == Shape.Row || shape == Shape.RowNear) && y == 1 && !center;
                     px[(2 - y) * 3 + x] = center ? new Color32(255, 255, 255, 255) : hit ? new Color32(255, 214, 64, 255) : new Color32(20, 16, 24, 255);
                 }
             t.SetPixels32(px);
